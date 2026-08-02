@@ -4,7 +4,7 @@ import { Logo } from '@/components/Logo';
 import { UploadCloud, FileText, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Clock, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Globe } from 'lucide-react';
 
 export function OnboardingPage() {
-  const { t, navigate, locale, countries, setUser } = useApp();
+  const { t, navigate, locale, countries, setUser, loadingReference, referenceError } = useApp();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     email: '', password: '', phone: '', otp: '',
@@ -125,15 +125,34 @@ export function OnboardingPage() {
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{t.onboarding.selectCountry}</h2>
               <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Tous les pays africains disponibles' : 'All African countries available'}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
-                {countries.map((c) => (
-                  <button key={c.id} onClick={() => setForm({ ...form, countryId: c.id })}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${form.countryId === c.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50'}`}>
-                    <span className="text-2xl mr-1">{c.flag}</span>
-                    <span className="text-sm font-medium text-[#0f172a]">{c.name}</span>
-                  </button>
-                ))}
-              </div>
+
+              {loadingReference && (
+                <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Chargement des pays...' : 'Loading countries...'}</p>
+              )}
+
+              {!loadingReference && referenceError && (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+                  {locale === 'fr' ? 'Impossible de charger la liste des pays.' : 'Could not load the country list.'}
+                  <br />
+                  <span className="text-xs opacity-70">{referenceError}</span>
+                </div>
+              )}
+
+              {!loadingReference && !referenceError && countries.length === 0 && (
+                <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucun pays disponible pour le moment.' : 'No countries available right now.'}</p>
+              )}
+
+              {!loadingReference && countries.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
+                  {countries.map((c) => (
+                    <button key={c.id} onClick={() => setForm({ ...form, countryId: c.id })}
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${form.countryId === c.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50'}`}>
+                      <span className="text-2xl mr-1">{c.flag}</span>
+                      <span className="text-sm font-medium text-[#0f172a]">{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
