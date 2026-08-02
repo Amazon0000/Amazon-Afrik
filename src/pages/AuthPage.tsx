@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
+import { supabase } from '@/lib/supabase';
 import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Crown, Shield } from 'lucide-react';
 
 export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
@@ -10,28 +11,62 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!email || !password || (mode === 'signup' && !fullName)) {
       setError(locale === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill all fields');
       return;
     }
+    setSubmitting(true);
     const role = isSeller ? 'seller' : 'customer';
-    setUser({
-      id: `user-${Date.now()}`,
-      email,
-      fullName: fullName || email.split('@')[0],
-      role,
-      sellerPlan: isSeller ? (params.plan as 'starter' | 'premium' | 'enterprise' || 'starter') : undefined,
-      sellerStatus: isSeller ? 'approved' : undefined,
-    });
-    if (isSeller && mode === 'signup') {
-      navigate('onboarding');
-    } else if (role === 'seller') {
-      navigate('seller-center');
-    } else {
-      navigate('home');
+
+    try {
+      if (mode === 'signup') {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              role,
+              seller_plan: isSeller ? (params.plan as 'starter' | 'premium' | 'enterprise' || 'starter') : undefined,
+              seller_status: isSeller ? 'pending' : undefined,
+            },
+          },
+        });
+        if (signUpError) { setError(signUpError.message); setSubmitting(false); return; }
+
+        if (!data.session) {
+          // Email confirmation required by the Supabase project settings — no session yet.
+          setCheckEmail(true);
+          setSubmitting(false);
+          return;
+        }
+
+        if (isSeller) {
+          navigate('onboarding');
+        } else {
+          navigate('home');
+        }
+      } else {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) { setError(signInError.message); setSubmitting(false); return; }
+
+        const meta = data.user?.user_metadata || {};
+        if (meta.role === 'seller') {
+          navigate('seller-center');
+        } else {
+          navigate('home');
+        }
+      }
+    } catch (err) {
+      setError(locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -39,6 +74,34 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
     setUser({ id: 'admin-1', email: 'admin@zando.africa', fullName: 'Admin Zando', role: 'superadmin' });
     navigate('admin');
   };
+
+  if (checkEmail) {
+    return (
+      <div className="motif-bg min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <button onClick={() => navigate('home')} className="inline-block"><Logo size={56} /></button>
+          </div>
+          <div className="card p-7 text-center animate-fade-up">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center">
+              <Mail className="w-6 h-6 text-[#0e9f6e]" />
+            </div>
+            <h1 className="font-display text-xl font-bold text-[#0f172a] mb-2">
+              {locale === 'fr' ? 'Vérifiez votre email' : 'Check your email'}
+            </h1>
+            <p className="text-sm text-[#64748b] mb-6">
+              {locale === 'fr'
+                ? `Un lien de confirmation a été envoyé à ${email}. Cliquez dessus pour activer votre compte, puis connectez-vous.`
+                : `A confirmation link was sent to ${email}. Click it to activate your account, then log in.`}
+            </p>
+            <button onClick={() => navigate('login')} className="w-full btn-gold py-3 rounded-xl font-semibold">
+              {t.auth.loginBtn}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="motif-bg min-h-screen flex items-center justify-center px-4 py-12">
@@ -99,8 +162,10 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <button type="submit" className="w-full btn-gold py-3.5 rounded-xl font-semibold">
-              {mode === 'login' ? t.auth.loginBtn : t.auth.signupBtn}
+            <button type="submit" disabled={submitting} className="w-full btn-gold py-3.5 rounded-xl font-semibold disabled:opacity-50">
+              {submitting
+                ? (locale === 'fr' ? 'Veuillez patienter...' : 'Please wait...')
+                : (mode === 'login' ? t.auth.loginBtn : t.auth.signupBtn)}
             </button>
           </form>
 
