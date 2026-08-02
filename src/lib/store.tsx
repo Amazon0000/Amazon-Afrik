@@ -111,23 +111,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Auth state
   useEffect(() => {
-    supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        if (session?.user) {
-          const u = session.user;
-          const meta = u.user_metadata || {};
-          setUserState({
-            id: u.id,
-            email: u.email || '',
-            fullName: meta.full_name || meta.name || u.email?.split('@')[0] || 'User',
-            role: meta.role || 'customer',
-            sellerId: meta.seller_id,
-            sellerPlan: meta.seller_plan,
-            sellerStatus: meta.seller_status,
-          });
-        }
-      })();
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const u = session.user;
+        const meta = u.user_metadata || {};
+        setUserState({
+          id: u.id,
+          email: u.email || '',
+          fullName: meta.full_name || meta.name || u.email?.split('@')[0] || 'User',
+          role: meta.role || 'customer',
+          sellerId: meta.seller_id,
+          sellerPlan: meta.seller_plan,
+          sellerStatus: meta.seller_status,
+        });
+      } else if (_event !== 'INITIAL_SESSION') {
+        // Real sign-out (not just "no session found on first load with no prior local admin-demo user")
+        setUserState((prev) => (prev?.id === 'admin-1' ? prev : null));
+      }
     });
+    return () => subscription.subscription.unsubscribe();
   }, []);
 
   // Load reference data (countries, currencies, categories)
