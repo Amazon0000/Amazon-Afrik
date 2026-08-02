@@ -50,6 +50,8 @@ type AppState = {
   setCurrencyCode: (c: string) => void;
   products: Product[];
   loadingProducts: boolean;
+  loadingReference: boolean;
+  referenceError: string | null;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -93,6 +95,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currencyCode, setCurrencyCodeState] = useState<string>(() => localStorage.getItem('zando-currency') || 'USD');
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingReference, setLoadingReference] = useState(true);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem('zando-locale', locale); document.documentElement.lang = locale; }, [locale]);
   useEffect(() => { localStorage.setItem('zando-geo', JSON.stringify(geo)); }, [geo]);
@@ -126,9 +130,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Load reference data
+  // Load reference data (countries, currencies, categories)
   useEffect(() => {
     (async () => {
+      setLoadingReference(true);
+      setReferenceError(null);
       try {
         const [c, cur, cat] = await Promise.all([
           import('@/lib/db').then((m) => m.fetchCountries()),
@@ -140,6 +146,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCategories(cat);
       } catch (e) {
         console.error('Failed to load reference data', e);
+        setReferenceError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoadingReference(false);
       }
     })();
   }, []);
@@ -210,6 +219,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toasts, showToast, dismissToast,
       countries, currencies, categories, currencyCode, setCurrencyCode,
       products, loadingProducts,
+      loadingReference, referenceError,
     }}>
       {children}
     </AppContext.Provider>
