@@ -1,6 +1,6 @@
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
-import { ShieldCheck, Truck, Globe, Headphones, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Truck, Globe, Headphones } from 'lucide-react';
 
 export function Footer() {
   const { t, navigate, locale } = useApp();
@@ -48,11 +48,21 @@ export function Footer() {
             <div key={section.title}>
               <h3 className="text-sm font-semibold text-[#0f172a] mb-3">{section.title}</h3>
               <ul className="space-y-2">
-                {section.items.map((item) => (
-                  <li key={item}>
-                    <button onClick={() => navigate('catalog')} className="text-xs text-[#64748b] hover:text-[#0e9f6e] transition-colors">{item}</button>
-                  </li>
-                ))}
+                {section.items.map((item) => {
+                  const handleLinkClick = () => {
+                    if (item === t.nav.becomeSeller) { navigate('sell'); }
+                    else if (item === t.nav.sellers) { navigate('sellers'); }
+                    else if (item === t.nav.plans) { navigate('plans'); }
+                    else if (item === t.nav.ads) { navigate('ads'); }
+                    else if (item === (locale === 'fr' ? "Suivi de commande" : "Track Order")) { navigate('account'); }
+                    else { navigate('catalog'); }
+                  };
+                  return (
+                    <li key={item}>
+                      <button onClick={handleLinkClick} className="text-xs text-[#64748b] hover:text-[#0e9f6e] transition-colors text-left">{item}</button>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}

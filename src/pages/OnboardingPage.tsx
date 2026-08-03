@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
-import { UploadCloud, FileText, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Clock, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Globe } from 'lucide-react';
+import { UploadCloud, FileText, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Clock, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock } from 'lucide-react';
 
 export function OnboardingPage() {
   const { t, navigate, locale, countries, setUser, loadingReference, referenceError } = useApp();
@@ -277,7 +277,7 @@ export function OnboardingPage() {
                   { key: 'shipPickup', label: locale === 'fr' ? 'Point de retrait' : 'Pickup point' },
                 ].map((s) => (
                   <label key={s.key} className="flex items-center gap-3 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
-                    <input type="checkbox" checked={(form as any)[s.key]} onChange={(e) => setForm({ ...form, [s.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
+                    <input type="checkbox" checked={((form as Record<string, unknown>)[s.key] as boolean) || false} onChange={(e) => setForm({ ...form, [s.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
                     <span className="text-sm text-[#0f172a]">{s.label}</span>
                   </label>
                 ))}
@@ -300,7 +300,7 @@ export function OnboardingPage() {
                   { key: 'payBank', label: locale === 'fr' ? 'Virement bancaire' : 'Bank transfer' },
                 ].map((p) => (
                   <label key={p.key} className="flex items-center gap-3 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
-                    <input type="checkbox" checked={(form as any)[p.key]} onChange={(e) => setForm({ ...form, [p.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
+                    <input type="checkbox" checked={((form as Record<string, unknown>)[p.key] as boolean) || false} onChange={(e) => setForm({ ...form, [p.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
                     <span className="text-sm text-[#0f172a]">{p.label}</span>
                   </label>
                 ))}

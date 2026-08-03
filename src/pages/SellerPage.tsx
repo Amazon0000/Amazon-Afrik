@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/Cards';
 import { Star, MapPin, Package, Calendar, Crown, Award, BadgeCheck } from 'lucide-react';
 
 export function SellerPage() {
-  const { t, params, navigate, locale } = useApp();
+  const { t, params, locale } = useApp();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);

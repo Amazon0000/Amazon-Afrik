@@ -181,7 +181,7 @@ export async function fetchBrands(): Promise<Brand[]> {
 }
 
 export async function fetchPaymentProviders(countryId?: string): Promise<PaymentProvider[]> {
-  let query = supabase.from('payment_providers').select('*').eq('is_active', true).order('sort_order');
+  const query = supabase.from('payment_providers').select('*').eq('is_active', true).order('sort_order');
   const { data, error } = await query;
   if (error) throw error;
   if (countryId) return (data || []).filter((p) => p.countries.includes(countryId));
@@ -277,7 +277,7 @@ export async function fetchAddresses(userId: string): Promise<Address[]> {
   return data || [];
 }
 
-export function searchSuggestions(products: Product[], sellers: Seller[], categories: Category[], query: string, locale: 'fr' | 'en'): string[] {
+export function searchSuggestions(products: Product[], sellers: Seller[], categories: Category[], query: string): string[] {
   if (!query.trim()) return [];
   const q = query.toLowerCase();
   const prodNames = products.filter((p) => p.name.toLowerCase().includes(q)).map((p) => p.name).slice(0, 5);

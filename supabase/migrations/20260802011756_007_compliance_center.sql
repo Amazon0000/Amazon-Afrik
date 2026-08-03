@@ -70,15 +70,15 @@ ALTER TABLE compliance_reports ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "auth_read_reports" ON compliance_reports;
 CREATE POLICY "auth_read_reports" ON compliance_reports FOR SELECT
-  TO authenticated USING (true);
+  TO authenticated USING (auth.uid() = reporter_id);
 
 DROP POLICY IF EXISTS "auth_insert_reports" ON compliance_reports;
 CREATE POLICY "auth_insert_reports" ON compliance_reports FOR INSERT
-  TO authenticated WITH CHECK (true);
+  TO authenticated WITH CHECK (auth.uid() = reporter_id OR reporter_id IS NULL);
 
 DROP POLICY IF EXISTS "auth_update_reports" ON compliance_reports;
 CREATE POLICY "auth_update_reports" ON compliance_reports FOR UPDATE
-  TO authenticated USING (true) WITH CHECK (true);
+  TO authenticated USING (auth.uid() = reporter_id) WITH CHECK (auth.uid() = reporter_id);
 
 -- ============ COMPLIANCE CASES ============
 CREATE TABLE IF NOT EXISTS compliance_cases (
@@ -166,19 +166,19 @@ ALTER TABLE seller_payment_methods ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "auth_read_payment_methods" ON seller_payment_methods;
 CREATE POLICY "auth_read_payment_methods" ON seller_payment_methods FOR SELECT
-  TO authenticated USING (true);
+  TO authenticated USING (auth.uid() IN (SELECT user_id FROM sellers WHERE id = seller_id));
 
 DROP POLICY IF EXISTS "auth_insert_payment_methods" ON seller_payment_methods;
 CREATE POLICY "auth_insert_payment_methods" ON seller_payment_methods FOR INSERT
-  TO authenticated WITH CHECK (true);
+  TO authenticated WITH CHECK (auth.uid() IN (SELECT user_id FROM sellers WHERE id = seller_id));
 
 DROP POLICY IF EXISTS "auth_update_payment_methods" ON seller_payment_methods;
 CREATE POLICY "auth_update_payment_methods" ON seller_payment_methods FOR UPDATE
-  TO authenticated USING (true) WITH CHECK (true);
+  TO authenticated USING (auth.uid() IN (SELECT user_id FROM sellers WHERE id = seller_id)) WITH CHECK (auth.uid() IN (SELECT user_id FROM sellers WHERE id = seller_id));
 
 DROP POLICY IF EXISTS "auth_delete_payment_methods" ON seller_payment_methods;
 CREATE POLICY "auth_delete_payment_methods" ON seller_payment_methods FOR DELETE
-  TO authenticated USING (true);
+  TO authenticated USING (auth.uid() IN (SELECT user_id FROM sellers WHERE id = seller_id));
 
 -- ============ ADD COLUMNS TO SELLERS ============
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS risk_score numeric DEFAULT 0;

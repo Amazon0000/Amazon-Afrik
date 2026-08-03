@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/ui';
 import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 
 export function CatalogPage() {
-  const { t, params, geo, locale, categories, countries } = useApp();
+  const { t, params, geo, locale, categories } = useApp();
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState(params.sort || 'popular');
   const [priceMin, setPriceMin] = useState('');

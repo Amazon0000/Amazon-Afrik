@@ -5,7 +5,7 @@ import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, Truck } from 'lucide-reac
 import { useState, useEffect } from 'react';
 
 export function CartPage() {
-  const { t, cart, removeFromCart, updateCartQty, navigate, locale } = useApp();
+  const { t, cart, removeFromCart, updateCartQty, navigate } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [loading, setLoading] = useState(true);
 

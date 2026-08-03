@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import { ProductCard } from '@/components/Cards';
 import { SectionTitle } from '@/components/ui';
-import { ShieldCheck, CreditCard, Truck, Globe, ArrowRight, Sparkles, TrendingUp, Flame, Star, Store, MapPin, Clock, Zap, Tag, Gift, Award } from 'lucide-react';
+import { ShieldCheck, CreditCard, Truck, Globe, ArrowRight, Sparkles, TrendingUp, Star, Store, MapPin, Clock, Zap, Tag, Gift, Award } from 'lucide-react';
+import type { Seller } from '@/lib/db';
 import * as Icons from 'lucide-react';
 
 export function HomePage() {
@@ -23,9 +24,8 @@ export function HomePage() {
     return () => clearInterval(timer);
   }, [heroSlides.length]);
 
-  const heroProduct = heroSlides[heroIdx];
   const featuredCategories = categories.filter((c) => c.is_featured && !c.parent_id);
-  const sellers = [...new Map(products.map((p) => [p.sellers?.id, p.sellers]).filter(([, s]) => s) as [string, typeof products[0]['sellers']][]).values()].map((s) => s!) as any[];
+  const sellers = [...new Map(products.map((p) => [p.sellers?.id, p.sellers]).filter(([, s]) => s) as [string, typeof products[0]['sellers']][]).values()].map((s) => s!) as Seller[];
 
   if (loadingProducts) {
     return (

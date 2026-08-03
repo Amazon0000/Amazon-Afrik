@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/Cards';
 import { Star, ShoppingCart, Truck, ShieldCheck, Minus, Plus, ChevronRight, Store, Heart, Share2, CheckCircle, MapPin, BadgeCheck, Crown, Award, Search } from 'lucide-react';
 
 export function ProductPage() {
-  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast } = useApp();
+  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user } = useApp();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,6 +244,58 @@ export function ProductPage() {
               <span className="text-2xl font-bold text-[#0f172a]">{product.rating}</span>
             </div>
           </div>
+
+          {user && (
+            <div className="mb-6">
+              {!showReviewForm ? (
+                <button onClick={() => setShowReviewForm(true)} className="btn-gold px-4 py-2 rounded-lg text-sm font-semibold">
+                  {t.product.writeReview}
+                </button>
+              ) : (
+                <div className="card p-4 border border-[#0e9f6e]/20 bg-[#0e9f6e]/5 space-y-3">
+                  <h4 className="font-semibold text-sm text-[#0f172a]">{t.product.writeReview}</h4>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1">Rating</label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <button key={num} onClick={() => setReviewRating(num)} className="p-1">
+                          <Star className={`w-6 h-6 ${num <= reviewRating ? 'fill-[#ff9900] text-[#ff9900]' : 'text-gray-300'}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1">Comment</label>
+                    <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} rows={3} className="input-field" placeholder="Share your experience..." />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={async () => {
+                      if (!reviewText.trim()) return;
+                      const ok = await import('@/lib/db').then(m => m.createReview({
+                        productId: product.id,
+                        userId: user.id,
+                        authorName: user.fullName,
+                        rating: reviewRating,
+                        comment: reviewText
+                      }));
+                      if (ok) {
+                        showToast(locale === 'fr' ? 'Avis publié' : 'Review submitted');
+                        setShowReviewForm(false);
+                        setReviewText('');
+                        setReviewRating(5);
+                        const p = await fetchProductById(product.id);
+                        setProduct(p);
+                      } else {
+                        showToast('Error submitting review', 'error');
+                      }
+                    }} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold">Submit</button>
+                    <button onClick={() => setShowReviewForm(false)} className="px-4 py-2 rounded-lg text-xs border border-gray-300 text-gray-700">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-4">
             {reviews.map((review) => (
               <div key={review.id} className="pb-4 border-b border-[#0e9f6e]/10 last:border-0">

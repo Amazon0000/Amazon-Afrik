@@ -1,5 +1,5 @@
 import { useApp } from '@/lib/store';
-import { Truck, Package, CheckCircle, Clock, MapPin, Camera, PenTool, ChevronRight } from 'lucide-react';
+import { Truck, Package, CheckCircle, Clock, MapPin, Camera, PenTool } from 'lucide-react';
 
 export function DeliveryPage() {
   const { t, params, locale } = useApp();

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Heart, Package, MapPin, Bell, MessageSquare, ChevronRight } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
-import { searchSuggestions } from '@/lib/db';
+import { searchSuggestions, type Seller } from '@/lib/db';
 
 const MEGA_CATEGORIES = [
   { label: "Today's Deals", key: 'deals' },
@@ -41,7 +41,7 @@ const MEGA_CATEGORIES = [
 ];
 
 export function Header() {
-  const { t, locale, setLocale, navigate, page, user, logout, cartCount, geo, setGeo, wishlist, countries, currencies, currencyCode, setCurrencyCode, products, categories } = useApp();
+  const { t, locale, setLocale, navigate, user, logout, cartCount, geo, setGeo, wishlist, countries, currencies, currencyCode, setCurrencyCode, products, categories } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -49,8 +49,8 @@ export function Header() {
   const [megaOpen, setMegaOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const sellers = products.map((p) => p.sellers).filter(Boolean) as any[];
-  const suggestions = searchSuggestions(products, sellers, categories, search, locale);
+  const sellers = products.map((p) => p.sellers).filter(Boolean) as Seller[];
+  const suggestions = searchSuggestions(products, sellers, categories, search);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import { fetchProductById, fetchAddresses, fetchPaymentProviders } from '@/lib/db';
 import type { Product, Address, PaymentProvider } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, CreditCard, Smartphone, MapPin, Plus, ChevronRight, Truck, ShieldCheck } from 'lucide-react';
+import { CheckCircle, CreditCard, Smartphone, MapPin, Plus, Truck, ShieldCheck } from 'lucide-react';
 
 export function CheckoutPage() {
   const { t, locale, cart, navigate, clearCart, showToast, user, geo } = useApp();
@@ -75,7 +75,7 @@ export function CheckoutPage() {
       setOrderPlaced(true);
       clearCart();
       showToast(t.checkout.orderPlaced);
-    } catch (e) {
+    } catch {
       showToast(locale === 'fr' ? 'Erreur lors de la commande' : 'Order error', 'error');
     }
   };

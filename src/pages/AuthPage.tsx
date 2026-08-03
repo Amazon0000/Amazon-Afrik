@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
-import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Crown, Shield } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Crown } from 'lucide-react';
 
 export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   const { t, navigate, setUser, locale, params } = useApp();
@@ -63,7 +63,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
           navigate('home');
         }
       }
-    } catch (err) {
+    } catch {
       setError(locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong');
     } finally {
       setSubmitting(false);

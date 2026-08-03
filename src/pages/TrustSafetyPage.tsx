@@ -11,14 +11,14 @@ import { Badge } from '@/components/ui';
 import {
   ShieldCheck, Store, FileText, AlertTriangle, BarChart3, ScrollText, Search,
   CheckCircle, XCircle, Clock, Ban, Snowflake, RotateCcw, Flag, Eye, FileSearch,
-  Activity, TrendingUp, TrendingDown, ChevronRight, X, ZoomIn, Download, Star,
-  AlertOctagon, UserCheck, UserX, Scale, Gavel, Bell,
+  Activity, TrendingUp, ChevronRight, X, ZoomIn,
+  AlertOctagon, Gavel,
 } from 'lucide-react';
 
 type Tab = 'overview' | 'verification' | 'documents' | 'reports' | 'cases' | 'health' | 'audit';
 
 export function TrustSafetyPage() {
-  const { t, locale, user } = useApp();
+  const { locale, user } = useApp();
   const [tab, setTab] = useState<Tab>('overview');
   const [sellers, setSellers] = useState<ComplianceSeller[]>([]);
   const [logs, setLogs] = useState<AuditLog[]>([]);

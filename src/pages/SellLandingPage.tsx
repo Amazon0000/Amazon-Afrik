@@ -1,6 +1,6 @@
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, CheckCircle, TrendingUp, Globe, Shield, Wallet, Users, Package, Truck, Star, ChevronDown } from 'lucide-react';
+import { ArrowRight, CheckCircle, TrendingUp, Globe, Shield, Wallet, Users, Package, Truck, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 export function SellLandingPage() {

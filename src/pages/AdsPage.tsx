@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import { countries } from '@/lib/geo';
 import { categories } from '@/lib/data';
 import { StatCard } from '@/components/ui';
-import { Megaphone, MousePointerClick, Eye, Target, Plus, TrendingUp, Gift } from 'lucide-react';
+import { Megaphone, MousePointerClick, Eye, Target, Plus, Gift } from 'lucide-react';
 
 type Campaign = {
   id: string;

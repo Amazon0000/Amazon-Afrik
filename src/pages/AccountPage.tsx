@@ -4,7 +4,7 @@ import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile } from
 import type { Product, Address, Order } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, CheckCircle, Truck } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck } from 'lucide-react';
 
 export function AccountPage() {
   const { t, locale, user, navigate, wishlist, showToast, countries } = useApp();
@@ -42,7 +42,7 @@ export function AccountPage() {
         is_default: addresses.length === 0,
       }).select().single();
       if (data) { setAddresses([data, ...addresses]); setShowAddrForm(false); setAddrForm({ label: '', fullName: user.fullName, phone: '', street: '', countryId: '', city: '' }); showToast(locale === 'fr' ? 'Adresse ajoutée' : 'Address added'); }
-    } catch (e) { showToast('Error', 'error'); }
+    } catch { showToast('Error', 'error'); }
   };
 
   const removeAddress = async (id: string) => {
