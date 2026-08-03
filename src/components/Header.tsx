@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Heart, Package, MapPin, Bell, MessageSquare, ChevronRight } from 'lucide-react';
+import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Heart, Package, MapPin, Bell, MessageSquare, ChevronRight, Minus, Plus, Trash2 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
 import { searchSuggestions, type Seller } from '@/lib/db';
@@ -41,16 +41,18 @@ const MEGA_CATEGORIES = [
 ];
 
 export function Header() {
-  const { t, locale, setLocale, navigate, user, logout, cartCount, geo, setGeo, wishlist, countries, currencies, currencyCode, setCurrencyCode, products, categories } = useApp();
+  const { t, locale, setLocale, navigate, user, logout, cartCount, geo, setGeo, wishlist, countries, currencies, currencyCode, setCurrencyCode, products, categories, cart, removeFromCart, updateCartQty, formatPrice } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const sellers = products.map((p) => p.sellers).filter(Boolean) as Seller[];
   const suggestions = searchSuggestions(products, sellers, categories, search);
+  const matchingProducts = search.trim() ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase())).slice(0, 4) : [];
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -118,15 +120,39 @@ export function Header() {
                 </button>
               </div>
             </form>
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#e2e8f0] rounded-lg shadow-xl animate-fade-up z-50 max-h-80 overflow-y-auto">
-                <p className="px-3 py-1.5 text-[10px] font-semibold uppercase text-[#64748b]">{locale === 'fr' ? 'Suggestions' : 'Suggestions'}</p>
-                {suggestions.map((s) => (
-                  <button key={s} onClick={() => { setSearch(s); navigate('catalog', { q: s }); setShowSuggestions(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f7f8fa] transition-colors text-left">
-                    <Search className="w-3.5 h-3.5 text-[#64748b]" /> {s}
-                  </button>
-                ))}
+            {showSuggestions && (search.trim() !== '') && (suggestions.length > 0 || matchingProducts.length > 0) && (
+              <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#e2e8f0] rounded-2xl shadow-2xl animate-fade-up z-50 max-h-[480px] overflow-y-auto p-2 grid md:grid-cols-12 gap-4">
+                {/* Left: Text Suggestions */}
+                <div className="md:col-span-5 border-r border-[#e2e8f0]/60 pr-2 text-left">
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#64748b]">{locale === 'fr' ? 'Suggestions de recherche' : 'Search Suggestions'}</p>
+                  {suggestions.slice(0, 6).map((s) => (
+                    <button key={s} onClick={() => { setSearch(s); navigate('catalog', { q: s }); setShowSuggestions(false); }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-[#0f172a] hover:bg-[#0e9f6e]/5 hover:text-[#0e9f6e] rounded-xl transition-colors text-left font-medium border-0 bg-transparent outline-none">
+                      <Search className="w-3.5 h-3.5 text-[#64748b]" /> {s}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right: Rich Products Matches */}
+                <div className="md:col-span-7 text-left">
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#64748b]">{locale === 'fr' ? 'Produits correspondants' : 'Matching Products'}</p>
+                  <div className="space-y-1.5">
+                    {matchingProducts.map((p) => (
+                      <div key={p.id} onClick={() => { navigate('product', { id: p.id }); setShowSuggestions(false); }}
+                        className="flex items-center gap-3 p-2 hover:bg-[#0e9f6e]/5 rounded-xl cursor-pointer transition-colors text-left">
+                        <img src={p.product_images?.[0]?.image_url || ''} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-50 border border-[#e2e8f0]" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-[#0f172a] truncate">{p.name}</p>
+                          <p className="text-[10px] text-[#64748b] truncate">{p.sellers?.business_name}</p>
+                        </div>
+                        <span className="text-xs font-bold text-[#0e9f6e] pr-2 shrink-0">{formatPrice(p.price)}</span>
+                      </div>
+                    ))}
+                    {matchingProducts.length === 0 && (
+                      <p className="text-xs text-[#64748b] px-3 py-2 text-left">{locale === 'fr' ? 'Aucun produit correspondant' : 'No matching products'}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -166,7 +192,7 @@ export function Header() {
               <Package className="w-5 h-5 text-[#0f172a]" />
             </button>
             {/* Cart */}
-            <button onClick={() => go('cart')} className="relative p-2 rounded-lg hover:bg-[#f7f8fa]">
+            <button onClick={() => setCartOpen(true)} className="relative p-2 rounded-lg hover:bg-[#f7f8fa]">
               <ShoppingBag className="w-5 h-5 text-[#0f172a]" />
               {cartCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-[#0e9f6e] text-white">{cartCount}</span>}
             </button>
@@ -264,6 +290,70 @@ export function Header() {
           </div>
         </div>
       )}
+
+      {/* Cart Drawer Backdrop */}
+      {cartOpen && (
+        <div className="fixed inset-0 bg-black/40 z-[100] animate-fade-in" onClick={() => setCartOpen(false)} />
+      )}
+
+      {/* Cart Drawer Container */}
+      <div className={`fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-[101] transform transition-transform duration-300 flex flex-col ${cartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-4 border-b border-[#e2e8f0] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-[#0e9f6e]" />
+            <span className="font-display font-bold text-[#0f172a] text-lg">{t.cart.title} ({cartCount})</span>
+          </div>
+          <button onClick={() => setCartOpen(false)} className="p-2 rounded-lg hover:bg-[#f7f8fa]"><X className="w-5 h-5 text-[#64748b]" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+          {cart.length === 0 ? (
+            <div className="text-center py-12">
+              <ShoppingBag className="w-12 h-12 text-[#0e9f6e]/30 mx-auto mb-3" />
+              <p className="text-sm text-[#64748b]">{t.cart.empty}</p>
+              <button onClick={() => { setCartOpen(false); navigate('catalog'); }} className="mt-4 btn-gold px-4 py-2 rounded-lg text-xs font-semibold">{t.cart.continueShopping}</button>
+            </div>
+          ) : (
+            cart.map((item) => {
+              const product = products.find(p => p.id === item.productId);
+              if (!product) return null;
+              return (
+                <div key={item.productId} className="flex gap-3 p-3 rounded-xl border border-[#0f172a]/10 bg-white text-left">
+                  <img src={product.product_images?.[0]?.image_url || ''} alt="" className="w-16 h-16 rounded-lg object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#0f172a] truncate">{product.name}</p>
+                    {item.variation && <p className="text-[10px] text-[#64748b]">{item.variation}</p>}
+                    <p className="text-xs font-bold text-[#0f172a] mt-1">{formatPrice(product.price)}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center border border-[#0f172a]/10 rounded-lg overflow-hidden scale-90 origin-left bg-white">
+                        <button onClick={() => updateCartQty(item.productId, item.qty - 1)} className="p-1 hover:bg-[#0f172a]/5"><Minus className="w-3.5 h-3.5" /></button>
+                        <span className="px-2 text-xs font-semibold">{item.qty}</span>
+                        <button onClick={() => updateCartQty(item.productId, item.qty + 1)} className="p-1 hover:bg-[#0f172a]/5"><Plus className="w-3.5 h-3.5" /></button>
+                      </div>
+                      <button onClick={() => removeFromCart(item.productId)} className="text-[11px] text-red-400 hover:text-red-600 ml-auto flex items-center gap-0.5"><Trash2 className="w-3 h-3" /> Remove</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {cart.length > 0 && (
+          <div className="p-4 border-t border-[#e2e8f0] bg-[#f7f8fa] space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[#64748b]">{t.cart.subtotal}</span>
+              <span className="font-bold text-[#0f172a]">{formatPrice(cart.reduce((sum, item) => sum + (products.find(p => p.id === item.productId)?.price || 0) * item.qty, 0))}</span>
+            </div>
+            <button onClick={() => { setCartOpen(false); navigate('checkout'); }} className="w-full btn-gold py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
+              {t.cart.checkout} <ChevronRight className="w-4 h-4" />
+            </button>
+            <button onClick={() => { setCartOpen(false); navigate('cart'); }} className="w-full text-center text-xs font-semibold text-[#0e9f6e] hover:underline bg-transparent border-0 outline-none">
+              {locale === 'fr' ? 'Voir le panier complet' : 'View full cart'}
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 }
