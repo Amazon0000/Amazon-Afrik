@@ -3,8 +3,10 @@ import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
 import { UploadCloud, FileText, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Clock, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock } from 'lucide-react';
 
+import { supabase } from '@/lib/supabase';
+
 export function OnboardingPage() {
-  const { t, navigate, locale, countries, setUser, loadingReference, referenceError } = useApp();
+  const { t, navigate, locale, countries, setUser, loadingReference, referenceError, refreshSellers, user } = useApp();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     email: '', password: '', phone: '', otp: '',
@@ -46,16 +48,46 @@ export function OnboardingPage() {
     return true;
   };
 
-  const submit = () => {
+  const submit = async () => {
+    const userId = user?.id || 'demo-user-' + Date.now();
+    try {
+      const { createSeller } = await import('@/lib/db');
+      const sellerId = await createSeller({
+        userId,
+        businessName: form.businessName,
+        storeSlug: form.storeSlug,
+        description: form.storeDesc,
+        countryId: form.countryId,
+        city: form.businessAddress.split(',')[0] || 'Abidjan',
+        phone: form.phone,
+        businessType: form.businessType,
+        storeLogoUrl: form.storeLogo,
+        storeBannerUrl: form.storeBanner,
+      });
+
+      if (sellerId) {
+        await supabase.auth.updateUser({
+          data: { seller_id: sellerId, seller_status: 'approved' }
+        });
+
+        setUser({
+          id: userId,
+          email: form.email || user?.email || '',
+          fullName: form.storeName || form.businessName,
+          role: 'seller',
+          sellerId,
+          sellerPlan: 'starter',
+          sellerStatus: 'approved',
+        });
+
+        if (refreshSellers) {
+          await refreshSellers();
+        }
+      }
+    } catch (e) {
+      console.error('Error creating seller:', e);
+    }
     setSubmitted(true);
-    setUser({
-      id: 'demo-seller-' + Date.now(),
-      email: form.email,
-      fullName: form.storeName || form.businessName,
-      role: 'seller',
-      sellerPlan: 'starter',
-      sellerStatus: 'pending',
-    });
   };
 
   if (submitted) {

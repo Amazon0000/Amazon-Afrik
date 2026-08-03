@@ -30,6 +30,8 @@ export function AdsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', country: '', city: '', category: '', duration: 7, budget: 50 });
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(['ci']);
+  const [placements, setPlacements] = useState({ hero: true, sidebar: false, list: true });
 
   const totalImpressions = campaigns.reduce((s, c) => s + c.impressions, 0);
   const totalClicks = campaigns.reduce((s, c) => s + c.clicks, 0);
@@ -89,11 +91,27 @@ export function AdsPage() {
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" placeholder="Soldes Wax" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.targetCountry}</label>
-                <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="input-field">
+                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Pays cibles (multiples)' : 'Target Countries (multiple)'}</label>
+                <select value="" onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && !selectedCountries.includes(val)) {
+                    setSelectedCountries([...selectedCountries, val]);
+                  }
+                }} className="input-field">
                   <option value="">—</option>
                   {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
                 </select>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {selectedCountries.map((code) => {
+                    const c = countries.find((x) => x.id.toLowerCase() === code.toLowerCase());
+                    return (
+                      <span key={code} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0e9f6e]/10 text-[#0e9f6e]">
+                        <span>{c?.flag} {c?.name || code.toUpperCase()}</span>
+                        <button type="button" onClick={() => setSelectedCountries(selectedCountries.filter((x) => x !== code))} className="text-[#0e9f6e] hover:text-[#0c8a5f] font-bold">×</button>
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.targetCity}</label>
@@ -111,11 +129,45 @@ export function AdsPage() {
                 <input type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) || 7 })} className="input-field" min={1} max={90} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.budget}</label>
+                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.budget} ($)</label>
                 <input type="number" value={form.budget} onChange={(e) => setForm({ ...form, budget: parseInt(e.target.value) || 50 })} className="input-field" min={10} />
               </div>
+              <div className="sm:col-span-2 text-left">
+                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Placements publicitaires' : 'Ad Placements'}</label>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
+                    <input type="checkbox" checked={placements.hero} onChange={(e) => setPlacements({ ...placements, hero: e.target.checked })} className="w-4 h-4 accent-[#0e9f6e]" />
+                    <span className="text-xs font-medium text-[#0f172a]">{locale === 'fr' ? 'Bannière d\'accueil Hero' : 'Homepage Hero banner'}</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
+                    <input type="checkbox" checked={placements.sidebar} onChange={(e) => setPlacements({ ...placements, sidebar: e.target.checked })} className="w-4 h-4 accent-[#0e9f6e]" />
+                    <span className="text-xs font-medium text-[#0f172a]">{locale === 'fr' ? 'Barre latérale de recherche' : 'Search Sidebar'}</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
+                    <input type="checkbox" checked={placements.list} onChange={(e) => setPlacements({ ...placements, list: e.target.checked })} className="w-4 h-4 accent-[#0e9f6e]" />
+                    <span className="text-xs font-medium text-[#0f172a]">{locale === 'fr' ? 'Haut de liste sponsorisé' : 'Sponsored Top List'}</span>
+                  </label>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-3 mt-5">
+
+            {/* Reach Calculator */}
+            <div className="mt-6 p-4 rounded-xl bg-[#0e9f6e]/5 border border-[#0e9f6e]/20 grid sm:grid-cols-3 gap-4 text-left">
+              <div>
+                <p className="text-xs text-[#64748b] font-medium">{locale === 'fr' ? 'Impressions estimées' : 'Est. Impressions'}</p>
+                <p className="text-xl font-bold text-[#0f172a] mt-0.5">{(form.budget * form.duration * 240).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#64748b] font-medium">{locale === 'fr' ? 'Clics estimés' : 'Est. Clicks'}</p>
+                <p className="text-xl font-bold text-[#0f172a] mt-0.5">{(form.budget * form.duration * 12).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#64748b] font-medium">{locale === 'fr' ? 'Ventes estimées' : 'Est. Conversions'}</p>
+                <p className="text-xl font-bold text-[#0f172a] mt-0.5">{(form.budget * form.duration * 1.5).toFixed(0)}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
               <button onClick={launch} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold">{t.ads.launch}</button>
               <button onClick={() => setShowForm(false)} className="px-6 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a]">{t.common.cancel}</button>
             </div>

@@ -322,6 +322,44 @@ export async function uploadSellerAsset(file: File, sellerId: string, type: 'log
 
 // ============ MUTATIONS ============
 
+export async function createSeller(opts: {
+  userId: string;
+  businessName: string;
+  storeSlug: string;
+  description: string;
+  countryId: string;
+  city: string;
+  phone: string;
+  businessType: string;
+  storeLogoUrl?: string | null;
+  storeBannerUrl?: string | null;
+}): Promise<string | null> {
+  const { data, error } = await supabase.from('sellers').insert({
+    user_id: opts.userId,
+    business_name: opts.businessName,
+    store_slug: opts.storeSlug,
+    description: opts.description,
+    country_id: opts.countryId,
+    city: opts.city,
+    phone: opts.phone,
+    business_type: opts.businessType,
+    store_logo_url: opts.storeLogoUrl || null,
+    store_banner_url: opts.storeBannerUrl || null,
+    status: 'pending',
+    plan: 'starter',
+    rating: 5.0,
+    total_reviews: 0,
+    total_products: 0,
+    joined_year: new Date().getFullYear(),
+  }).select('id').single();
+
+  if (error || !data) {
+    console.error('createSeller error:', error?.message);
+    return null;
+  }
+  return data.id;
+}
+
 export async function createProduct(opts: {
   sellerId: string;
   name: string;

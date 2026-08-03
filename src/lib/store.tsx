@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { type Dict, type Locale, dictionaries } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
-import type { Country, Currency, Category, Product } from '@/lib/db';
+import type { Country, Currency, Category, Product, Seller } from '@/lib/db';
 
 type GeoSelection = {
   countryId: string;
@@ -49,10 +49,14 @@ type AppState = {
   currencyCode: string;
   setCurrencyCode: (c: string) => void;
   products: Product[];
+  sellers: Seller[];
   loadingProducts: boolean;
+  loadingSellers: boolean;
   loadingReference: boolean;
   referenceError: string | null;
   formatPrice: (p: number) => string;
+  refreshProducts: () => Promise<void>;
+  refreshSellers: () => Promise<void>;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -95,7 +99,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [currencyCode, setCurrencyCodeState] = useState<string>(() => localStorage.getItem('zando-currency') || 'USD');
   const [products, setProducts] = useState<Product[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingSellers, setLoadingSellers] = useState(true);
   const [loadingReference, setLoadingReference] = useState(true);
   const [referenceError, setReferenceError] = useState<string | null>(null);
 
@@ -156,20 +162,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // Load products
-  useEffect(() => {
-    (async () => {
-      setLoadingProducts(true);
-      try {
-        const prods = await import('@/lib/db').then((m) => m.fetchProducts({ limit: 50 }));
-        setProducts(prods);
-      } catch (e) {
-        console.error('Failed to load products', e);
-      } finally {
-        setLoadingProducts(false);
-      }
-    })();
+  const refreshProducts = useCallback(async () => {
+    setLoadingProducts(true);
+    try {
+      const prods = await import('@/lib/db').then((m) => m.fetchProducts({ limit: 50 }));
+      setProducts(prods);
+    } catch (e) {
+      console.error('Failed to load products', e);
+    } finally {
+      setLoadingProducts(false);
+    }
   }, []);
+
+  const refreshSellers = useCallback(async () => {
+    setLoadingSellers(true);
+    try {
+      const s = await import('@/lib/db').then((m) => m.fetchSellers({ limit: 50 }));
+      setSellers(s);
+    } catch (e) {
+      console.error('Failed to load sellers', e);
+    } finally {
+      setLoadingSellers(false);
+    }
+  }, []);
+
+  // Load products & sellers
+  useEffect(() => {
+    refreshProducts();
+    refreshSellers();
+  }, [refreshProducts, refreshSellers]);
 
   const setLocale = (l: Locale) => setLocaleState(l);
   const setGeo = (g: Partial<GeoSelection>) => setGeoState((prev) => ({ ...prev, ...g }));
@@ -233,8 +254,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toasts, showToast, dismissToast,
       countries, currencies, categories, currencyCode, setCurrencyCode,
       products, loadingProducts,
+      sellers, loadingSellers,
       loadingReference, referenceError,
       formatPrice,
+      refreshProducts,
+      refreshSellers,
     }}>
       {children}
     </AppContext.Provider>

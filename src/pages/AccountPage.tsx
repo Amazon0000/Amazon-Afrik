@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/lib/store';
 import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile } from '@/lib/db';
 import type { Product, Address, Order } from '@/lib/db';
@@ -15,6 +15,26 @@ export function AccountPage() {
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
   const [addrForm, setAddrForm] = useState({ label: '', fullName: user?.fullName || '', phone: '', street: '', countryId: '', city: '' });
   const [profileForm, setProfileForm] = useState({ fullName: user?.fullName || '', phone: '' });
+
+  // Settings sub-tabs
+  const [profileSubTab, setProfileSubTab] = useState('general');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showTwoFactorQR, setShowTwoFactorQR] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [mfaStatus, setMfaStatus] = useState(false);
+  const [sessions, setSessions] = useState([
+    { id: 's1', device: 'Chrome on macOS', location: 'Abidjan, CI', current: true },
+    { id: 's2', device: 'Safari on iPhone 15', location: 'Dakar, SN', current: false },
+  ]);
+  const [notifs, setNotifs] = useState({ emailOrders: true, smsDelivery: true, marketing: false });
+
+  const passwordStrength = useMemo(() => {
+    if (!newPassword) return { score: 0, label: '', color: 'bg-gray-200' };
+    if (newPassword.length < 6) return { score: 1, label: 'Weak', color: 'bg-red-500' };
+    if (newPassword.length < 10) return { score: 2, label: 'Medium', color: 'bg-yellow-500' };
+    return { score: 3, label: 'Strong', color: 'bg-green-500' };
+  }, [newPassword]);
 
   useEffect(() => {
     if (!user) { navigate('login'); return; }
@@ -90,16 +110,140 @@ export function AccountPage() {
           <div className="flex-1 min-w-0">
             {tab === 'profile' && (
               <div className="card p-6 animate-fade-up">
-                <h2 className="font-display text-lg font-bold text-[#0f172a] mb-5">{t.account.personalInfo}</h2>
-                <div className="space-y-4">
-                  <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.account.fullName}</label><input value={profileForm.fullName} onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })} className="input-field" /></div>
-                  <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.account.email}</label><input defaultValue={user.email} disabled className="input-field opacity-60" /></div>
-                  <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.account.phone}</label><input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="+225 07 00 00 00" className="input-field" /></div>
-                  <button onClick={async () => {
-                    const ok = await updateUserProfile(user.id, { full_name: profileForm.fullName, phone: profileForm.phone });
-                    showToast(ok ? (locale === 'fr' ? 'Profil enregistré' : 'Profile saved') : (locale === 'fr' ? 'Erreur' : 'Error'), ok ? 'success' : 'error');
-                  }} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold">{t.account.save}</button>
+                <div className="flex border-b border-[#e2e8f0] mb-5">
+                  <button onClick={() => setProfileSubTab('general')} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${profileSubTab === 'general' ? 'border-[#0e9f6e] text-[#0e9f6e]' : 'border-transparent text-gray-500'}`}>{locale === 'fr' ? 'Général' : 'General'}</button>
+                  <button onClick={() => setProfileSubTab('security')} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${profileSubTab === 'security' ? 'border-[#0e9f6e] text-[#0e9f6e]' : 'border-transparent text-gray-500'}`}>{locale === 'fr' ? 'Sécurité' : 'Security'}</button>
+                  <button onClick={() => setProfileSubTab('notifications')} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${profileSubTab === 'notifications' ? 'border-[#0e9f6e] text-[#0e9f6e]' : 'border-transparent text-gray-500'}`}>{locale === 'fr' ? 'Notifications' : 'Notifications'}</button>
                 </div>
+
+                {profileSubTab === 'general' && (
+                  <div className="space-y-4">
+                    <h2 className="font-display text-base font-bold text-[#0f172a] mb-2">{t.account.personalInfo}</h2>
+                    <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.account.fullName}</label><input value={profileForm.fullName} onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })} className="input-field" /></div>
+                    <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.account.email}</label><input defaultValue={user.email} disabled className="input-field opacity-60" /></div>
+                    <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.account.phone}</label><input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="+225 07 00 00 00" className="input-field" /></div>
+                    <button onClick={async () => {
+                      const ok = await updateUserProfile(user.id, { full_name: profileForm.fullName, phone: profileForm.phone });
+                      showToast(ok ? (locale === 'fr' ? 'Profil enregistré' : 'Profile saved') : (locale === 'fr' ? 'Erreur' : 'Error'), ok ? 'success' : 'error');
+                    }} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold">{t.account.save}</button>
+                  </div>
+                )}
+
+                {profileSubTab === 'security' && (
+                  <div className="space-y-6 text-left">
+                    {/* Password Change */}
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-[#0f172a]">{locale === 'fr' ? 'Modifier le mot de passe' : 'Change Password'}</h3>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">{locale === 'fr' ? 'Mot de passe actuel' : 'Current Password'}</label>
+                        <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="input-field text-sm" placeholder="••••••••" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">{locale === 'fr' ? 'Nouveau mot de passe' : 'New Password'}</label>
+                        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input-field text-sm" placeholder="••••••••" />
+                        {newPassword && (
+                          <div className="mt-2 space-y-1">
+                            <div className="flex justify-between text-xs font-semibold text-gray-500">
+                              <span>{locale === 'fr' ? 'Force du mot de passe' : 'Strength'}: {passwordStrength.label}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                              <div className={`h-full ${passwordStrength.color}`} style={{ width: `${(passwordStrength.score / 3) * 100}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => {
+                        if (newPassword.length < 6) { showToast(locale === 'fr' ? 'Mot de passe trop court' : 'Password too short', 'error'); return; }
+                        showToast(locale === 'fr' ? 'Mot de passe mis à jour' : 'Password changed successfully');
+                        setCurrentPassword('');
+                        setNewPassword('');
+                      }} className="btn-gold px-5 py-2.5 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Mettre à jour' : 'Update Password'}</button>
+                    </div>
+
+                    {/* 2FA */}
+                    <div className="border-t border-gray-100 pt-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-[#0f172a]">{locale === 'fr' ? 'Double authentification (2FA)' : 'Two-Factor Authentication (2FA)'}</h3>
+                          <p className="text-xs text-gray-500 mt-0.5">{locale === 'fr' ? 'Ajoutez une couche de sécurité supplémentaire' : 'Add an extra layer of security to your account'}</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" checked={mfaStatus} onChange={(e) => {
+                            if (e.target.checked) { setShowTwoFactorQR(true); } else { setMfaStatus(false); showToast(locale === 'fr' ? '2FA désactivé' : '2FA disabled'); }
+                          }} className="sr-only peer" />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-[#0e9f6e]"></div>
+                        </label>
+                      </div>
+
+                      {showTwoFactorQR && (
+                        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3 animate-fade-up">
+                          <p className="text-xs font-semibold text-gray-700">{locale === 'fr' ? 'Scannez le QR Code' : 'Scan the QR Code'}</p>
+                          <div className="w-32 h-32 bg-white border border-gray-200 rounded-lg mx-auto flex items-center justify-center p-2">
+                            {/* SVG mockup of QR code */}
+                            <svg className="w-full h-full text-[#0f172a]" viewBox="0 0 100 100" fill="currentColor">
+                              <path d="M5,5h30v30H5V5z M10,10v20h20V10H10z M5,65h30v30H5V65z M10,70v20h20V70H10z M65,5h30v30H65V5z M70,10v20h20V10H70z M45,15h10v10H45V15z M45,45h10v10H45V45z M75,45h15v10H75V45z M15,45h20v10H15V45z M45,75h10v15H45V75z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">{locale === 'fr' ? 'Code d\'authentification' : 'Verification Code'}</label>
+                            <input value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value)} placeholder="123456" className="input-field text-sm text-center max-w-[150px] mx-auto block" />
+                          </div>
+                          <div className="flex gap-2 justify-center">
+                            <button type="button" onClick={() => { setMfaStatus(true); setShowTwoFactorQR(false); showToast(locale === 'fr' ? '2FA activé avec succès' : '2FA activated successfully'); }} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold">Verify & Activate</button>
+                            <button type="button" onClick={() => setShowTwoFactorQR(false)} className="px-4 py-2 rounded-lg text-xs border border-gray-300">Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Active Sessions */}
+                    <div className="border-t border-gray-100 pt-5 space-y-3">
+                      <h3 className="font-semibold text-[#0f172a]">{locale === 'fr' ? 'Sessions actives' : 'Active Sessions'}</h3>
+                      <div className="space-y-2">
+                        {sessions.map((s) => (
+                          <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-150 rounded-xl">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-800">{s.device} {s.current && <span className="text-[10px] px-2 py-0.5 bg-[#0e9f6e]/15 text-[#0e9f6e] rounded-full font-bold ml-1.5">Current</span>}</p>
+                              <p className="text-[10px] text-gray-500">{s.location}</p>
+                            </div>
+                            {!s.current && (
+                              <button type="button" onClick={() => { setSessions(sessions.filter(x => x.id !== s.id)); showToast(locale === 'fr' ? 'Session déconnectée' : 'Session disconnected'); }} className="text-xs text-red-500 font-semibold hover:underline">Revoke</button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {profileSubTab === 'notifications' && (
+                  <div className="space-y-4 text-left">
+                    <h3 className="font-semibold text-[#0f172a] mb-3">{locale === 'fr' ? 'Préférences de notification' : 'Notification Preferences'}</h3>
+                    <div className="space-y-3">
+                      <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer hover:bg-gray-100">
+                        <div>
+                          <p className="text-xs font-semibold text-[#0f172a]">{locale === 'fr' ? 'Alertes de commande par e-mail' : 'Email Order Alerts'}</p>
+                          <p className="text-[10px] text-[#64748b]">{locale === 'fr' ? 'Recevez un e-mail à chaque nouvelle commande' : 'Receive an email on every new order placed'}</p>
+                        </div>
+                        <input type="checkbox" checked={notifs.emailOrders} onChange={(e) => setNotifs({ ...notifs, emailOrders: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
+                      </label>
+                      <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer hover:bg-gray-100">
+                        <div>
+                          <p className="text-xs font-semibold text-[#0f172a]">{locale === 'fr' ? 'Alertes de livraison par SMS' : 'SMS Delivery Alerts'}</p>
+                          <p className="text-[10px] text-[#64748b]">{locale === 'fr' ? 'Recevez des SMS pour le suivi logistique' : 'Receive SMS updates for delivery logs'}</p>
+                        </div>
+                        <input type="checkbox" checked={notifs.smsDelivery} onChange={(e) => setNotifs({ ...notifs, smsDelivery: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
+                      </label>
+                      <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer hover:bg-gray-100">
+                        <div>
+                          <p className="text-xs font-semibold text-[#0f172a]">{locale === 'fr' ? 'Newsletters Marketing' : 'Marketing Toggles'}</p>
+                          <p className="text-[10px] text-[#64748b]">{locale === 'fr' ? 'Recevez des coupons et bons plans promotionnels' : 'Receive exclusive coupons and seasonal deals'}</p>
+                        </div>
+                        <input type="checkbox" checked={notifs.marketing} onChange={(e) => setNotifs({ ...notifs, marketing: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {tab === 'orders' && (
