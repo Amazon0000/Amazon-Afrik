@@ -18,7 +18,7 @@ type NewProduct = {
 const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, navigate, showToast, categories } = useApp();
+  const { t, locale, user, navigate, showToast, categories, formatPrice } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -177,7 +177,7 @@ export function SellerCenterPage() {
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.dashboard}</h1>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard label={t.seller.orders} value={orders.length.toString()} icon={ShoppingCart} trend="+15%" />
-                  <StatCard label={locale === 'fr' ? 'Revenus' : 'Revenue'} value={`$${totalRevenue.toFixed(0)}`} icon={DollarSign} trend="+22%" />
+                  <StatCard label={locale === 'fr' ? 'Revenus' : 'Revenue'} value={formatPrice(totalRevenue)} icon={DollarSign} trend="+22%" />
                   <StatCard label={t.seller.products} value={products.length.toString()} icon={Package} />
                   <StatCard label={t.seller.reputation} value={avgRating.toFixed(1)} icon={Star} />
                 </div>
@@ -307,7 +307,7 @@ export function SellerCenterPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-[#0f172a]">${p.price}</p>
+                        <p className="font-bold text-[#0f172a]">{formatPrice(p.price)}</p>
                         <p className={`text-xs ${p.stock === 0 ? 'text-red-500' : p.stock < 5 ? 'text-[#ff9900]' : 'text-[#64748b]'}`}>{t.seller.stock}: {p.stock}</p>
                       </div>
                     </div>
@@ -330,7 +330,7 @@ export function SellerCenterPage() {
                           <p className="text-xs text-[#64748b]">{o.tracking_id || o.id.slice(0, 8)} • {new Date(o.created_at).toLocaleDateString()}</p>
                         </div>
                         <span className="px-2 py-1 text-[10px] font-bold uppercase rounded-full" style={{ background: `${statusColors[o.status]}15`, color: statusColors[o.status] }}>{t.delivery[o.status as 'pending' | 'confirmed' | 'preparing' | 'inTransit' | 'delivered' | 'cancelled']}</span>
-                        <span className="font-bold text-[#0f172a]">${o.total.toFixed(0)}</span>
+                        <span className="font-bold text-[#0f172a]">{formatPrice(o.total)}</span>
                       </div>
                     ))}
                   </div>
@@ -409,7 +409,7 @@ export function SellerCenterPage() {
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Portefeuille' : 'Wallet'}</h1>
                 <div className="card p-6 bg-gradient-to-br from-[#0e9f6e]/10 to-transparent border-[#0e9f6e]/20">
                   <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Solde disponible' : 'Available balance'}</p>
-                  <p className="text-4xl font-bold text-[#0f172a] mt-2">${totalRevenue.toFixed(2)}</p>
+                  <p className="text-4xl font-bold text-[#0f172a] mt-2">{formatPrice(totalRevenue)}</p>
                   <button onClick={async () => {
                     if (!user?.sellerId && !user?.id) return;
                     const sellerId = user.sellerId || user.id;

@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import type { Product, Seller } from '@/lib/db';
 
 export function ProductCard({ product }: { product: Product }) {
-  const { t, navigate, wishlist, toggleWishlist, showToast } = useApp();
+  const { t, navigate, wishlist, toggleWishlist, showToast, formatPrice } = useApp();
   const inWishlist = wishlist.includes(product.id);
   const country = product.countries;
   const seller = product.sellers;
@@ -32,8 +32,8 @@ export function ProductCard({ product }: { product: Product }) {
           {country && <span className="ml-auto text-xs text-[#64748b]/60">{country.flag}</span>}
         </div>
         <div className="flex items-baseline gap-2 mt-2">
-          <span className="text-lg font-bold text-[#0f172a]">${product.price}</span>
-          {product.old_price && <span className="text-xs text-[#64748b]/50 line-through">${product.old_price}</span>}
+          <span className="text-lg font-bold text-[#0f172a]">{formatPrice(product.price)}</span>
+          {product.old_price && <span className="text-xs text-[#64748b]/50 line-through">{formatPrice(product.old_price)}</span>}
         </div>
       </div>
     </div>

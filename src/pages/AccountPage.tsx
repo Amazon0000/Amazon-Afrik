@@ -7,7 +7,7 @@ import { ProductCard } from '@/components/Cards';
 import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck } from 'lucide-react';
 
 export function AccountPage() {
-  const { t, locale, user, navigate, wishlist, showToast, countries } = useApp();
+  const { t, locale, user, navigate, wishlist, showToast, countries, formatPrice } = useApp();
   const [tab, setTab] = useState('profile');
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -119,11 +119,11 @@ export function AccountPage() {
                           <div key={item.id} className="flex items-center gap-3 mb-2">
                             {item.image_url && <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />}
                             <span className="text-sm text-[#0f172a] flex-1">{item.product_name} x{item.qty}</span>
-                            <span className="text-sm font-bold text-[#0f172a]">${item.price * item.qty}</span>
+                            <span className="text-sm font-bold text-[#0f172a]">{formatPrice(item.price * item.qty)}</span>
                           </div>
                         ))}
                         <div className="flex items-center justify-between pt-3 border-t border-[#0e9f6e]/10">
-                          <span className="font-bold text-[#0f172a]">{t.cart.total}: ${order.total.toFixed(2)}</span>
+                          <span className="font-bold text-[#0f172a]">{t.cart.total}: {formatPrice(order.total)}</span>
                           <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#0e9f6e] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
                         </div>
                       </div>

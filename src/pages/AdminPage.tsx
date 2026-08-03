@@ -19,7 +19,7 @@ const initialRoles: StaffRole[] = [
 ];
 
 export function AdminPage() {
-  const { t, locale, user, navigate, showToast } = useApp();
+  const { t, locale, user, navigate, showToast, formatPrice } = useApp();
   const [tab, setTab] = useState('overview');
   const [roles, setRoles] = useState<StaffRole[]>(initialRoles);
   const [showRoleForm, setShowRoleForm] = useState(false);
@@ -107,7 +107,7 @@ export function AdminPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard label={t.admin.sellers} value={sellers.length.toString()} icon={Store} trend="+12%" />
                   <StatCard label={t.admin.products} value={products.length.toString()} icon={Package} trend="+8%" />
-                  <StatCard label={locale === 'fr' ? 'Revenus pub' : 'Ad revenue'} value={`$${adRevenue.toFixed(0)}`} icon={CreditCard} trend="+24%" />
+                  <StatCard label={locale === 'fr' ? 'Revenus pub' : 'Ad revenue'} value={formatPrice(adRevenue)} icon={CreditCard} trend="+24%" />
                   <StatCard label={locale === 'fr' ? 'Campagnes en attente' : 'Pending campaigns'} value={pendingAds.length.toString()} icon={Megaphone} />
                 </div>
                 <div className="grid lg:grid-cols-2 gap-4">
@@ -158,7 +158,7 @@ export function AdminPage() {
                   {products.slice(0, 20).map((p, i) => (
                     <div key={p.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                       <img src={p.product_images?.[0]?.image_url || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p><p className="text-xs text-[#64748b]">{p.sellers?.business_name} • ${p.price}</p></div>
+                      <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p><p className="text-xs text-[#64748b]">{p.sellers?.business_name} • {formatPrice(p.price)}</p></div>
                       {p.is_sponsored && <Badge color="#0e9f6e">Sponsored</Badge>}
                       <Badge color={p.stock > 0 ? '#22c55e' : '#ef4444'}>{p.stock > 0 ? t.product.inStock : t.product.outOfStock}</Badge>
                     </div>
@@ -192,7 +192,7 @@ export function AdminPage() {
                   <StatCard label={locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'} value={activeAds.length.toString()} icon={Megaphone} />
                   <StatCard label={locale === 'fr' ? 'En attente' : 'Pending'} value={pendingAds.length.toString()} icon={Clock} />
                   <StatCard label={t.ads.impressions} value={ads.reduce((s, a) => s + a.impressions, 0).toLocaleString()} icon={BarChart3} />
-                  <StatCard label={locale === 'fr' ? 'Revenus pub' : 'Ad revenue'} value={`$${adRevenue.toFixed(0)}`} icon={CreditCard} />
+                  <StatCard label={locale === 'fr' ? 'Revenus pub' : 'Ad revenue'} value={formatPrice(adRevenue)} icon={CreditCard} />
                 </div>
                 <div className="card p-5 bg-white">
                   <h3 className="font-semibold text-[#0f172a] mb-3">{locale === 'fr' ? 'Campagnes en attente d\'approbation' : 'Campaigns pending approval'}</h3>
@@ -204,7 +204,7 @@ export function AdminPage() {
                         <div key={ad.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#ff9900]/5">
                           <Megaphone className="w-4 h-4 text-[#ff9900]" />
                           <span className="text-sm text-[#0f172a] flex-1">{ad.name}</span>
-                          <span className="text-xs text-[#64748b]">${ad.budget}</span>
+                          <span className="text-xs text-[#64748b]">{formatPrice(ad.budget)}</span>
                           <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.approve', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'active' } : x)); showToast(locale === 'fr' ? 'Campagne approuvée' : 'Campaign approved'); }} className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-3 h-3" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
                           <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.reject', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'rejected' } : x)); showToast(locale === 'fr' ? 'Campagne rejetée' : 'Campaign rejected'); }} className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-3 h-3" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
                         </div>
@@ -289,7 +289,7 @@ export function AdminPage() {
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.analytics}</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard label={locale === 'fr' ? 'Ventes totales' : 'Total sales'} value={`$${(products.reduce((s, p) => s + p.price * p.total_reviews, 0)).toFixed(0)}`} icon={CreditCard} trend="+24%" />
+                  <StatCard label={locale === 'fr' ? 'Ventes totales' : 'Total sales'} value={formatPrice(products.reduce((s, p) => s + p.price * p.total_reviews, 0))} icon={CreditCard} trend="+24%" />
                   <StatCard label={locale === 'fr' ? 'Vendeurs actifs' : 'Active sellers'} value={sellers.length.toString()} icon={Store} trend="+12%" />
                   <StatCard label={locale === 'fr' ? 'Taux de conversion' : 'Conversion rate'} value="3.8%" icon={BarChart3} />
                   <StatCard label={locale === 'fr' ? 'Trafic mensuel' : 'Monthly traffic'} value="890K" icon={Globe} trend="+18%" />

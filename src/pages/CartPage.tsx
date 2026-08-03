@@ -5,7 +5,7 @@ import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, Truck } from 'lucide-reac
 import { useState, useEffect } from 'react';
 
 export function CartPage() {
-  const { t, cart, removeFromCart, updateCartQty, navigate } = useApp();
+  const { t, cart, removeFromCart, updateCartQty, navigate, formatPrice } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [loading, setLoading] = useState(true);
 
@@ -60,8 +60,8 @@ export function CartPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-[#0f172a]">${(item.product!.price * item.qty).toFixed(0)}</p>
-                    <p className="text-xs text-[#64748b]">${item.product!.price} {t.cart.qty}</p>
+                    <p className="text-lg font-bold text-[#0f172a]">{formatPrice(item.product!.price * item.qty)}</p>
+                    <p className="text-xs text-[#64748b]">{formatPrice(item.product!.price)} {t.cart.qty}</p>
                   </div>
                 </div>
               ))}
@@ -70,12 +70,12 @@ export function CartPage() {
               <div className="card p-5 sticky top-20">
                 <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4">{t.cart.orderSummary}</h2>
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${total.toFixed(2)}</span></div>
+                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">{formatPrice(total)}</span></div>
                   <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-green-600 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-[#0e9f6e]/20 mb-5">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
-                  <span className="text-2xl font-bold text-[#0f172a]">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[#0f172a]">{formatPrice(total)}</span>
                 </div>
                 <button onClick={() => navigate('checkout')} className="w-full btn-gold py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2">{t.cart.checkout} <ArrowRight className="w-4 h-4" /></button>
                 <button onClick={() => navigate('catalog')} className="w-full mt-2 text-sm text-[#64748b] hover:text-[#0f172a] transition-colors">{t.cart.continueShopping}</button>

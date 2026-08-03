@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/Cards';
 import { Star, ShoppingCart, Truck, ShieldCheck, Minus, Plus, ChevronRight, Store, Heart, Share2, CheckCircle, MapPin, BadgeCheck, Crown, Award, Search } from 'lucide-react';
 
 export function ProductPage() {
-  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user } = useApp();
+  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user, formatPrice } = useApp();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,8 +120,8 @@ export function ProductPage() {
             </div>
 
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-4xl font-bold text-[#0f172a]">${product.price}</span>
-              {product.old_price && <span className="text-lg text-[#64748b]/50 line-through">${product.old_price}</span>}
+              <span className="text-4xl font-bold text-[#0f172a]">{formatPrice(product.price)}</span>
+              {product.old_price && <span className="text-lg text-[#64748b]/50 line-through">{formatPrice(product.old_price)}</span>}
             </div>
 
             <div className="flex items-center gap-2 mb-5">

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, Smartphone, MapPin, Plus, Truck, ShieldCheck } from 'lucide-react';
 
 export function CheckoutPage() {
-  const { t, locale, cart, navigate, clearCart, showToast, user, geo } = useApp();
+  const { t, locale, cart, navigate, clearCart, showToast, user, geo, formatPrice } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProvider[]>([]);
@@ -179,16 +179,16 @@ export function CheckoutPage() {
                       <p className="text-xs font-medium text-[#0f172a] truncate">{i.product!.name}</p>
                       <p className="text-xs text-[#64748b]">{t.cart.qty}: {i.qty}</p>
                     </div>
-                    <span className="text-sm font-bold text-[#0f172a]">${(i.product!.price * i.qty).toFixed(0)}</span>
+                    <span className="text-sm font-bold text-[#0f172a]">{formatPrice(i.product!.price * i.qty)}</span>
                   </div>
                 ))}
               </div>
               <div className="space-y-2 pt-3 border-t border-[#0e9f6e]/20">
-                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${subtotal.toFixed(2)}</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">{formatPrice(subtotal)}</span></div>
                 <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-green-600 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
                 <div className="flex items-center justify-between pt-2 border-t border-[#0e9f6e]/20">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
-                  <span className="text-2xl font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[#0f172a]">{formatPrice(subtotal)}</span>
                 </div>
               </div>
               <button onClick={placeOrder} disabled={!user || !selectedAddressId} className="w-full btn-gold py-3.5 rounded-xl font-semibold mt-5 disabled:opacity-50">
