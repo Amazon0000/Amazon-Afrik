@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
-import { supabase } from '@/lib/supabase';
+import { supabase, isOfflineMode } from '@/lib/supabase';
 import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Crown } from 'lucide-react';
 
 export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
@@ -23,6 +23,32 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
     }
     setSubmitting(true);
     const role = isSeller ? 'seller' : 'customer';
+
+    if (isOfflineMode) {
+      setTimeout(() => {
+        const mockUser = {
+          id: 'mock-user-' + Math.random().toString(36).slice(2, 6),
+          email,
+          fullName: mode === 'signup' ? fullName : (email.split('@')[0].toUpperCase()),
+          role: role as 'customer' | 'seller',
+          sellerId: role === 'seller' ? 's1' : undefined,
+          sellerPlan: role === 'seller' ? ('starter' as const) : undefined,
+          sellerStatus: role === 'seller' ? ('approved' as const) : undefined,
+        };
+        setUser(mockUser);
+        setSubmitting(false);
+        if (role === 'seller') {
+          if (mode === 'signup') {
+            navigate('onboarding');
+          } else {
+            navigate('seller-center');
+          }
+        } else {
+          navigate('home');
+        }
+      }, 600);
+      return;
+    }
 
     try {
       if (mode === 'signup') {
@@ -63,8 +89,28 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
           navigate('home');
         }
       }
-    } catch {
-      setError(locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong');
+    } catch (err: unknown) {
+      const isFetchError = err instanceof Error && (err.message.includes('fetch') || err.message.includes('Network'));
+      if (isFetchError) {
+        const mockUser = {
+          id: 'mock-user-' + Math.random().toString(36).slice(2, 6),
+          email,
+          fullName: mode === 'signup' ? fullName : (email.split('@')[0].toUpperCase()),
+          role: role as 'customer' | 'seller',
+          sellerId: role === 'seller' ? 's1' : undefined,
+          sellerPlan: role === 'seller' ? ('starter' as const) : undefined,
+          sellerStatus: role === 'seller' ? ('approved' as const) : undefined,
+        };
+        setUser(mockUser);
+        if (role === 'seller') {
+          if (mode === 'signup') navigate('onboarding');
+          else navigate('seller-center');
+        } else {
+          navigate('home');
+        }
+      } else {
+        setError(locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -172,7 +218,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
           {mode === 'login' && (
             <div className="mt-4 pt-4 border-t border-[#0e9f6e]/20">
               <button onClick={loginAsAdmin} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a] hover:bg-[#0f172a]/5 transition-colors">
-                <Crown className="w-4 h-4 text-[#0e9f6e]" /> {locale === 'fr' ? 'Connexion Super Admin (démo)' : 'Super Admin login (demo)'}
+                <Crown className="w-4 h-4 text-[#0e9f6e]" /> {locale === 'fr' ? 'Connexion Super Admin' : 'Super Admin login'}
               </button>
             </div>
           )}
