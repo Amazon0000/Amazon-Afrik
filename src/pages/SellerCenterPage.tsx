@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
 import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, createPayoutRequest } from '@/lib/db';
-import type { Product, Order, AdCampaign } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2 } from 'lucide-react';
 
@@ -21,9 +21,16 @@ export function SellerCenterPage() {
   const { t, locale, user, navigate, showToast, categories, formatPrice } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [isDigital, setIsDigital] = useState(false);
+  const [digitalUrl, setDigitalUrl] = useState('');
+  const [digitalInstructions, setDigitalInstructions] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ads, setAds] = useState<AdCampaign[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<SellerPaymentMethod[]>([]);
+  const [momoProvider, setMomoProvider] = useState('Orange Money');
+  const [momoNumber, setMomoPhone] = useState('');
+  const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newProduct, setNewProduct] = useState<NewProduct>(emptyProduct);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -36,14 +43,16 @@ export function SellerCenterPage() {
       if (!user?.sellerId && !user?.id) { setLoading(false); return; }
       try {
         const sellerId = user.sellerId || user.id;
-        const [prods, ords, adCamp] = await Promise.all([
+        const [prods, ords, adCamp, methods] = await Promise.all([
           fetchProducts({ sellerId, limit: 50 }),
           fetchOrders(),
           fetchAdCampaigns(sellerId),
+          import('@/lib/db').then((m) => m.fetchSellerPaymentMethods(sellerId)),
         ]);
         setProducts(prods);
         setOrders(ords.slice(0, 10));
         setAds(adCamp);
+        setPaymentMethods(methods);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
@@ -113,15 +122,19 @@ export function SellerCenterPage() {
       return;
     }
     setSaving(true);
+    const finalDescription = isDigital
+      ? `[DIGITAL_URL:${digitalUrl}] ${newProduct.description.trim()}`
+      : newProduct.description.trim();
+
     const productId = await createProduct({
       sellerId,
       name: newProduct.name.trim(),
-      description: newProduct.description.trim(),
+      description: finalDescription,
       price: parseFloat(newProduct.price),
       oldPrice: newProduct.oldPrice ? parseFloat(newProduct.oldPrice) : null,
       currencyCode: 'USD',
       categoryId: newProduct.categoryId || null,
-      stock: parseInt(newProduct.stock, 10),
+      stock: isDigital ? 999999 : parseInt(newProduct.stock, 10),
       sku: newProduct.sku.trim() || null,
       imageUrls: uploadedImages,
     });
@@ -250,10 +263,25 @@ export function SellerCenterPage() {
 
                 {showAddProduct && (
                   <div className="card p-6 mb-6 animate-fade-up bg-white">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.productName} *</label><input value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} className="input-field" placeholder="Robe Wax Premium" /></div>
+                    <div className="grid sm:grid-cols-2 gap-4 text-left">
+                      <div className="sm:col-span-2 text-left">
+                        <label className="flex items-center gap-2.5 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer bg-white hover:bg-[#0f172a]/5">
+                          <input type="checkbox" checked={isDigital} onChange={(e) => setIsDigital(e.target.checked)} className="w-4 h-4 accent-[#0e9f6e]" />
+                          <span className="text-xs font-semibold text-[#0f172a]">{locale === 'fr' ? 'Il s\'agit d\'un produit numérique (Ebook, PDF, Clé, Logiciel...)' : 'This is a digital product (Ebook, PDF, Key, Software...)'}</span>
+                        </label>
+                      </div>
+
+                      <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.productName} *</label><input value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} className="input-field" placeholder={isDigital ? "Premium Marketing Ebook (PDF)" : "Robe Wax Premium"} /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.price} *</label><input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} className="input-field" placeholder="45" /></div>
-                      <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.stock} *</label><input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} className="input-field" placeholder="12" /></div>
+
+                      {!isDigital ? (
+                        <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.stock} *</label><input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} className="input-field" placeholder="12" /></div>
+                      ) : (
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Lien de téléchargement direct' : 'Download Link / URL'}</label>
+                          <input type="url" value={digitalUrl} onChange={(e) => setDigitalUrl(e.target.value)} className="input-field" placeholder="https://example.com/ebook.pdf" />
+                        </div>
+                      )}
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Ancien prix' : 'Compare price'}</label><input type="number" value={newProduct.oldPrice} onChange={(e) => setNewProduct({ ...newProduct, oldPrice: e.target.value })} className="input-field" placeholder="60" /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">SKU</label><input value={newProduct.sku} onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })} className="input-field" placeholder="ZND-001" /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.category}</label>
@@ -262,6 +290,12 @@ export function SellerCenterPage() {
                           {categories.filter((c) => !c.parent_id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </div>
+                      {isDigital && (
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Instructions de livraison numérique' : 'Digital Delivery Instructions'}</label>
+                          <textarea value={digitalInstructions} onChange={(e) => setDigitalInstructions(e.target.value)} className="input-field" rows={2} placeholder={locale === 'fr' ? 'Le lien de téléchargement sera automatiquement fourni après achat.' : 'The download link will be automatically provided upon checkout.'} />
+                        </div>
+                      )}
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.description}</label><textarea value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Description du produit...' : 'Product description...'} /></div>
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.uploadImages} *</label>
                         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
@@ -407,7 +441,7 @@ export function SellerCenterPage() {
             {tab === 'wallet' && (
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Portefeuille' : 'Wallet'}</h1>
-                <div className="card p-6 bg-gradient-to-br from-[#0e9f6e]/10 to-transparent border-[#0e9f6e]/20">
+                <div className="card p-6 bg-gradient-to-br from-[#0e9f6e]/10 to-transparent border-[#0e9f6e]/20 text-left">
                   <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Solde disponible' : 'Available balance'}</p>
                   <p className="text-4xl font-bold text-[#0f172a] mt-2">{formatPrice(totalRevenue)}</p>
                   <button onClick={async () => {
@@ -417,6 +451,88 @@ export function SellerCenterPage() {
                     const id = await createPayoutRequest({ sellerId, amount: totalRevenue });
                     showToast(id ? (locale === 'fr' ? 'Demande de paiement envoyée' : 'Payout request submitted') : (locale === 'fr' ? 'Erreur' : 'Error'), id ? 'success' : 'error');
                   }} className="mt-4 btn-green px-6 py-2.5 rounded-lg text-sm font-semibold">{locale === 'fr' ? 'Demander un paiement' : 'Request payout'}</button>
+                </div>
+
+                <div className="card p-5 bg-white space-y-4 text-left">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h3 className="font-semibold text-[#0f172a]">{locale === 'fr' ? 'Moyens de paiement connectés' : 'Connected Payment Methods'}</h3>
+                    <button onClick={() => setShowAddPaymentMethod(!showAddPaymentMethod)} className="btn-green px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1">
+                      <Plus className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Connecter' : 'Connect'}
+                    </button>
+                  </div>
+
+                  {showAddPaymentMethod && (
+                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3 animate-fade-up">
+                      <p className="text-xs font-semibold text-[#0f172a] uppercase">{locale === 'fr' ? 'Nouveau moyen de paiement direct' : 'New Direct Payment Account'}</p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Opérateur / Provider</label>
+                          <select value={momoProvider} onChange={(e) => setMomoProvider(e.target.value)} className="input-field text-xs cursor-pointer">
+                            <option value="Wave">Wave</option>
+                            <option value="Orange Money">Orange Money</option>
+                            <option value="MTN MoMo">MTN Mobile Money</option>
+                            <option value="M-Pesa">M-Pesa</option>
+                            <option value="Paystack">Paystack Merchant</option>
+                            <option value="Flutterwave">Flutterwave Merchant</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Identifiant / Compte</label>
+                          <input value={momoNumber} onChange={(e) => setMomoPhone(e.target.value)} placeholder="+225 07 00 00 00" className="input-field text-xs" />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={async () => {
+                          if (!momoNumber.trim()) return;
+                          const sellerId = user?.sellerId || user?.id;
+                          if (!sellerId) return;
+                          const { addSellerPaymentMethod } = await import('@/lib/db');
+                          const id = await addSellerPaymentMethod({
+                            sellerId,
+                            providerName: momoProvider,
+                            providerType: momoProvider.includes('MoMo') || momoProvider.includes('Money') || momoProvider === 'Wave' || momoProvider === 'M-Pesa' ? 'mobile_money' : 'psp',
+                            accountIdentifier: momoNumber,
+                            displayName: `${momoProvider} (${momoNumber.slice(-4)})`,
+                          });
+                          if (id) {
+                            showToast(locale === 'fr' ? 'Moyen de paiement connecté' : 'Payment method connected successfully');
+                            setMomoPhone('');
+                            setShowAddPaymentMethod(false);
+                            const methods = await import('@/lib/db').then((m) => m.fetchSellerPaymentMethods(sellerId));
+                            setPaymentMethods(methods);
+                          } else {
+                            showToast('Error', 'error');
+                          }
+                        }} className="btn-green px-4 py-2 rounded-lg text-xs font-semibold">Connect Account</button>
+                        <button type="button" onClick={() => setShowAddPaymentMethod(false)} className="px-4 py-2 rounded-lg text-xs border border-gray-300">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {paymentMethods.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-150 bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#0e9f6e]/15 flex items-center justify-center text-xs">📲</div>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-800">{m.provider_name}</p>
+                            <p className="text-[10px] text-gray-500">{m.account_identifier || 'Direct Checkout Account'}</p>
+                          </div>
+                        </div>
+                        <button type="button" onClick={async () => {
+                          const { removeSellerPaymentMethod } = await import('@/lib/db');
+                          const ok = await removeSellerPaymentMethod(m.id);
+                          if (ok) {
+                            showToast(locale === 'fr' ? 'Compte déconnecté' : 'Payment account disconnected');
+                            setPaymentMethods(paymentMethods.filter(x => x.id !== m.id));
+                          }
+                        }} className="text-xs text-red-500 font-semibold hover:underline">Disconnect</button>
+                      </div>
+                    ))}
+                    {paymentMethods.length === 0 && (
+                      <p className="text-xs text-gray-500 py-3 text-center">{locale === 'fr' ? 'Aucun moyen de paiement connecté. Connectez-en un pour recevoir vos gains directement.' : 'No connected payment methods yet. Connect one to receive direct payouts.'}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

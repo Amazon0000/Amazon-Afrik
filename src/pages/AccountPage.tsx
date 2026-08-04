@@ -259,13 +259,22 @@ export function AccountPage() {
                           <div><p className="font-semibold text-[#0f172a]">{order.tracking_id || order.id.slice(0, 8)}</p><p className="text-xs text-[#64748b]">{new Date(order.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}</p></div>
                           <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-full" style={{ background: `${statusColors[order.status]}20`, color: statusColors[order.status] }}>{t.delivery[order.status as 'pending' | 'confirmed' | 'preparing' | 'inTransit' | 'delivered' | 'cancelled']}</span>
                         </div>
-                        {order.order_items?.map((item) => (
-                          <div key={item.id} className="flex items-center gap-3 mb-2">
-                            {item.image_url && <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />}
-                            <span className="text-sm text-[#0f172a] flex-1">{item.product_name} x{item.qty}</span>
-                            <span className="text-sm font-bold text-[#0f172a]">{formatPrice(item.price * item.qty)}</span>
-                          </div>
-                        ))}
+                        {order.order_items?.map((item) => {
+                          const isDigitalProduct = item.product_name.toLowerCase().includes('digital') || item.product_name.toLowerCase().includes('pdf') || item.product_name.toLowerCase().includes('ebook') || item.product_name.toLowerCase().includes('clé') || item.product_name.toLowerCase().includes('key') || item.product_name.toLowerCase().includes('logiciel') || item.product_name.toLowerCase().includes('software');
+                          return (
+                            <div key={item.id} className="flex items-center gap-3 mb-2 flex-wrap sm:flex-nowrap">
+                              {item.image_url && <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />}
+                              <span className="text-sm text-[#0f172a] flex-1">{item.product_name} x{item.qty}</span>
+                              <span className="text-sm font-bold text-[#0f172a]">{formatPrice(item.price * item.qty)}</span>
+                              {isDigitalProduct && (
+                                <a href="https://placeholder-project.supabase.co/storage/v1/object/public/digital-downloads/demo.pdf" target="_blank" rel="noopener noreferrer"
+                                  className="ml-3 px-3 py-1 rounded bg-[#0e9f6e] text-white text-xs font-semibold hover:bg-[#0c8a5f] inline-block whitespace-nowrap">
+                                  {locale === 'fr' ? 'Télécharger' : 'Download'}
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
                         <div className="flex items-center justify-between pt-3 border-t border-[#0e9f6e]/10">
                           <span className="font-bold text-[#0f172a]">{t.cart.total}: {formatPrice(order.total)}</span>
                           <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#0e9f6e] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>

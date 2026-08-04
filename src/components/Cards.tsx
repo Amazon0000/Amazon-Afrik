@@ -32,8 +32,8 @@ export function ProductCard({ product }: { product: Product }) {
           {country && <span className="ml-auto text-xs text-[#64748b]/60">{country.flag}</span>}
         </div>
         <div className="flex items-baseline gap-2 mt-2">
-          <span className="text-lg font-bold text-[#0f172a]">{formatPrice(product.price)}</span>
-          {product.old_price && <span className="text-xs text-[#64748b]/50 line-through">{formatPrice(product.old_price)}</span>}
+          <span className="text-lg font-bold text-[#0f172a]">{formatPrice(product.price, product.currency_code)}</span>
+          {product.old_price && <span className="text-xs text-[#64748b]/50 line-through">{formatPrice(product.old_price, product.currency_code)}</span>}
         </div>
       </div>
     </div>

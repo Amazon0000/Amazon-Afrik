@@ -54,7 +54,7 @@ type AppState = {
   loadingSellers: boolean;
   loadingReference: boolean;
   referenceError: string | null;
-  formatPrice: (p: number) => string;
+  formatPrice: (p: number, baseCurrencyCode?: string) => string;
   refreshProducts: () => Promise<void>;
   refreshSellers: () => Promise<void>;
 };
@@ -118,18 +118,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Auth state
   useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const u = session.user;
         const meta = u.user_metadata || {};
+
+        let sellerId = meta.seller_id;
+        let sellerStatus = meta.seller_status;
+        let sellerPlan = meta.seller_plan;
+
+        if (meta.role === 'seller' || !sellerId) {
+          try {
+            const { data } = await supabase.from('sellers').select('id, status, plan').eq('user_id', u.id).maybeSingle();
+            if (data) {
+              sellerId = data.id;
+              sellerStatus = data.status;
+              sellerPlan = data.plan;
+            }
+          } catch (e) {
+            console.error('Error fetching seller details on login:', e);
+          }
+        }
+
         setUserState({
           id: u.id,
           email: u.email || '',
           fullName: meta.full_name || meta.name || u.email?.split('@')[0] || 'User',
           role: meta.role || 'customer',
-          sellerId: meta.seller_id,
-          sellerPlan: meta.seller_plan,
-          sellerStatus: meta.seller_status,
+          sellerId,
+          sellerPlan,
+          sellerStatus,
         });
       } else if (_event !== 'INITIAL_SESSION') {
         // Real sign-out (not just "no session found on first load with no prior local admin-demo user")
@@ -233,7 +251,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setCurrencyCode = (c: string) => setCurrencyCodeState(c);
 
-  const formatPrice = useCallback((priceInUSD: number) => {
+  const formatPrice = useCallback((price: number, baseCurrencyCode = 'USD') => {
+    let priceInUSD = price;
+    if (baseCurrencyCode !== 'USD') {
+      const base = currencies.find((c) => c.code === baseCurrencyCode);
+      if (base && base.exchange_rate) {
+        priceInUSD = price / base.exchange_rate;
+      }
+    }
     const current = currencies.find((c) => c.code === currencyCode);
     if (!current) return `$${priceInUSD.toFixed(2)}`;
     const converted = priceInUSD * (current.exchange_rate || 1);

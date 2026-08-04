@@ -31,6 +31,7 @@ export function AdsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', country: '', city: '', category: '', duration: 7, budget: 50 });
   const [selectedCountries, setSelectedCountries] = useState<string[]>(['ci']);
+  const [selectedCities, setSelectedCities] = useState<string[]>(['Abidjan']);
   const [placements, setPlacements] = useState({ hero: true, sidebar: false, list: true });
 
   const totalImpressions = campaigns.reduce((s, c) => s + c.impressions, 0);
@@ -114,8 +115,35 @@ export function AdsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.targetCity}</label>
-                <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="input-field" placeholder="Abidjan" />
+                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Villes cibles (multiples)' : 'Target Cities (multiple)'}</label>
+                <div className="flex gap-2">
+                  <input type="text" id="cityInput" placeholder="Abidjan" className="input-field" onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const val = (e.target as HTMLInputElement).value.trim();
+                      if (val && !selectedCities.includes(val)) {
+                        setSelectedCities([...selectedCities, val]);
+                        (e.target as HTMLInputElement).value = '';
+                      }
+                    }
+                  }} />
+                  <button type="button" onClick={() => {
+                    const el = document.getElementById('cityInput') as HTMLInputElement;
+                    const val = el?.value.trim();
+                    if (val && !selectedCities.includes(val)) {
+                      setSelectedCities([...selectedCities, val]);
+                      el.value = '';
+                    }
+                  }} className="btn-green px-4 py-2.5 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Ajouter' : 'Add'}</button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {selectedCities.map((city) => (
+                    <span key={city} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#ff9900]/10 text-[#ff9900]">
+                      <span>{city}</span>
+                      <button type="button" onClick={() => setSelectedCities(selectedCities.filter((x) => x !== city))} className="text-[#ff9900] hover:text-[#e88b00] font-bold">×</button>
+                    </span>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.targetCategory}</label>

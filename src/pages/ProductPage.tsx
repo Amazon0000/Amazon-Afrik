@@ -120,8 +120,8 @@ export function ProductPage() {
             </div>
 
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-4xl font-bold text-[#0f172a]">{formatPrice(product.price)}</span>
-              {product.old_price && <span className="text-lg text-[#64748b]/50 line-through">{formatPrice(product.old_price)}</span>}
+              <span className="text-4xl font-bold text-[#0f172a]">{formatPrice(product.price, product.currency_code)}</span>
+              {product.old_price && <span className="text-lg text-[#64748b]/50 line-through">{formatPrice(product.old_price, product.currency_code)}</span>}
             </div>
 
             <div className="flex items-center gap-2 mb-5">
