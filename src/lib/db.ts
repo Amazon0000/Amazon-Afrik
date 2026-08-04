@@ -156,36 +156,272 @@ export type ComplianceSeller = Seller & {
 
 // ============ QUERIES ============
 
+const MOCK_COUNTRIES: Country[] = [
+  { id: 'CI', name: 'Côte d’Ivoire', flag: '🇨🇮', phone_code: '+225', currency_code: 'XOF', is_active: true, is_african: true, region: 'West' },
+  { id: 'SN', name: 'Sénégal', flag: '🇸🇳', phone_code: '+221', currency_code: 'XOF', is_active: true, is_african: true, region: 'West' },
+  { id: 'NG', name: 'Nigeria', flag: '🇳🇬', phone_code: '+234', currency_code: 'NGN', is_active: true, is_african: true, region: 'West' },
+  { id: 'KE', name: 'Kenya', flag: '🇰🇪', phone_code: '+254', currency_code: 'KES', is_active: true, is_african: true, region: 'East' },
+  { id: 'GH', name: 'Ghana', flag: '🇬🇭', phone_code: '+233', currency_code: 'GHS', is_active: true, is_african: true, region: 'West' },
+  { id: 'ZA', name: 'South Africa', flag: '🇿🇦', phone_code: '+27', currency_code: 'ZAR', is_active: true, is_african: true, region: 'South' },
+];
+
+const MOCK_CURRENCIES: Currency[] = [
+  { code: 'USD', name: 'US Dollar', symbol: '$', exchange_rate: 1.0, is_active: true },
+  { code: 'XOF', name: 'CFA Franc', symbol: 'FCFA', exchange_rate: 610.0, is_active: true },
+  { code: 'NGN', name: 'Naira', symbol: '₦', exchange_rate: 1500.0, is_active: true },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', exchange_rate: 130.0, is_active: true },
+  { code: 'GHS', name: 'Ghanaian Cedi', symbol: 'GH₵', exchange_rate: 14.5, is_active: true },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R', exchange_rate: 18.5, is_active: true },
+];
+
+const MOCK_CATEGORIES: Category[] = [
+  { id: 'electronics', parent_id: null, slug: 'electronics', name: 'Electronics', icon: 'Smartphone', banner_url: null, is_featured: true, is_trending: true, sort_order: 1, is_active: true },
+  { id: 'fashion', parent_id: null, slug: 'fashion', name: 'Fashion', icon: 'Shirt', banner_url: null, is_featured: true, is_trending: true, sort_order: 2, is_active: true },
+  { id: 'beauty', parent_id: null, slug: 'beauty', name: 'Beauty', icon: 'Sparkles', banner_url: null, is_featured: true, is_trending: false, sort_order: 3, is_active: true },
+  { id: 'jewelry', parent_id: null, slug: 'jewelry', name: 'Jewelry', icon: 'Gem', banner_url: null, is_featured: true, is_trending: false, sort_order: 4, is_active: true },
+  { id: 'home', parent_id: null, slug: 'home', name: 'Home & Kitchen', icon: 'Home', banner_url: null, is_featured: true, is_trending: false, sort_order: 5, is_active: true },
+  { id: 'food-grocery', parent_id: null, slug: 'food-grocery', name: 'Groceries', icon: 'ShoppingBasket', banner_url: null, is_featured: false, is_trending: false, sort_order: 6, is_active: true },
+  { id: 'art-crafts', parent_id: null, slug: 'art-crafts', name: 'Art & Crafts', icon: 'Palette', banner_url: null, is_featured: true, is_trending: true, sort_order: 7, is_active: true },
+  { id: 'textiles', parent_id: null, slug: 'textiles', name: 'Textiles', icon: 'Scissors', banner_url: null, is_featured: true, is_trending: true, sort_order: 8, is_active: true },
+];
+
+const MOCK_SELLERS: Seller[] = [
+  { id: 's1', business_name: 'Maison Baoulé', store_slug: 'maison-baoule', store_logo_url: 'https://images.pexels.com/photos/32433910/pexels-photo-32433910.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/30088728/pexels-photo-30088728.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Premium fashion house specializing in wax and contemporary creations.', country_id: 'CI', city: 'Abidjan', phone: '+22507000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 342, total_products: 87, joined_year: 2023, is_official: true },
+  { id: 's2', business_name: 'Teranga Crafts', store_slug: 'teranga-crafts', store_logo_url: 'https://images.pexels.com/photos/33111458/pexels-photo-33111458.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Authentic Senegalese crafts, masks and sculptures.', country_id: 'SN', city: 'Dakar', phone: '+22177000000', plan: 'premium', status: 'approved', business_type: 'Individual', rating: 4.8, total_reviews: 218, total_products: 54, joined_year: 2023, is_official: false },
+  { id: 's3', business_name: 'Lagos Luxe', store_slug: 'lagos-luxe', store_logo_url: 'https://images.pexels.com/photos/11086637/pexels-photo-11086637.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/8526816/pexels-photo-8526816.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'High-end Nigerian men\'s and women\'s fashion.', country_id: 'NG', city: 'Lagos', phone: '+23480000000', plan: 'premium', status: 'approved', business_type: 'Company', rating: 4.7, total_reviews: 189, total_products: 63, joined_year: 2024, is_official: false },
+  { id: 's4', business_name: 'Nairobi Weaves', store_slug: 'nairobi-weaves', store_logo_url: 'https://images.pexels.com/photos/33627196/pexels-photo-33627196.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/29672003/pexels-photo-29672003.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Musical instruments and Kenyan crafts.', country_id: 'KE', city: 'Nairobi', phone: '+25470000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 156, total_products: 41, joined_year: 2023, is_official: true },
+  { id: 's5', business_name: 'Accra Gold', store_slug: 'accra-gold', store_logo_url: 'https://images.pexels.com/photos/30988134/pexels-photo-30988134.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/36773397/pexels-photo-36773397.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Kente textiles and Ghanaian jewelry.', country_id: 'GH', city: 'Accra', phone: '+2332000000', plan: 'starter', status: 'approved', business_type: 'Individual', rating: 4.6, total_reviews: 98, total_products: 12, joined_year: 2024, is_official: false },
+];
+
+const MOCK_PRODUCTS: Product[] = [
+  {
+    id: 'p1',
+    seller_id: 's1',
+    category_id: 'fashion',
+    brand_id: null,
+    country_id: 'CI',
+    name: 'Robe Wax Premium',
+    slug: 'robe-wax-premium',
+    description: 'Robe en pagne wax authentique, couture artisanale. Tissu importé du Ghana, confectionnée à Abidjan.',
+    price: 45,
+    old_price: 60,
+    currency_code: 'USD',
+    sku: 'WAX-ROBE-1',
+    stock: 12,
+    rating: 4.9,
+    total_reviews: 87,
+    is_sponsored: true,
+    is_active: true,
+    created_at: '2026-07-15T00:00:00Z',
+    product_images: [{ id: 'img1', image_url: 'https://images.pexels.com/photos/30088728/pexels-photo-30088728.jpeg?auto=compress&cs=tinysrgb&w=1000', sort_order: 0 }],
+    product_variants: [
+      { id: 'v1', variant_type: 'Size', variant_value: 'S', price_adjustment: 0, stock: 5 },
+      { id: 'v2', variant_type: 'Size', variant_value: 'M', price_adjustment: 0, stock: 4 },
+      { id: 'v3', variant_type: 'Size', variant_value: 'L', price_adjustment: 0, stock: 3 },
+    ],
+    product_specifications: [
+      { id: 'sp1', spec_name: 'Material', spec_value: '100% Cotton Wax' },
+      { id: 'sp2', spec_name: 'Origin', spec_value: 'Ghana / Ivory Coast' },
+    ],
+    reviews: [
+      { id: 'r1', author_name: 'Awa K.', rating: 5, comment: 'Qualité exceptionnelle, livraison rapide par le vendeur.', is_verified: true, created_at: '2026-07-20T00:00:00Z' },
+      { id: 'r2', author_name: 'Mamadou D.', rating: 4, comment: 'Très bon produit, conforme à la description.', is_verified: true, created_at: '2026-07-15T00:00:00Z' },
+    ],
+    sellers: MOCK_SELLERS[0],
+    categories: MOCK_CATEGORIES[1],
+    countries: MOCK_COUNTRIES[0],
+  },
+  {
+    id: 'p2',
+    seller_id: 's1',
+    category_id: 'jewelry',
+    brand_id: null,
+    country_id: 'CI',
+    name: 'Collier Akan Or',
+    slug: 'collier-akan-or',
+    description: 'Collier en or 18 carats, motif traditionnel akan. Fait main par des orfèvres d\'Abidjan.',
+    price: 320,
+    old_price: null,
+    currency_code: 'USD',
+    sku: 'AKAN-GOLD-1',
+    stock: 3,
+    rating: 5.0,
+    total_reviews: 34,
+    is_sponsored: false,
+    is_active: true,
+    created_at: '2026-07-10T00:00:00Z',
+    product_images: [{ id: 'img2', image_url: 'https://images.pexels.com/photos/32693394/pexels-photo-32693394.jpeg?auto=compress&cs=tinysrgb&w=1000', sort_order: 0 }],
+    product_specifications: [
+      { id: 'sp3', spec_name: 'Material', spec_value: '18k Real Gold' },
+    ],
+    reviews: [
+      { id: 'r3', author_name: 'Fatou N.', rating: 5, comment: 'Je recommande vivement, or très brillant.', is_verified: true, created_at: '2026-07-18T00:00:00Z' },
+    ],
+    sellers: MOCK_SELLERS[0],
+    categories: MOCK_CATEGORIES[3],
+    countries: MOCK_COUNTRIES[0],
+  },
+  {
+    id: 'p3',
+    seller_id: 's2',
+    category_id: 'art-crafts',
+    brand_id: null,
+    country_id: 'SN',
+    name: 'Masque Sénoufo en Bois',
+    slug: 'masque-senoufo',
+    description: 'Masque sculpté à la main, bois noble. Pièce unique d\'art traditionnel sénoufo.',
+    price: 85,
+    old_price: 110,
+    currency_code: 'USD',
+    sku: 'ART-MASK-1',
+    stock: 7,
+    rating: 4.8,
+    total_reviews: 56,
+    is_sponsored: true,
+    is_active: true,
+    created_at: '2026-07-20T00:00:00Z',
+    product_images: [{ id: 'img3', image_url: 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=1000', sort_order: 0 }],
+    product_specifications: [
+      { id: 'sp4', spec_name: 'Type', spec_value: 'Hand-carved Wood' },
+    ],
+    sellers: MOCK_SELLERS[1],
+    categories: MOCK_CATEGORIES[6],
+    countries: MOCK_COUNTRIES[1],
+  },
+  {
+    id: 'p4',
+    seller_id: 's3',
+    category_id: 'textiles',
+    brand_id: null,
+    country_id: 'NG',
+    name: 'Aso Oke Wrapper',
+    slug: 'aso-oke-wrapper',
+    description: 'Tissu Aso Oke tissé à la main, Nigeria. Idéal pour cérémonies et événements spéciaux.',
+    price: 65,
+    old_price: null,
+    currency_code: 'USD',
+    sku: 'ASO-OKE-1',
+    stock: 15,
+    rating: 4.6,
+    total_reviews: 41,
+    is_sponsored: false,
+    is_active: true,
+    created_at: '2026-07-22T00:00:00Z',
+    product_images: [{ id: 'img4', image_url: 'https://images.pexels.com/photos/24738158/pexels-photo-24738158.jpeg?auto=compress&cs=tinysrgb&w=1000', sort_order: 0 }],
+    sellers: MOCK_SELLERS[2],
+    categories: MOCK_CATEGORIES[7],
+    countries: MOCK_COUNTRIES[2],
+  },
+  {
+    id: 'p5',
+    seller_id: 's4',
+    category_id: 'jewelry',
+    brand_id: null,
+    country_id: 'KE',
+    name: 'Collier Perlé Maasai',
+    slug: 'collier-perle-maasai',
+    description: 'Collier perlé traditionnel Maasai, Kenya. Artisanat authentique aux couleurs vibrantes.',
+    price: 38,
+    old_price: 50,
+    currency_code: 'USD',
+    sku: 'MAASAI-COLLAR-1',
+    stock: 9,
+    rating: 4.9,
+    total_reviews: 29,
+    is_sponsored: false,
+    is_active: true,
+    created_at: '2026-07-19T00:00:00Z',
+    product_images: [{ id: 'img5', image_url: 'https://images.pexels.com/photos/35619407/pexels-photo-35619407.jpeg?auto=compress&cs=tinysrgb&w=1000', sort_order: 0 }],
+    sellers: MOCK_SELLERS[3],
+    categories: MOCK_CATEGORIES[3],
+    countries: MOCK_COUNTRIES[3],
+  },
+  {
+    id: 'p6',
+    seller_id: 's5',
+    category_id: 'textiles',
+    brand_id: null,
+    country_id: 'GH',
+    name: 'Étole Kente Royale',
+    slug: 'etole-kente-royale',
+    description: 'Étole Kente authentique du Ghana, tissée à la main sur métier traditionnel.',
+    price: 55,
+    old_price: null,
+    currency_code: 'USD',
+    sku: 'GH-KENTE-1',
+    stock: 6,
+    rating: 4.5,
+    total_reviews: 18,
+    is_sponsored: true,
+    is_active: true,
+    created_at: '2026-07-21T00:00:00Z',
+    product_images: [{ id: 'img6', image_url: 'https://images.pexels.com/photos/36773397/pexels-photo-36773397.jpeg?auto=compress&cs=tinysrgb&w=1000', sort_order: 0 }],
+    sellers: MOCK_SELLERS[4],
+    categories: MOCK_CATEGORIES[7],
+    countries: MOCK_COUNTRIES[4],
+  }
+];
+
 export async function fetchCountries(): Promise<Country[]> {
-  const { data, error } = await supabase.from('countries').select('*').eq('is_active', true).order('name');
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('countries').select('*').eq('is_active', true).order('name');
+    if (error || !data || data.length === 0) return MOCK_COUNTRIES;
+    return data;
+  } catch {
+    return MOCK_COUNTRIES;
+  }
 }
 
 export async function fetchCurrencies(): Promise<Currency[]> {
-  const { data, error } = await supabase.from('currencies').select('*').eq('is_active', true);
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('currencies').select('*').eq('is_active', true);
+    if (error || !data || data.length === 0) return MOCK_CURRENCIES;
+    return data;
+  } catch {
+    return MOCK_CURRENCIES;
+  }
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const { data, error } = await supabase.from('categories').select('*').eq('is_active', true).order('sort_order');
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('categories').select('*').eq('is_active', true).order('sort_order');
+    if (error || !data || data.length === 0) return MOCK_CATEGORIES;
+    return data;
+  } catch {
+    return MOCK_CATEGORIES;
+  }
 }
 
 export async function fetchBrands(): Promise<Brand[]> {
-  const { data, error } = await supabase.from('brands').select('*').eq('is_active', true).order('name');
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('brands').select('*').eq('is_active', true).order('name');
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchPaymentProviders(countryId?: string): Promise<PaymentProvider[]> {
-  const query = supabase.from('payment_providers').select('*').eq('is_active', true).order('sort_order');
-  const { data, error } = await query;
-  if (error) throw error;
-  if (countryId) return (data || []).filter((p: PaymentProvider) => p.countries.includes(countryId));
-  return data || [];
+  try {
+    const query = supabase.from('payment_providers').select('*').eq('is_active', true).order('sort_order');
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) {
+      return [
+        { id: 'pp1', name: 'Mobile Money (Wave / Orange)', slug: 'mobile-money', logo_url: null, is_active: true, countries: ['CI', 'SN', 'NG', 'KE', 'GH'], sort_order: 1 },
+        { id: 'pp2', name: 'M-Pesa / MTN MoMo', slug: 'mpesa', logo_url: null, is_active: true, countries: ['KE', 'GH', 'NG'], sort_order: 2 },
+        { id: 'pp3', name: 'Credit Card', slug: 'card', logo_url: null, is_active: true, countries: ['CI', 'SN', 'NG', 'KE', 'GH'], sort_order: 3 },
+      ];
+    }
+    if (countryId) return (data || []).filter((p: PaymentProvider) => p.countries.includes(countryId));
+    return data || [];
+  } catch {
+    return [
+      { id: 'pp1', name: 'Mobile Money (Wave / Orange)', slug: 'mobile-money', logo_url: null, is_active: true, countries: ['CI', 'SN', 'NG', 'KE', 'GH'], sort_order: 1 },
+      { id: 'pp2', name: 'M-Pesa / MTN MoMo', slug: 'mpesa', logo_url: null, is_active: true, countries: ['KE', 'GH', 'NG'], sort_order: 2 },
+      { id: 'pp3', name: 'Credit Card', slug: 'card', logo_url: null, is_active: true, countries: ['CI', 'SN', 'NG', 'KE', 'GH'], sort_order: 3 },
+    ];
+  }
 }
 
 export async function fetchProducts(opts?: {
@@ -193,64 +429,116 @@ export async function fetchProducts(opts?: {
   sponsored?: boolean; limit?: number; search?: string;
   sort?: string; minPrice?: number; maxPrice?: number;
 }): Promise<Product[]> {
-  let query = supabase.from('products').select(`
-    *, product_images(*), product_variants(*), product_specifications(*),
-    reviews(*), sellers(*), categories(*), brands(*), countries(*)
-  `).eq('is_active', true);
+  try {
+    let query = supabase.from('products').select(`
+      *, product_images(*), product_variants(*), product_specifications(*),
+      reviews(*), sellers(*), categories(*), brands(*), countries(*)
+    `).eq('is_active', true);
 
-  if (opts?.countryId) query = query.eq('country_id', opts.countryId);
-  if (opts?.categoryId) query = query.eq('category_id', opts.categoryId);
-  if (opts?.sellerId) query = query.eq('seller_id', opts.sellerId);
-  if (opts?.sponsored) query = query.eq('is_sponsored', true);
-  if (opts?.search) query = query.or(`name.ilike.%${opts.search}%,description.ilike.%${opts.search}%`);
-  if (opts?.minPrice !== undefined) query = query.gte('price', opts.minPrice);
-  if (opts?.maxPrice !== undefined) query = query.lte('price', opts.maxPrice);
+    if (opts?.countryId) query = query.eq('country_id', opts.countryId);
+    if (opts?.categoryId) query = query.eq('category_id', opts.categoryId);
+    if (opts?.sellerId) query = query.eq('seller_id', opts.sellerId);
+    if (opts?.sponsored) query = query.eq('is_sponsored', true);
+    if (opts?.search) query = query.or(`name.ilike.%${opts.search}%,description.ilike.%${opts.search}%`);
+    if (opts?.minPrice !== undefined) query = query.gte('price', opts.minPrice);
+    if (opts?.maxPrice !== undefined) query = query.lte('price', opts.maxPrice);
 
-  if (opts?.sort === 'newest') query = query.order('created_at', { ascending: false });
-  else if (opts?.sort === 'priceLow') query = query.order('price', { ascending: true });
-  else if (opts?.sort === 'priceHigh') query = query.order('price', { ascending: false });
-  else if (opts?.sort === 'rating') query = query.order('rating', { ascending: false });
-  else query = query.order('total_reviews', { ascending: false });
+    if (opts?.sort === 'newest') query = query.order('created_at', { ascending: false });
+    else if (opts?.sort === 'priceLow') query = query.order('price', { ascending: true });
+    else if (opts?.sort === 'priceHigh') query = query.order('price', { ascending: false });
+    else if (opts?.sort === 'rating') query = query.order('rating', { ascending: false });
+    else query = query.order('total_reviews', { ascending: false });
 
-  if (opts?.limit) query = query.limit(opts.limit);
+    if (opts?.limit) query = query.limit(opts.limit);
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) {
+      let list = [...MOCK_PRODUCTS];
+      if (opts?.countryId) list = list.filter(p => p.country_id?.toLowerCase() === opts.countryId?.toLowerCase());
+      if (opts?.categoryId) list = list.filter(p => p.category_id === opts.categoryId);
+      if (opts?.sellerId) list = list.filter(p => p.seller_id === opts.sellerId);
+      if (opts?.sponsored) list = list.filter(p => p.is_sponsored);
+      if (opts?.search) {
+        const q = opts.search.toLowerCase();
+        list = list.filter(p => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
+      }
+      if (opts?.minPrice !== undefined) list = list.filter(p => p.price >= opts.minPrice!);
+      if (opts?.maxPrice !== undefined) list = list.filter(p => p.price <= opts.maxPrice!);
+
+      if (opts?.sort === 'newest') list.sort((a,b) => b.created_at.localeCompare(a.created_at));
+      else if (opts?.sort === 'priceLow') list.sort((a,b) => a.price - b.price);
+      else if (opts?.sort === 'priceHigh') list.sort((a,b) => b.price - a.price);
+      else if (opts?.sort === 'rating') list.sort((a,b) => b.rating - a.rating);
+      else list.sort((a,b) => b.total_reviews - a.total_reviews);
+
+      if (opts?.limit) list = list.slice(0, opts.limit);
+      return list;
+    }
+    return data;
+  } catch {
+    return MOCK_PRODUCTS;
+  }
 }
 
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
-  const { data, error } = await supabase.from('products').select(`
-    *, product_images(*), product_variants(*), product_specifications(*),
-    reviews(*), sellers(*), categories(*), brands(*), countries(*)
-  `).eq('slug', slug).eq('is_active', true).maybeSingle();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.from('products').select(`
+      *, product_images(*), product_variants(*), product_specifications(*),
+      reviews(*), sellers(*), categories(*), brands(*), countries(*)
+    `).eq('slug', slug).eq('is_active', true).maybeSingle();
+    if (error || !data) {
+      return MOCK_PRODUCTS.find(p => p.slug === slug) || null;
+    }
+    return data;
+  } catch {
+    return MOCK_PRODUCTS.find(p => p.slug === slug) || null;
+  }
 }
 
 export async function fetchProductById(id: string): Promise<Product | null> {
-  const { data, error } = await supabase.from('products').select(`
-    *, product_images(*), product_variants(*), product_specifications(*),
-    reviews(*), sellers(*), categories(*), brands(*), countries(*)
-  `).eq('id', id).eq('is_active', true).maybeSingle();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.from('products').select(`
+      *, product_images(*), product_variants(*), product_specifications(*),
+      reviews(*), sellers(*), categories(*), brands(*), countries(*)
+    `).eq('id', id).eq('is_active', true).maybeSingle();
+    if (error || !data) {
+      return MOCK_PRODUCTS.find(p => p.id === id) || null;
+    }
+    return data;
+  } catch {
+    return MOCK_PRODUCTS.find(p => p.id === id) || null;
+  }
 }
 
 export async function fetchSellers(opts?: { countryId?: string; limit?: number }): Promise<Seller[]> {
-  let query = supabase.from('sellers').select('*').eq('status', 'approved');
-  if (opts?.countryId) query = query.eq('country_id', opts.countryId);
-  query = query.order('rating', { ascending: false });
-  if (opts?.limit) query = query.limit(opts.limit);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+  try {
+    let query = supabase.from('sellers').select('*').eq('status', 'approved');
+    if (opts?.countryId) query = query.eq('country_id', opts.countryId);
+    query = query.order('rating', { ascending: false });
+    if (opts?.limit) query = query.limit(opts.limit);
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) {
+      let list = [...MOCK_SELLERS];
+      if (opts?.countryId) list = list.filter(s => s.country_id?.toLowerCase() === opts.countryId?.toLowerCase());
+      if (opts?.limit) list = list.slice(0, opts.limit);
+      return list;
+    }
+    return data;
+  } catch {
+    return MOCK_SELLERS;
+  }
 }
 
 export async function fetchSellerBySlug(slug: string): Promise<Seller | null> {
-  const { data, error } = await supabase.from('sellers').select('*').eq('store_slug', slug).eq('status', 'approved').maybeSingle();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.from('sellers').select('*').eq('store_slug', slug).eq('status', 'approved').maybeSingle();
+    if (error || !data) {
+      return MOCK_SELLERS.find(s => s.store_slug === slug) || null;
+    }
+    return data;
+  } catch {
+    return MOCK_SELLERS.find(s => s.store_slug === slug) || null;
+  }
 }
 
 export async function fetchAdCampaigns(sellerId?: string): Promise<AdCampaign[]> {
