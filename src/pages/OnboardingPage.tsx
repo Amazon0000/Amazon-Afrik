@@ -1,16 +1,38 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
-import { UploadCloud, FileText, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Clock, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock } from 'lucide-react';
-
+import { UploadCloud, FileText, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Clock, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Search, Globe } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+// High-fidelity worldwide country database
+const WORLD_COUNTRIES = [
+  { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', phone_code: '+225', currency: 'XOF', localities: ['Abidjan', 'Bouaké', 'Yamoussoukro', 'San-Pédro', 'Korhogo'] },
+  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', phone_code: '+221', currency: 'XOF', localities: ['Dakar', 'Thiès', 'Kaolack', 'Saint-Louis', 'Ziguinchor'] },
+  { code: 'NG', name: 'Nigeria', flag: '🇳🇬', phone_code: '+234', currency: 'NGN', localities: ['Lagos', 'Abuja', 'Kano', 'Ibadan', 'Port Harcourt'] },
+  { code: 'KE', name: 'Kenya', flag: '🇰🇪', phone_code: '+254', currency: 'KES', localities: ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'] },
+  { code: 'GH', name: 'Ghana', flag: '🇬🇭', phone_code: '+233', currency: 'GHS', localities: ['Accra', 'Kumasi', 'Tamale', 'Takoradi', 'Temale'] },
+  { code: 'ZA', name: 'South Africa', flag: '🇿🇦', phone_code: '+27', currency: 'ZAR', localities: ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth'] },
+  { code: 'EG', name: 'Egypt', flag: '🇪🇬', phone_code: '+20', currency: 'EGP', localities: ['Cairo', 'Alexandria', 'Giza', 'Shubra El Kheima', 'Port Said'] },
+  { code: 'MA', name: 'Morocco', flag: '🇲🇦', phone_code: '+212', currency: 'MAD', localities: ['Casablanca', 'Rabat', 'Marrakech', 'Fes', 'Tangier'] },
+  { code: 'FR', name: 'France', flag: '🇫🇷', phone_code: '+33', currency: 'EUR', localities: ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice'] },
+  { code: 'US', name: 'United States', flag: '🇺🇸', phone_code: '+1', currency: 'USD', localities: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami'] },
+  { code: 'CN', name: 'China', flag: '🇨🇳', phone_code: '+86', currency: 'CNY', localities: ['Beijing', 'Shanghai', 'Shenzhen', 'Guangzhou', 'Chengdu'] },
+  { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪', phone_code: '+971', currency: 'AED', localities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Al Ain'] },
+  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', phone_code: '+44', currency: 'GBP', localities: ['London', 'Birmingham', 'Manchester', 'Glasgow', 'Leeds'] },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦', phone_code: '+1', currency: 'CAD', localities: ['Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Ottawa'] },
+  { code: 'IN', name: 'India', flag: '🇮🇳', phone_code: '+91', currency: 'INR', localities: ['Mumbai', 'Delhi', 'Bangalore', 'Kolkata', 'Chennai'] },
+];
+
 export function OnboardingPage() {
-  const { t, navigate, locale, countries, setUser, loadingReference, referenceError, refreshSellers, user } = useApp();
+  const { t, navigate, locale, setUser, refreshSellers, user } = useApp();
   const [step, setStep] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [form, setForm] = useState({
     email: '', password: '', phone: '', otp: '',
-    countryId: '', businessType: 'individual',
+    countryId: '', countryNameManual: '', countryFlagManual: '🏳️', countryPhoneCodeManual: '', countryCurrencyManual: '',
+    localitiesManual: '', selectedLocality: '',
+    businessType: 'individual',
     businessName: '', registrationNumber: '', vatNumber: '', businessCategory: '', businessAddress: '',
     idType: 'passport', idFront: null as string | null, idBack: null as string | null, selfie: null as string | null,
     bankName: '', iban: '', swift: '', mobileMoney: '',
@@ -36,9 +58,42 @@ export function OnboardingPage() {
     { num: 12, label: locale === 'fr' ? 'Approbation' : 'Approval', icon: ShieldCheck },
   ];
 
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery) return WORLD_COUNTRIES;
+    return WORLD_COUNTRIES.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.code.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [searchQuery]);
+
+  const handleCountrySelect = (c: typeof WORLD_COUNTRIES[0]) => {
+    setSelectedCountry(c);
+    setForm(prev => ({
+      ...prev,
+      countryId: c.code,
+      countryNameManual: c.name,
+      countryFlagManual: c.flag,
+      countryPhoneCodeManual: c.phone_code,
+      countryCurrencyManual: c.currency,
+      localitiesManual: c.localities.join(', '),
+      selectedLocality: c.localities[0] || '',
+      phone: c.phone_code + ' '
+    }));
+  };
+
+  const handleCustomCountryChange = (field: string, val: string) => {
+    setSelectedCountry(null); // break custom coupling to let users type custom items
+    setForm(prev => ({
+      ...prev,
+      [field]: val
+    }));
+  };
+
+  const currentLocalitiesList = useMemo(() => {
+    if (!form.localitiesManual) return [];
+    return form.localitiesManual.split(',').map(s => s.trim()).filter(Boolean);
+  }, [form.localitiesManual]);
+
   const canProceed = () => {
     if (step === 1) return form.email && form.password && form.phone;
-    if (step === 2) return !!form.countryId;
+    if (step === 2) return form.countryNameManual && form.countryCurrencyManual;
     if (step === 3) return !!form.businessType;
     if (step === 4) return form.businessName && form.registrationNumber;
     if (step === 5) return form.idFront && form.idBack && form.selfie;
@@ -57,8 +112,8 @@ export function OnboardingPage() {
         businessName: form.businessName,
         storeSlug: form.storeSlug,
         description: form.storeDesc,
-        countryId: form.countryId,
-        city: form.businessAddress.split(',')[0] || 'Abidjan',
+        countryId: form.countryId || 'CUSTOM',
+        city: form.selectedLocality || form.businessAddress.split(',')[0] || 'Custom City',
         phone: form.phone,
         businessType: form.businessType,
         storeLogoUrl: form.storeLogo,
@@ -109,7 +164,11 @@ export function OnboardingPage() {
     <div className="motif-bg min-h-screen">
       <header className="sticky top-0 z-50 bg-[#0f172a] safe-top">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate('sell')}><Logo size={40} /></button>
+          <button onClick={() => navigate('sell')} className="flex items-center gap-2 text-white">
+            <ChevronLeft className="w-5 h-5 text-[#0e9f6e]" />
+            <span className="text-xs font-semibold">{locale === 'fr' ? 'Retour' : 'Back'}</span>
+          </button>
+          <Logo size={40} />
           <button onClick={() => navigate('home')} className="text-sm text-[#f7f8fa]/60 hover:text-[#0e9f6e]">{locale === 'fr' ? 'Retour à la boutique' : 'Back to store'}</button>
         </div>
       </header>
@@ -152,39 +211,122 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 2: Country */}
+          {/* Step 2: Country Cascade Selection */}
           {step === 2 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{t.onboarding.selectCountry}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Tous les pays africains disponibles' : 'All African countries available'}</p>
+              <p className="text-sm text-[#64748b] mb-5">
+                {locale === 'fr' ? 'Sélectionnez un pays du monde pour charger sa devise, son indicatif et ses localités en cascade, ou saisissez les informations manuellement.' : 'Select any country in the world to load its currency, code, and localities, or type manually.'}
+              </p>
 
-              {loadingReference && (
-                <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Chargement des pays...' : 'Loading countries...'}</p>
-              )}
-
-              {!loadingReference && referenceError && (
-                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
-                  {locale === 'fr' ? 'Impossible de charger la liste des pays.' : 'Could not load the country list.'}
-                  <br />
-                  <span className="text-xs opacity-70">{referenceError}</span>
+              {/* World country picker */}
+              <div className="mb-6 relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Rechercher un pays (ex: Côte d\'Ivoire, United States, China...)' : 'Search country...'}
+                    className="input-field pl-10"
+                  />
                 </div>
-              )}
-
-              {!loadingReference && !referenceError && countries.length === 0 && (
-                <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucun pays disponible pour le moment.' : 'No countries available right now.'}</p>
-              )}
-
-              {!loadingReference && countries.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
-                  {countries.map((c) => (
-                    <button key={c.id} onClick={() => setForm({ ...form, countryId: c.id })}
-                      className={`p-3 rounded-xl border-2 text-left transition-all ${form.countryId === c.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50'}`}>
-                      <span className="text-2xl mr-1">{c.flag}</span>
-                      <span className="text-sm font-medium text-[#0f172a]">{c.name}</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-[160px] overflow-y-auto border border-[#0f172a]/10 rounded-xl p-2 bg-white">
+                  {filteredCountries.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => handleCountrySelect(c)}
+                      className={`p-2 rounded-lg text-left transition-all flex items-center gap-1.5 text-xs ${form.countryId === c.code ? 'bg-[#0e9f6e]/10 border border-[#0e9f6e]' : 'hover:bg-[#0f172a]/5 border border-transparent'}`}
+                    >
+                      <span className="text-lg">{c.flag}</span>
+                      <span className="font-medium text-[#0f172a] truncate">{c.name}</span>
                     </button>
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Cascade Visual Fields */}
+              <div className="bg-[#0f172a]/5 rounded-xl p-4 mb-6 space-y-4 border border-[#0f172a]/10">
+                <p className="text-xs font-semibold text-[#0f172a] uppercase flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5 text-[#0e9f6e]" />
+                  {locale === 'fr' ? 'Données en Cascade & Saisie Manuelle Directe' : 'Cascading Data & Direct Manual Entry'}
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase mb-1">{locale === 'fr' ? 'Nom du Pays' : 'Country Name'}</label>
+                    <input
+                      type="text"
+                      value={form.countryNameManual}
+                      onChange={(e) => handleCustomCountryChange('countryNameManual', e.target.value)}
+                      placeholder="e.g. Togo"
+                      className="input-field text-sm py-1.5 px-3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase mb-1">{locale === 'fr' ? 'Drapeau / Émoji' : 'Flag / Emoji'}</label>
+                    <input
+                      type="text"
+                      value={form.countryFlagManual}
+                      onChange={(e) => handleCustomCountryChange('countryFlagManual', e.target.value)}
+                      placeholder="e.g. 🇹🇬"
+                      className="input-field text-sm py-1.5 px-3"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase mb-1">{locale === 'fr' ? 'Indicatif Téléphonique' : 'Phone Prefix'}</label>
+                    <input
+                      type="text"
+                      value={form.countryPhoneCodeManual}
+                      onChange={(e) => handleCustomCountryChange('countryPhoneCodeManual', e.target.value)}
+                      placeholder="e.g. +228"
+                      className="input-field text-sm py-1.5 px-3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase mb-1">{locale === 'fr' ? 'Devise Nationale' : 'Currency'}</label>
+                    <input
+                      type="text"
+                      value={form.countryCurrencyManual}
+                      onChange={(e) => handleCustomCountryChange('countryCurrencyManual', e.target.value)}
+                      placeholder="e.g. XOF"
+                      className="input-field text-sm py-1.5 px-3"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[#64748b] uppercase mb-1">
+                    {locale === 'fr' ? 'Localités du pays (séparées par une virgule pour saisie libre)' : 'Country Localities (comma separated for custom typing)'}
+                  </label>
+                  <textarea
+                    value={form.localitiesManual}
+                    onChange={(e) => handleCustomCountryChange('localitiesManual', e.target.value)}
+                    placeholder="Lomé, Kpalimé, Kara..."
+                    rows={2}
+                    className="input-field text-sm py-1.5 px-3"
+                  />
+                </div>
+
+                {currentLocalitiesList.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase mb-1">{locale === 'fr' ? 'Localité Principale de la Boutique' : 'Primary Store Locality'}</label>
+                    <select
+                      value={form.selectedLocality}
+                      onChange={(e) => setForm(prev => ({ ...prev, selectedLocality: e.target.value }))}
+                      className="input-field text-sm py-1.5 px-3"
+                    >
+                      {currentLocalitiesList.map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -192,14 +334,14 @@ export function OnboardingPage() {
           {step === 3 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Type d\'entreprise' : 'Business type'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Sélectionnez votre type' : 'Select your type'}</p>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Sélectionnez votre type d\'entité commerciale' : 'Select your business entity type'}</p>
               <div className="space-y-2">
                 {[
-                  { id: 'individual', label: locale === 'fr' ? 'Individuel' : 'Individual', desc: locale === 'fr' ? 'Vendeur particulier' : 'Individual seller' },
-                  { id: 'company', label: locale === 'fr' ? 'Entreprise' : 'Company', desc: locale === 'fr' ? 'Société enregistrée' : 'Registered company' },
-                  { id: 'government', label: locale === 'fr' ? 'Gouvernement' : 'Government', desc: locale === 'fr' ? 'Entité gouvernementale' : 'Government entity' },
-                  { id: 'ngo', label: 'NGO', desc: locale === 'fr' ? 'Organisation non gouvernementale' : 'Non-governmental organization' },
-                  { id: 'cooperative', label: locale === 'fr' ? 'Coopérative' : 'Cooperative', desc: locale === 'fr' ? 'Coopérative' : 'Cooperative' },
+                  { id: 'individual', label: locale === 'fr' ? 'Individuel' : 'Individual', desc: locale === 'fr' ? 'Vendeur particulier / Artisan autonome' : 'Individual seller / Freelance artisan' },
+                  { id: 'company', label: locale === 'fr' ? 'Entreprise' : 'Company', desc: locale === 'fr' ? 'Société civile ou commerciale enregistrée' : 'Registered civil or commercial corporation' },
+                  { id: 'government', label: locale === 'fr' ? 'Gouvernement / Institution' : 'Government / Institution', desc: locale === 'fr' ? 'Entité gouvernementale ou publique' : 'Government or public state entity' },
+                  { id: 'ngo', label: 'NGO / Association', desc: locale === 'fr' ? 'Organisation à but non lucratif' : 'Non-profit or charity organization' },
+                  { id: 'cooperative', label: locale === 'fr' ? 'Coopérative' : 'Cooperative', desc: locale === 'fr' ? 'Groupement ou coopérative agricole' : 'Agricultural group or cooperative union' },
                 ].map((b) => (
                   <button key={b.id} onClick={() => setForm({ ...form, businessType: b.id })}
                     className={`w-full p-4 rounded-xl border-2 text-left transition-all ${form.businessType === b.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50'}`}>
@@ -215,7 +357,7 @@ export function OnboardingPage() {
           {step === 4 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Informations entreprise' : 'Business information'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Détails légaux de votre entreprise' : 'Legal details of your business'}</p>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Détails légaux et fiscaux de votre entreprise' : 'Legal and tax details of your business'}</p>
               <div className="space-y-4">
                 <Input label={t.onboarding.companyName} value={form.businessName} onChange={(v) => setForm({ ...form, businessName: v })} placeholder="Maison Baoulé SARL" />
                 <Input label={t.onboarding.companyNumber} value={form.registrationNumber} onChange={(v) => setForm({ ...form, registrationNumber: v })} placeholder="CI-ABJ-2024-B-12345" />
@@ -229,7 +371,7 @@ export function OnboardingPage() {
           {step === 5 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Vérification d\'identité' : 'Identity verification'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Téléversez vos documents' : 'Upload your documents'} — JPG, PNG, PDF</p>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Téléversez vos documents de conformité légale' : 'Upload your legal compliance documents'} — JPG, PNG, PDF</p>
               <div className="mb-4">
                 <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Type de pièce' : 'ID type'}</label>
                 <div className="flex gap-2">
@@ -252,13 +394,13 @@ export function OnboardingPage() {
           {/* Step 6: Bank */}
           {step === 6 && (
             <div>
-              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Informations bancaires' : 'Bank information'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Où recevoir vos paiements' : 'Where to receive your payments'}</p>
+              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Informations de paiement direct (Retrait)' : 'Bank information & direct payouts'}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Coordonnées financières pour vos versements' : 'Financial details for your direct payouts'}</p>
               <div className="space-y-4">
-                <Input label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName} onChange={(v) => setForm({ ...form, bankName: v })} placeholder="Ecobank" />
-                <Input label="IBAN" value={form.iban} onChange={(v) => setForm({ ...form, iban: v })} placeholder="CI..." />
-                <Input label="SWIFT" value={form.swift} onChange={(v) => setForm({ ...form, swift: v })} placeholder="ECOCCIAB" />
-                <Input label={locale === 'fr' ? 'Numéro Mobile Money' : 'Mobile Money number'} value={form.mobileMoney} onChange={(v) => setForm({ ...form, mobileMoney: v })} placeholder="+225 07 00 00 00" />
+                <Input label={locale === 'fr' ? 'Banque de versement' : 'Payout Bank'} value={form.bankName} onChange={(v) => setForm({ ...form, bankName: v })} placeholder="Ecobank, Bank of Africa, etc." />
+                <Input label="IBAN / Numéro de compte" value={form.iban} onChange={(v) => setForm({ ...form, iban: v })} placeholder="CI..." />
+                <Input label="SWIFT / Code guichet" value={form.swift} onChange={(v) => setForm({ ...form, swift: v })} placeholder="ECOCCIAB" />
+                <Input label={locale === 'fr' ? 'Numéro de Mobile Money (Wave, Orange, MTN, Airtel)' : 'Mobile Money Direct account number'} value={form.mobileMoney} onChange={(v) => setForm({ ...form, mobileMoney: v })} placeholder="+225 07 00 00 00" />
               </div>
             </div>
           )}
@@ -267,13 +409,13 @@ export function OnboardingPage() {
           {step === 7 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Informations boutique' : 'Store information'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'L\u2019apparence de votre boutique' : 'Your store appearance'}</p>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'L\u2019identité visuelle de votre vitrine' : 'The visual identity of your showcase'}</p>
               <div className="space-y-4">
                 <Input label={locale === 'fr' ? 'Nom de la boutique' : 'Store name'} value={form.storeName} onChange={(v) => setForm({ ...form, storeName: v })} placeholder="Maison Baoulé" />
-                <Input label="URL" value={form.storeSlug} onChange={(v) => setForm({ ...form, storeSlug: v })} placeholder="maison-baoule" />
+                <Input label="URL unique" value={form.storeSlug} onChange={(v) => setForm({ ...form, storeSlug: v })} placeholder="maison-baoule" />
                 <div>
-                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Description' : 'Description'}</label>
-                  <textarea value={form.storeDesc} onChange={(e) => setForm({ ...form, storeDesc: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Décrivez votre boutique...' : 'Describe your store...'} />
+                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Description de la vitrine' : 'Showcase Description'}</label>
+                  <textarea value={form.storeDesc} onChange={(e) => setForm({ ...form, storeDesc: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Décrivez vos spécialités...' : 'Describe your store...'} />
                 </div>
                 <UploadField label={locale === 'fr' ? 'Logo (512×512)' : 'Logo (512×512)'} value={form.storeLogo} onChange={(v) => setForm({ ...form, storeLogo: v })} />
                 <UploadField label={locale === 'fr' ? 'Bannière (1920×600)' : 'Banner (1920×600)'} value={form.storeBanner} onChange={(v) => setForm({ ...form, storeBanner: v })} />
@@ -286,11 +428,11 @@ export function OnboardingPage() {
           {/* Step 8: Warehouse */}
           {step === 8 && (
             <div>
-              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Entrepôt' : 'Warehouse'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Votre adresse de stockage' : 'Your storage address'}</p>
+              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Entrepôt & Logistique' : 'Warehouse & Logistics'}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Votre adresse de départ d\'expédition' : 'Your shipping origin address'}</p>
               <div className="space-y-4">
-                <Input label={locale === 'fr' ? 'Adresse de l\'entrepôt' : 'Warehouse address'} value={form.warehouseAddress} onChange={(v) => setForm({ ...form, warehouseAddress: v })} placeholder="Zone industrielle, Abidjan" />
-                <Input label={locale === 'fr' ? 'Zone de livraison' : 'Shipping zone'} value={form.shippingZone} onChange={(v) => setForm({ ...form, shippingZone: v })} placeholder="Abidjan, Côte d'Ivoire" />
+                <Input label={locale === 'fr' ? 'Adresse de l\'entrepôt / Point d\'enlèvement' : 'Warehouse / Pickup Point Address'} value={form.warehouseAddress} onChange={(v) => setForm({ ...form, warehouseAddress: v })} placeholder="Zone industrielle, Abidjan" />
+                <Input label={locale === 'fr' ? 'Zone de livraison couverte' : 'Delivery coverage zone'} value={form.shippingZone} onChange={(v) => setForm({ ...form, shippingZone: v })} placeholder="Abidjan, Côte d'Ivoire, CEDEAO" />
               </div>
             </div>
           )}
@@ -299,14 +441,14 @@ export function OnboardingPage() {
           {step === 9 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Configuration livraison' : 'Shipping configuration'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Vos modes de livraison' : 'Your delivery methods'}</p>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Activez vos modes logistiques autorisés' : 'Activate your allowed logistic modes'}</p>
               <div className="space-y-2">
                 {[
-                  { key: 'shipNational', label: locale === 'fr' ? 'Livraison nationale' : 'National shipping' },
-                  { key: 'shipInternational', label: locale === 'fr' ? 'Livraison internationale' : 'International shipping' },
-                  { key: 'shipExpress', label: locale === 'fr' ? 'Livraison express' : 'Express shipping' },
-                  { key: 'shipLocal', label: locale === 'fr' ? 'Livraison locale' : 'Local delivery' },
-                  { key: 'shipPickup', label: locale === 'fr' ? 'Point de retrait' : 'Pickup point' },
+                  { key: 'shipNational', label: locale === 'fr' ? 'Livraison nationale (Standard)' : 'National standard shipping' },
+                  { key: 'shipInternational', label: locale === 'fr' ? 'Livraison internationale (DHL, Aramex, Fedex)' : 'International premium shipping' },
+                  { key: 'shipExpress', label: locale === 'fr' ? 'Livraison express (24h/48h)' : 'Express 24h shipping' },
+                  { key: 'shipLocal', label: locale === 'fr' ? 'Livraison de proximité locale (Moto)' : 'Hyperlocal express dispatch' },
+                  { key: 'shipPickup', label: locale === 'fr' ? 'Point de retrait physique' : 'Physical pickup point' },
                 ].map((s) => (
                   <label key={s.key} className="flex items-center gap-3 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
                     <input type="checkbox" checked={((form as Record<string, unknown>)[s.key] as boolean) || false} onChange={(e) => setForm({ ...form, [s.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
@@ -320,16 +462,16 @@ export function OnboardingPage() {
           {/* Step 10: Payment */}
           {step === 10 && (
             <div>
-              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Configuration paiement' : 'Payment configuration'}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Vos méthodes de paiement' : 'Your payment methods'}</p>
+              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Configuration des encaissements' : 'Payout Configuration'}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Sélectionnez les moyens de paiement acceptés pour vos ventes' : 'Select accepted checkout methods for your shop'}</p>
               <div className="space-y-2">
                 {[
-                  { key: 'payMobileMoney', label: 'Mobile Money' },
-                  { key: 'payPaystack', label: 'Paystack' },
-                  { key: 'payFlutterwave', label: 'Flutterwave' },
-                  { key: 'payStripe', label: 'Stripe' },
-                  { key: 'payPaypal', label: 'PayPal' },
-                  { key: 'payBank', label: locale === 'fr' ? 'Virement bancaire' : 'Bank transfer' },
+                  { key: 'payMobileMoney', label: 'Mobile Money (Orange Money, Wave, MTN, M-Pesa)' },
+                  { key: 'payPaystack', label: 'Paystack (Cartes bancaires Afrique de l\'Ouest)' },
+                  { key: 'payFlutterwave', label: 'Flutterwave (Multi-devises Afrique)' },
+                  { key: 'payStripe', label: 'Stripe (Cartes internationales)' },
+                  { key: 'payPaypal', label: 'PayPal (International)' },
+                  { key: 'payBank', label: locale === 'fr' ? 'Virement bancaire direct' : 'Direct bank wire' },
                 ].map((p) => (
                   <label key={p.key} className="flex items-center gap-3 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
                     <input type="checkbox" checked={((form as Record<string, unknown>)[p.key] as boolean) || false} onChange={(e) => setForm({ ...form, [p.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
@@ -344,14 +486,15 @@ export function OnboardingPage() {
           {step === 11 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{t.onboarding.validation}</h2>
-              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Vérifiez vos informations' : 'Review your information'}</p>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Vérifiez vos informations de conformité' : 'Review your compliance details'}</p>
               <div className="space-y-2 text-sm">
                 <SummaryRow label={t.auth.email} value={form.email} />
-                <SummaryRow label={t.onboarding.country} value={countries.find((c) => c.id === form.countryId)?.name || '—'} />
-                <SummaryRow label={locale === 'fr' ? 'Type' : 'Type'} value={form.businessType} />
+                <SummaryRow label={t.onboarding.country} value={`${form.countryFlagManual} ${form.countryNameManual} (${form.countryCurrencyManual})`} />
+                <SummaryRow label={locale === 'fr' ? 'Type d\'activité' : 'Activity Type'} value={form.businessType} />
                 <SummaryRow label={t.onboarding.companyName} value={form.businessName} />
                 <SummaryRow label={locale === 'fr' ? 'Boutique' : 'Store'} value={form.storeName} />
-                <SummaryRow label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName || form.mobileMoney} />
+                <SummaryRow label={locale === 'fr' ? 'Compte de retrait' : 'Payout details'} value={form.bankName || form.mobileMoney} />
+                <SummaryRow label={locale === 'fr' ? 'Localité principale' : 'Primary location'} value={form.selectedLocality} />
               </div>
             </div>
           )}
@@ -362,8 +505,8 @@ export function OnboardingPage() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center">
                 <ShieldCheck className="w-8 h-8 text-[#0e9f6e]" />
               </div>
-              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Prêt pour approbation' : 'Ready for approval'}</h2>
-              <p className="text-sm text-[#64748b] mb-6">{locale === 'fr' ? 'Soumettez votre demande. Notre équipe l\'examinera sous 48h.' : 'Submit your application. Our team will review it within 48h.'}</p>
+              <h2 className="font-display text-xl font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Prêt pour approbation immédiate' : 'Ready for instant approval'}</h2>
+              <p className="text-sm text-[#64748b] mb-6">{locale === 'fr' ? 'Soumettez votre demande. Notre passerelle de validation certifiera votre compte de vendeur en temps réel.' : 'Submit your application. Our validation engine will certify your vendor profile in real time.'}</p>
               <button onClick={submit} className="btn-gold px-8 py-3.5 rounded-xl font-semibold flex items-center gap-2 mx-auto">
                 <ShieldCheck className="w-5 h-5" /> {t.onboarding.submit}
               </button>

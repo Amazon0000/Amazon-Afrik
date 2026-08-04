@@ -7,64 +7,98 @@ export type Category = {
 
 export const categories: Category[] = [
   {
-    id: 'fashion', name: { fr: 'Mode', en: 'Fashion' }, icon: 'Shirt',
+    id: 'electronics', name: { fr: 'Électronique & Appareils', en: 'Electronics & Appliances' }, icon: 'Smartphone',
+    subcategories: [
+      { id: 'elec-phones', name: { fr: 'Téléphones & Tablettes', en: 'Phones & Tablets' } },
+      { id: 'elec-computers', name: { fr: 'Ordinateurs & Accessoires', en: 'Computers & Accessories' } },
+      { id: 'elec-tv', name: { fr: 'Télévisions & Audio', en: 'TVs & Audio' } },
+      { id: 'elec-appliances', name: { fr: 'Électroménager', en: 'Home Appliances' } },
+    ],
+  },
+  {
+    id: 'fashion', name: { fr: 'Mode & Vêtements', en: 'Fashion & Apparel' }, icon: 'Shirt',
     subcategories: [
       { id: 'fashion-dresses', name: { fr: 'Robes', en: 'Dresses' } },
-      { id: 'fashion-boubou', name: { fr: 'Boubous', en: 'Boubous' } },
-      { id: 'fashion-accessories', name: { fr: 'Accessoires', en: 'Accessories' } },
+      { id: 'fashion-boubou', name: { fr: 'Boubous & Caftans', en: 'Boubous & Kaftans' } },
+      { id: 'fashion-mens', name: { fr: 'Mode Homme', en: 'Men\'s Fashion' } },
+      { id: 'fashion-shoes', name: { fr: 'Chaussures', en: 'Shoes' } },
+      { id: 'fashion-accessories', name: { fr: 'Sacs & Accessoires', en: 'Bags & Accessories' } },
     ],
   },
   {
     id: 'art', name: { fr: 'Art & Artisanat', en: 'Art & Crafts' }, icon: 'Palette',
     subcategories: [
-      { id: 'art-masks', name: { fr: 'Masques', en: 'Masks' } },
-      { id: 'art-sculptures', name: { fr: 'Sculptures', en: 'Sculptures' } },
-      { id: 'art-paintings', name: { fr: 'Peintures', en: 'Paintings' } },
+      { id: 'art-masks', name: { fr: 'Masques Africains', en: 'African Masks' } },
+      { id: 'art-sculptures', name: { fr: 'Sculptures & Statuettes', en: 'Sculptures & Figurines' } },
+      { id: 'art-paintings', name: { fr: 'Peintures & Toiles', en: 'Paintings & Canvas' } },
+      { id: 'art-souvenirs', name: { fr: 'Souvenirs & Cadeaux', en: 'Souvenirs & Gifts' } },
     ],
   },
   {
-    id: 'jewelry', name: { fr: 'Bijoux', en: 'Jewelry' }, icon: 'Gem',
+    id: 'jewelry', name: { fr: 'Bijoux & Parures', en: 'Jewelry & Adornments' }, icon: 'Gem',
     subcategories: [
       { id: 'jewelry-necklaces', name: { fr: 'Colliers', en: 'Necklaces' } },
       { id: 'jewelry-earrings', name: { fr: 'Boucles d\'oreilles', en: 'Earrings' } },
       { id: 'jewelry-rings', name: { fr: 'Bagues', en: 'Rings' } },
+      { id: 'jewelry-bracelets', name: { fr: 'Bracelets', en: 'Bracelets' } },
     ],
   },
   {
-    id: 'beauty', name: { fr: 'Beauté', en: 'Beauty' }, icon: 'Sparkles',
+    id: 'beauty', name: { fr: 'Beauté & Cosmétiques', en: 'Beauty & Cosmetics' }, icon: 'Sparkles',
     subcategories: [
-      { id: 'beauty-skincare', name: { fr: 'Soins peau', en: 'Skincare' } },
-      { id: 'beauty-hair', name: { fr: 'Soins cheveux', en: 'Hair care' } },
-      { id: 'beauty-oils', name: { fr: 'Huiles', en: 'Oils' } },
+      { id: 'beauty-skincare', name: { fr: 'Soins de la peau', en: 'Skincare' } },
+      { id: 'beauty-hair', name: { fr: 'Soins des cheveux', en: 'Hair Care' } },
+      { id: 'beauty-oils', name: { fr: 'Huiles Naturelles', en: 'Natural Oils' } },
+      { id: 'beauty-makeup', name: { fr: 'Maquillage', en: 'Makeup' } },
     ],
   },
   {
-    id: 'home', name: { fr: 'Maison', en: 'Home' }, icon: 'Home',
+    id: 'home', name: { fr: 'Maison, Cuisine & Déco', en: 'Home, Kitchen & Decor' }, icon: 'Home',
     subcategories: [
-      { id: 'home-baskets', name: { fr: 'Paniers', en: 'Baskets' } },
-      { id: 'home-decor', name: { fr: 'Décoration', en: 'Decor' } },
+      { id: 'home-baskets', name: { fr: 'Paniers de Bolga & Tressages', en: 'Bolga Baskets & Weavings' } },
+      { id: 'home-decor', name: { fr: 'Objets de Décoration', en: 'Decorative Items' } },
+      { id: 'home-furniture', name: { fr: 'Meubles & Mobilier', en: 'Furniture' } },
+      { id: 'home-cookware', name: { fr: 'Ustensiles de Cuisine', en: 'Cookware & Kitchen' } },
     ],
   },
   {
-    id: 'food', name: { fr: 'Épicerie', en: 'Food' }, icon: 'ShoppingBasket',
+    id: 'food', name: { fr: 'Épicerie & Agroalimentaire', en: 'Food & Agribusiness' }, icon: 'ShoppingBasket',
     subcategories: [
-      { id: 'food-coffee', name: { fr: 'Café', en: 'Coffee' } },
-      { id: 'food-spices', name: { fr: 'Épices', en: 'Spices' } },
+      { id: 'food-coffee', name: { fr: 'Café & Thé', en: 'Coffee & Tea' } },
+      { id: 'food-spices', name: { fr: 'Épices & Condiments', en: 'Spices & Seasonings' } },
+      { id: 'food-cacao', name: { fr: 'Cacao, Chocolat & Confiseries', en: 'Cocoa, Chocolate & Sweets' } },
+      { id: 'food-grains', name: { fr: 'Céréales & Grains', en: 'Cereals & Grains' } },
     ],
   },
   {
-    id: 'electronics', name: { fr: 'Électronique', en: 'Electronics' }, icon: 'Smartphone',
+    id: 'books', name: { fr: 'Livres, Culture & Papeterie', en: 'Books & Stationery' }, icon: 'BookOpen',
     subcategories: [
-      { id: 'elec-phones', name: { fr: 'Téléphones', en: 'Phones' } },
-      { id: 'elec-accessories', name: { fr: 'Accessoires', en: 'Accessories' } },
+      { id: 'books-novels', name: { fr: 'Romans & Littérature', en: 'Novels & Literature' } },
+      { id: 'books-education', name: { fr: 'Manuels Scolaires', en: 'Educational Books' } },
+      { id: 'books-stationery', name: { fr: 'Fournitures de bureau', en: 'Office Stationery' } },
     ],
   },
   {
-    id: 'textiles', name: { fr: 'Textiles', en: 'Textiles' }, icon: 'Scissors',
+    id: 'kids', name: { fr: 'Bébés, Enfants & Jouets', en: 'Baby, Kids & Toys' }, icon: 'Gamepad2',
     subcategories: [
-      { id: 'textiles-kente', name: { fr: 'Kente', en: 'Kente' } },
-      { id: 'textiles-wax', name: { fr: 'Wax', en: 'Wax' } },
-      { id: 'textiles-aso', name: { fr: 'Aso Oke', en: 'Aso Oke' } },
+      { id: 'kids-toys', name: { fr: 'Jouets & Jeux', en: 'Toys & Games' } },
+      { id: 'kids-clothes', name: { fr: 'Vêtements Enfant', en: 'Children\'s Clothes' } },
+      { id: 'kids-babycare', name: { fr: 'Puériculture', en: 'Baby Care' } },
+    ],
+  },
+  {
+    id: 'automotive', name: { fr: 'Automobile & Outillage', en: 'Automotive & Tools' }, icon: 'Wrench',
+    subcategories: [
+      { id: 'auto-parts', name: { fr: 'Pièces & Accessoires Auto', en: 'Car Parts & Accessories' } },
+      { id: 'auto-tools', name: { fr: 'Outillage & Matériel', en: 'Hand Tools & Hardware' } },
+    ],
+  },
+  {
+    id: 'textiles', name: { fr: 'Textiles & Tissus', en: 'Textiles & Fabrics' }, icon: 'Scissors',
+    subcategories: [
+      { id: 'textiles-kente', name: { fr: 'Tissu Kente', en: 'Kente Fabric' } },
+      { id: 'textiles-wax', name: { fr: 'Pagne Wax', en: 'Wax Print' } },
+      { id: 'textiles-aso', name: { fr: 'Tissu Aso Oke', en: 'Aso Oke' } },
     ],
   },
 ];

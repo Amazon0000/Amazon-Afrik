@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, createPayoutRequest } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ArrowLeft } from 'lucide-react';
 
 type NewProduct = {
   name: string;
@@ -28,8 +28,15 @@ export function SellerCenterPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ads, setAds] = useState<AdCampaign[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<SellerPaymentMethod[]>([]);
+
+  // Real functional payout form fields
+  const [payoutAmountInput, setPayoutAmountInput] = useState('');
   const [momoProvider, setMomoProvider] = useState('Orange Money');
   const [momoNumber, setMomoPhone] = useState('');
+  const [momoHolder, setMomoHolder] = useState('');
+  const [bankSwiftCode, setBankSwiftCode] = useState('');
+  const [bankIbanCode, setBankIbanCode] = useState('');
+
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newProduct, setNewProduct] = useState<NewProduct>(emptyProduct);
@@ -68,7 +75,7 @@ export function SellerCenterPage() {
     { id: 'ads', label: t.seller.ads, icon: Megaphone },
     { id: 'analytics', label: t.seller.analytics, icon: BarChart3 },
     { id: 'messages', label: locale === 'fr' ? 'Messages' : 'Messages', icon: MessageSquare },
-    { id: 'wallet', label: locale === 'fr' ? 'Portefeuille' : 'Wallet', icon: Wallet },
+    { id: 'wallet', label: locale === 'fr' ? 'Portefeuille & Retraits' : 'Wallet & Payouts', icon: Wallet },
     { id: 'invoices', label: locale === 'fr' ? 'Factures' : 'Invoices', icon: FileText },
     { id: 'subscription', label: t.seller.subscription, icon: CreditCard },
     { id: 'settings', label: locale === 'fr' ? 'Paramètres' : 'Settings', icon: Settings },
@@ -157,12 +164,25 @@ export function SellerCenterPage() {
   return (
     <div className="bg-[#f7f8fa] min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+        {/* Module back layout navigations */}
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => navigate('home')} className="p-2.5 bg-white hover:bg-gray-100 rounded-xl border border-gray-200 transition-all shadow-sm">
+            <ArrowLeft className="w-4 h-4 text-[#0f172a]" />
+          </button>
+          <div className="text-xs text-[#64748b]">
+            <span className="hover:underline cursor-pointer" onClick={() => navigate('home')}>{t.nav.home}</span>
+            <span className="mx-1.5">/</span>
+            <span className="text-[#0f172a] font-bold">{locale === 'fr' ? 'Espace Vendeur' : 'Seller Center'}</span>
+          </div>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <aside className="lg:w-60 shrink-0">
-            <div className="card p-4 sticky top-20 bg-white">
+            <div className="card p-4 bg-white border border-[#e2e8f0] shadow-sm">
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#e2e8f0]">
-                <div className="w-10 h-10 rounded-xl bg-[#0e9f6e] flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 rounded-xl bg-[#0e9f6e] flex items-center justify-center text-white font-bold shadow-sm">
                   {(user?.fullName || 'S').charAt(0)}
                 </div>
                 <div>
@@ -196,25 +216,25 @@ export function SellerCenterPage() {
                 </div>
 
                 {/* KYC status */}
-                <div className="card p-5 flex items-center gap-4 bg-white">
+                <div className="card p-5 flex items-center gap-4 bg-white border border-[#e2e8f0] shadow-sm">
                   {user?.sellerStatus === 'pending' ? (
                     <>
                       <div className="w-12 h-12 rounded-xl bg-[#ff9900]/15 flex items-center justify-center"><Clock className="w-6 h-6 text-[#ff9900]" /></div>
-                      <div className="flex-1"><p className="font-semibold text-[#0f172a]">{t.onboarding.pending}</p><p className="text-xs text-[#64748b]">{t.onboarding.submitSuccess}</p></div>
+                      <div className="flex-1 text-left"><p className="font-semibold text-[#0f172a]">{t.onboarding.pending}</p><p className="text-xs text-[#64748b]">{t.onboarding.submitSuccess}</p></div>
                     </>
                   ) : (
                     <>
                       <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center"><CheckCircle className="w-6 h-6 text-green-600" /></div>
-                      <div className="flex-1"><p className="font-semibold text-[#0f172a]">{t.onboarding.approved}</p><p className="text-xs text-[#64748b]">{t.home.trust1}</p></div>
+                      <div className="flex-1 text-left"><p className="font-semibold text-[#0f172a]">{t.onboarding.approved}</p><p className="text-xs text-[#64748b]">{t.home.trust1}</p></div>
                     </>
                   )}
                 </div>
 
                 {/* Low stock alerts */}
                 {(lowStock.length > 0 || outOfStock.length > 0) && (
-                  <div className="card p-5 bg-white">
+                  <div className="card p-5 bg-white border border-[#e2e8f0] shadow-sm">
                     <h3 className="font-semibold text-[#0f172a] mb-3 flex items-center gap-2"><Bell className="w-4 h-4 text-[#ff9900]" /> {locale === 'fr' ? 'Alertes de stock' : 'Stock alerts'}</h3>
-                    <div className="space-y-2">
+                    <div className="space-y-2 text-left">
                       {lowStock.map((p) => (
                         <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#ff9900]/5">
                           <Package className="w-4 h-4 text-[#ff9900]" />
@@ -235,13 +255,13 @@ export function SellerCenterPage() {
 
                 {/* Recent orders */}
                 <div>
-                  <h2 className="font-display text-lg font-bold text-[#0f172a] mb-3">{t.seller.recentOrders}</h2>
-                  <div className="card overflow-hidden bg-white">
+                  <h2 className="font-display text-lg font-bold text-[#0f172a] mb-3 text-left">{t.seller.recentOrders}</h2>
+                  <div className="card overflow-hidden bg-white border border-[#e2e8f0] shadow-sm">
                     {orders.length === 0 ? (
                       <div className="p-6 text-center text-sm text-[#64748b]"><ShoppingCart className="w-8 h-8 text-[#0e9f6e]/30 mx-auto mb-2" />{locale === 'fr' ? 'Aucune commande pour le moment' : 'No orders yet'}</div>
                     ) : orders.map((o, i) => (
                       <div key={o.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
-                        <div className="flex-1">
+                        <div className="flex-1 text-left">
                           <p className="text-sm font-semibold text-[#0f172a]">{o.order_items?.[0]?.product_name || 'Order'}</p>
                           <p className="text-xs text-[#64748b]">{o.tracking_id || o.id.slice(0, 8)}</p>
                         </div>
@@ -332,7 +352,7 @@ export function SellerCenterPage() {
                   ) : products.map((p, i) => (
                     <div key={p.id} className={`flex items-center gap-4 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                       <img src={p.product_images?.[0]?.image_url || ''} alt={p.name} className="w-14 h-14 rounded-xl object-cover" />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 text-left">
                         <p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Star className="w-3 h-3 fill-[#ff9900] text-[#ff9900]" />
@@ -359,7 +379,7 @@ export function SellerCenterPage() {
                   <div className="card overflow-hidden bg-white">
                     {orders.map((o, i) => (
                       <div key={o.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
-                        <div className="flex-1">
+                        <div className="flex-1 text-left">
                           <p className="text-sm font-semibold text-[#0f172a]">{o.order_items?.[0]?.product_name || 'Order'}</p>
                           <p className="text-xs text-[#64748b]">{o.tracking_id || o.id.slice(0, 8)} • {new Date(o.created_at).toLocaleDateString()}</p>
                         </div>
@@ -381,7 +401,7 @@ export function SellerCenterPage() {
                   <StatCard label={locale === 'fr' ? 'Visiteurs' : 'Visitors'} value="12.4K" icon={Users} />
                   <StatCard label={locale === 'fr' ? 'Trafic' : 'Traffic'} value="89K" icon={BarChart3} />
                 </div>
-                <div className="card p-6 bg-white">
+                <div className="card p-6 bg-white text-left">
                   <h3 className="font-semibold text-[#0f172a] mb-4">{locale === 'fr' ? 'Ventes par produit' : 'Sales by product'}</h3>
                   <div className="space-y-3">
                     {products.slice(0, 6).map((p) => {
@@ -410,7 +430,7 @@ export function SellerCenterPage() {
                 ) : (
                   <div className="space-y-3">
                     {ads.map((ad) => (
-                      <div key={ad.id} className="card p-5 bg-white">
+                      <div key={ad.id} className="card p-5 bg-white text-left">
                         <div className="flex items-center justify-between mb-3">
                           <p className="font-semibold text-[#0f172a]">{ad.name}</p>
                           <Badge color={ad.status === 'active' ? '#22c55e' : ad.status === 'pending' ? '#ff9900' : '#64748b'}>{ad.status}</Badge>
@@ -439,18 +459,41 @@ export function SellerCenterPage() {
             )}
 
             {tab === 'wallet' && (
-              <div className="animate-fade-up space-y-6">
-                <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Portefeuille' : 'Wallet'}</h1>
+              <div className="animate-fade-up space-y-6 text-left">
+                <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Portefeuille & Direct Payouts' : 'Wallet & Direct Payouts'}</h1>
+
                 <div className="card p-6 bg-gradient-to-br from-[#0e9f6e]/10 to-transparent border-[#0e9f6e]/20 text-left">
-                  <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Solde disponible' : 'Available balance'}</p>
+                  <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Solde disponible de votre boutique' : 'Available shop balance'}</p>
                   <p className="text-4xl font-bold text-[#0f172a] mt-2">{formatPrice(totalRevenue)}</p>
-                  <button onClick={async () => {
-                    if (!user?.sellerId && !user?.id) return;
-                    const sellerId = user.sellerId || user.id;
-                    if (totalRevenue <= 0) { showToast(locale === 'fr' ? 'Solde insuffisant' : 'Insufficient balance'); return; }
-                    const id = await createPayoutRequest({ sellerId, amount: totalRevenue });
-                    showToast(id ? (locale === 'fr' ? 'Demande de paiement envoyée' : 'Payout request submitted') : (locale === 'fr' ? 'Erreur' : 'Error'), id ? 'success' : 'error');
-                  }} className="mt-4 btn-green px-6 py-2.5 rounded-lg text-sm font-semibold">{locale === 'fr' ? 'Demander un paiement' : 'Request payout'}</button>
+
+                  {/* Real functional amount field with validations */}
+                  <div className="mt-4 max-w-sm space-y-2">
+                    <label className="block text-[11px] font-bold text-gray-500 uppercase">{locale === 'fr' ? 'Saisir le montant du virement' : 'Enter payout amount'}</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={payoutAmountInput}
+                        onChange={(e) => setPayoutAmountInput(e.target.value)}
+                        placeholder="e.g. 100"
+                        className="input-field text-sm py-2 max-w-[140px]"
+                      />
+                      <button onClick={async () => {
+                        if (!user?.sellerId && !user?.id) return;
+                        const sellerId = user.sellerId || user.id;
+                        const parsed = parseFloat(payoutAmountInput);
+                        if (!parsed || parsed <= 0) { showToast(locale === 'fr' ? 'Veuillez saisir un montant valide' : 'Please enter a valid amount'); return; }
+                        if (parsed > totalRevenue) { showToast(locale === 'fr' ? 'Solde insuffisant' : 'Insufficient balance'); return; }
+
+                        const id = await createPayoutRequest({ sellerId, amount: parsed });
+                        if (id) {
+                          showToast(locale === 'fr' ? `Virement direct de $${parsed} initié` : `Direct payment of $${parsed} initiated!`, 'success');
+                          setPayoutAmountInput('');
+                        } else {
+                          showToast('Error', 'error');
+                        }
+                      }} className="btn-green px-5 py-2.5 rounded-xl text-xs font-semibold">{locale === 'fr' ? 'Transférer' : 'Transfer'}</button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="card p-5 bg-white space-y-4 text-left">
@@ -464,7 +507,8 @@ export function SellerCenterPage() {
                   {showAddPaymentMethod && (
                     <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3 animate-fade-up">
                       <p className="text-xs font-semibold text-[#0f172a] uppercase">{locale === 'fr' ? 'Nouveau moyen de paiement direct' : 'New Direct Payment Account'}</p>
-                      <div className="grid sm:grid-cols-2 gap-3">
+
+                      <div className="grid sm:grid-cols-2 gap-3 text-left">
                         <div>
                           <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Opérateur / Provider</label>
                           <select value={momoProvider} onChange={(e) => setMomoProvider(e.target.value)} className="input-field text-xs cursor-pointer">
@@ -472,31 +516,59 @@ export function SellerCenterPage() {
                             <option value="Orange Money">Orange Money</option>
                             <option value="MTN MoMo">MTN Mobile Money</option>
                             <option value="M-Pesa">M-Pesa</option>
-                            <option value="Paystack">Paystack Merchant</option>
-                            <option value="Flutterwave">Flutterwave Merchant</option>
+                            <option value="Airtel Money">Airtel Money</option>
+                            <option value="Virement Bancaire">Virement Bancaire Direct (IBAN)</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Identifiant / Compte</label>
-                          <input value={momoNumber} onChange={(e) => setMomoPhone(e.target.value)} placeholder="+225 07 00 00 00" className="input-field text-xs" />
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">{locale === 'fr' ? 'Nom du Titulaire' : 'Account Holder Name'}</label>
+                          <input value={momoHolder} onChange={(e) => setMomoHolder(e.target.value)} placeholder="Moussa Traore" className="input-field text-xs" />
                         </div>
                       </div>
+
+                      {momoProvider === 'Virement Bancaire' ? (
+                        <div className="grid sm:grid-cols-2 gap-3 text-left animate-fade-up">
+                          <div>
+                            <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Code SWIFT</label>
+                            <input value={bankSwiftCode} onChange={(e) => setBankSwiftCode(e.target.value)} placeholder="e.g. ECOCCIAB" className="input-field text-xs" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Code IBAN</label>
+                            <input value={bankIbanCode} onChange={(e) => setBankIbanCode(e.target.value)} placeholder="e.g. CI01 0203..." className="input-field text-xs" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-left animate-fade-up">
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">{locale === 'fr' ? 'Numéro de Téléphone' : 'Mobile Phone Number'}</label>
+                          <input value={momoNumber} onChange={(e) => setMomoPhone(e.target.value)} placeholder="e.g. +225 07 0000 0000" className="input-field text-xs" />
+                        </div>
+                      )}
+
                       <div className="flex gap-2">
                         <button type="button" onClick={async () => {
-                          if (!momoNumber.trim()) return;
+                          const isBank = momoProvider === 'Virement Bancaire';
+                          if (!momoHolder.trim()) { showToast(locale === 'fr' ? 'Veuillez saisir le titulaire' : 'Please enter the holder name'); return; }
+                          if (isBank && (!bankSwiftCode.trim() || !bankIbanCode.trim())) { showToast('Please enter SWIFT/IBAN'); return; }
+                          if (!isBank && !momoNumber.trim()) { showToast('Please enter phone number'); return; }
+
                           const sellerId = user?.sellerId || user?.id;
                           if (!sellerId) return;
+
+                          const accountId = isBank ? bankIbanCode : momoNumber;
                           const { addSellerPaymentMethod } = await import('@/lib/db');
                           const id = await addSellerPaymentMethod({
                             sellerId,
                             providerName: momoProvider,
-                            providerType: momoProvider.includes('MoMo') || momoProvider.includes('Money') || momoProvider === 'Wave' || momoProvider === 'M-Pesa' ? 'mobile_money' : 'psp',
-                            accountIdentifier: momoNumber,
-                            displayName: `${momoProvider} (${momoNumber.slice(-4)})`,
+                            providerType: isBank ? 'bank' : 'mobile_money',
+                            accountIdentifier: accountId,
+                            displayName: `${momoProvider} - ${momoHolder} (${accountId.slice(-4)})`,
                           });
                           if (id) {
                             showToast(locale === 'fr' ? 'Moyen de paiement connecté' : 'Payment method connected successfully');
                             setMomoPhone('');
+                            setMomoHolder('');
+                            setBankIbanCode('');
+                            setBankSwiftCode('');
                             setShowAddPaymentMethod(false);
                             const methods = await import('@/lib/db').then((m) => m.fetchSellerPaymentMethods(sellerId));
                             setPaymentMethods(methods);

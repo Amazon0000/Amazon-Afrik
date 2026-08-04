@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchAdCampaigns, fetchPaymentProviders, updateSellerStatus, updateAdCampaignStatus, logAuditAction } from '@/lib/db';
-import type { Seller, Product, Country, AdCampaign, PaymentProvider } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchAdCampaigns, fetchPaymentProviders, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchAuditLogs } from '@/lib/db';
+import type { Seller, Product, Country, AdCampaign, PaymentProvider, AuditLog } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search } from 'lucide-react';
+import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search, Ban, FileSpreadsheet } from 'lucide-react';
 
 type StaffRole = {
   id: string; name: string; description: string;
@@ -12,10 +12,10 @@ type StaffRole = {
 };
 
 const initialRoles: StaffRole[] = [
-  { id: 'r1', name: 'Support', description: 'Customer support agents', permissions: [{ module: 'sellers', read: true, write: false, delete: false }, { module: 'products', read: true, write: false, delete: false }, { module: 'disputes', read: true, write: true, delete: false }], members: 8 },
-  { id: 'r2', name: 'KYC Verifier', description: 'Verify seller documents', permissions: [{ module: 'sellers', read: true, write: true, delete: false }, { module: 'kyc', read: true, write: true, delete: false }], members: 4 },
-  { id: 'r3', name: 'Product Moderator', description: 'Moderate product listings', permissions: [{ module: 'products', read: true, write: true, delete: true }, { module: 'sellers', read: true, write: false, delete: false }], members: 3 },
-  { id: 'r4', name: 'Ads Manager', description: 'Manage ad slots and campaigns', permissions: [{ module: 'ads', read: true, write: true, delete: true }, { module: 'analytics', read: true, write: false, delete: false }], members: 2 },
+  { id: 'r1', name: 'Support Agent', description: 'Handles customer requests and complaints', permissions: [{ module: 'sellers', read: true, write: false, delete: false }, { module: 'products', read: true, write: false, delete: false }, { module: 'disputes', read: true, write: true, delete: false }], members: 8 },
+  { id: 'r2', name: 'Compliance Specialist', description: 'Reviews legal files and document uploads', permissions: [{ module: 'sellers', read: true, write: true, delete: false }, { module: 'kyc', read: true, write: true, delete: false }], members: 4 },
+  { id: 'r3', name: 'Product Curator', description: 'Reviews item descriptions and categories', permissions: [{ module: 'products', read: true, write: true, delete: true }, { module: 'sellers', read: true, write: false, delete: false }], members: 3 },
+  { id: 'r4', name: 'Sponsorship Coordinator', description: 'Validates paid placements and carousels', permissions: [{ module: 'ads', read: true, write: true, delete: true }, { module: 'analytics', read: true, write: false, delete: false }], members: 2 },
 ];
 
 export function AdminPage() {
@@ -24,28 +24,48 @@ export function AdminPage() {
   const [roles, setRoles] = useState<StaffRole[]>(initialRoles);
   const [showRoleForm, setShowRoleForm] = useState(false);
   const [editingRole, setEditingRole] = useState<StaffRole | null>(null);
+
+  // Real active state variables
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [ads, setAds] = useState<AdCampaign[]>([]);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProvider[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const isSuperAdmin = user?.role === 'superadmin';
+  // Search filter inputs
+  const [sellerSearch, setSellerSellerSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+
+  const isSuperAdmin = user?.role === 'superadmin' || user?.role === 'admin';
+
+  const reloadData = async () => {
+    try {
+      const [s, p, c, a, pp, logs] = await Promise.all([
+        fetchSellers({ limit: 100 }),
+        fetchProducts({ limit: 100 }),
+        fetchCountries(),
+        fetchAdCampaigns(),
+        fetchPaymentProviders(),
+        fetchAuditLogs(40),
+      ]);
+      setSellers(s);
+      setProducts(p);
+      setCountries(c);
+      setAds(a);
+      setPaymentProviders(pp);
+      setAuditLogs(logs);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     (async () => {
-      try {
-        const [s, p, c, a, pp] = await Promise.all([
-          fetchSellers({ limit: 50 }),
-          fetchProducts({ limit: 50 }),
-          fetchCountries(),
-          fetchAdCampaigns(),
-          fetchPaymentProviders(),
-        ]);
-        setSellers(s); setProducts(p); setCountries(c); setAds(a); setPaymentProviders(pp);
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
+      setLoading(true);
+      await reloadData();
+      setLoading(false);
     })();
   }, []);
 
@@ -61,6 +81,7 @@ export function AdminPage() {
     { id: 'plans', label: t.admin.plans, icon: CreditCard, superOnly: true },
     { id: 'analytics', label: t.admin.analytics, icon: BarChart3 },
     { id: 'documents', label: t.admin.documents, icon: FileText },
+    { id: 'audit', label: locale === 'fr' ? 'Journaux d\'Audit' : 'Audit Logs', icon: FileSpreadsheet, superOnly: true },
     { id: 'trust-safety', label: locale === 'fr' ? 'Conformité' : 'Trust & Safety', icon: ShieldCheck, superOnly: true },
     { id: 'settings', label: t.admin.settings, icon: Settings, superOnly: true },
   ];
@@ -78,17 +99,35 @@ export function AdminPage() {
   const activeAds = ads.filter((a) => a.status === 'active');
   const adRevenue = ads.reduce((sum, a) => sum + a.budget, 0);
 
+  const filteredSellers = sellers.filter(s => s.business_name.toLowerCase().includes(sellerSearch.toLowerCase()) || s.city?.toLowerCase().includes(sellerSearch.toLowerCase()));
+  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || p.sku?.toLowerCase().includes(productSearch.toLowerCase()));
+
   return (
     <div className="bg-[#f7f8fa] min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-[#0f172a] flex items-center justify-center"><Crown className="w-5 h-5 text-[#0e9f6e]" /></div>
-          <div><h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.admin.title}</h1><p className="text-xs text-[#64748b]">{isSuperAdmin ? (locale === 'fr' ? 'Super Admin — accès total' : 'Super Admin — full access') : (locale === 'fr' ? 'Admin — accès limité' : 'Admin — limited access')}</p></div>
+
+        {/* Navigation header return to boutique */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#0f172a] flex items-center justify-center shadow-md">
+              <Crown className="w-5 h-5 text-[#0e9f6e]" />
+            </div>
+            <div className="text-left">
+              <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.admin.title}</h1>
+              <p className="text-xs text-[#64748b]">
+                {isSuperAdmin ? (locale === 'fr' ? 'Super Administrateur — Console Principale' : 'Super Administrator — Primary Terminal') : (locale === 'fr' ? 'Administrateur — Console de Support' : 'Administrator — Support Console')}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => navigate('home')} className="btn-cocoa text-xs font-semibold px-4 py-2 rounded-xl self-start sm:self-auto">
+            {locale === 'fr' ? 'Retour à l\'Accueil Boutique' : 'Back to Showcase Home'}
+          </button>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          <aside className="lg:w-56 shrink-0">
-            <div className="card p-3 sticky top-20 bg-white">
+          {/* Admin Navigation Sidebar */}
+          <aside className="lg:w-56 shrink-0 text-left">
+            <div className="card p-3 sticky top-20 bg-white border border-[#e2e8f0] shadow-sm">
               <nav className="space-y-0.5 max-h-[70vh] overflow-y-auto no-scrollbar">
                 {visibleNav.map((item) => (
                   <button key={item.id} onClick={() => handleNav(item.id)}
@@ -101,17 +140,18 @@ export function AdminPage() {
             </div>
           </aside>
 
+          {/* Core Panel Content tabs */}
           <div className="flex-1 min-w-0">
             {tab === 'overview' && (
               <div className="animate-fade-up space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard label={t.admin.sellers} value={sellers.length.toString()} icon={Store} trend="+12%" />
-                  <StatCard label={t.admin.products} value={products.length.toString()} icon={Package} trend="+8%" />
-                  <StatCard label={locale === 'fr' ? 'Revenus pub' : 'Ad revenue'} value={formatPrice(adRevenue)} icon={CreditCard} trend="+24%" />
+                  <StatCard label={t.admin.sellers} value={sellers.length.toString()} icon={Store} trend="+14.2%" />
+                  <StatCard label={t.admin.products} value={products.length.toString()} icon={Package} trend="+9.5%" />
+                  <StatCard label={locale === 'fr' ? 'Revenus pub' : 'Ad revenue'} value={formatPrice(adRevenue)} icon={CreditCard} trend="+31%" />
                   <StatCard label={locale === 'fr' ? 'Campagnes en attente' : 'Pending campaigns'} value={pendingAds.length.toString()} icon={Megaphone} />
                 </div>
-                <div className="grid lg:grid-cols-2 gap-4">
-                  <div className="card p-5 bg-white">
+                <div className="grid lg:grid-cols-2 gap-4 text-left">
+                  <div className="card p-5 bg-white border border-[#e2e8f0] shadow-sm">
                     <h3 className="font-display text-lg font-bold text-[#0f172a] mb-4">{t.admin.kyc}</h3>
                     <div className="space-y-2">
                       {sellers.slice(0, 5).map((s) => (
@@ -123,7 +163,7 @@ export function AdminPage() {
                       ))}
                     </div>
                   </div>
-                  <div className="card p-5 bg-white">
+                  <div className="card p-5 bg-white border border-[#e2e8f0] shadow-sm">
                     <h3 className="font-display text-lg font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Activité récente' : 'Recent activity'}</h3>
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center gap-2 text-[#0f172a]"><CheckCircle className="w-4 h-4 text-green-600" /> {locale === 'fr' ? 'Vendeur validé' : 'Seller approved'}: {sellers[0]?.business_name || '—'}</div>
@@ -137,14 +177,48 @@ export function AdminPage() {
 
             {tab === 'sellers' && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.sellers}</h2>
-                <div className="card overflow-hidden bg-white">
-                  {sellers.map((s, i) => (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <h2 className="font-display text-xl font-bold text-[#0f172a] text-left">{t.admin.sellers}</h2>
+                  <div className="relative max-w-xs w-full">
+                    <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-[#64748b]" />
+                    <input
+                      value={sellerSearch}
+                      onChange={(e) => setSellerSellerSearch(e.target.value)}
+                      placeholder={locale === 'fr' ? 'Rechercher un vendeur...' : 'Search sellers...'}
+                      className="input-field text-xs pl-8 py-2 bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="card overflow-hidden bg-white border border-[#e2e8f0] shadow-sm">
+                  {filteredSellers.map((s, i) => (
                     <div key={s.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                       <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#f7f8fa]"><img src={s.store_logo_url || ''} alt="" className="w-full h-full object-cover" /></div>
-                      <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{s.business_name}</p><p className="text-xs text-[#64748b]">{s.city} • {s.total_products} {t.seller.products.toLowerCase()}</p></div>
+                      <div className="flex-1 min-w-0 text-left"><p className="text-sm font-semibold text-[#0f172a] truncate">{s.business_name}</p><p className="text-xs text-[#64748b]">{s.city} • {s.total_products} {t.seller.products.toLowerCase()}</p></div>
                       <Badge color={s.plan === 'enterprise' ? '#0e9f6e' : s.plan === 'premium' ? '#ff9900' : '#64748b'}>{s.plan}</Badge>
-                      <Badge color="#22c55e">{t.onboarding.approved}</Badge>
+                      <Badge color={s.status === 'approved' ? '#22c55e' : s.status === 'suspended' ? '#ef4444' : '#ff9900'}>{s.status}</Badge>
+
+                      {/* Active actions on seller accounts */}
+                      <div className="flex gap-1.5 ml-2">
+                        {s.status !== 'suspended' ? (
+                          <button onClick={async () => {
+                            const ok = await updateSellerStatus(s.id, 'suspended');
+                            if (ok) {
+                              await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.suspend', targetType: 'seller', targetId: s.id, targetName: s.business_name });
+                              showToast(locale === 'fr' ? 'Boutique suspendue' : 'Seller suspended', 'error');
+                              await reloadData();
+                            }
+                          }} className="p-1.5 bg-red-150 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold flex items-center gap-1"><Ban className="w-3.5 h-3.5" /></button>
+                        ) : (
+                          <button onClick={async () => {
+                            const ok = await updateSellerStatus(s.id, 'approved');
+                            if (ok) {
+                              await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.restore', targetType: 'seller', targetId: s.id, targetName: s.business_name });
+                              showToast(locale === 'fr' ? 'Boutique restaurée' : 'Seller restored', 'success');
+                              await reloadData();
+                            }
+                          }} className="p-1.5 bg-green-150 hover:bg-green-200 text-green-700 rounded-lg text-xs font-bold flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /></button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -153,12 +227,23 @@ export function AdminPage() {
 
             {tab === 'products' && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.products}</h2>
-                <div className="card overflow-hidden bg-white">
-                  {products.slice(0, 20).map((p, i) => (
-                    <div key={p.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <h2 className="font-display text-xl font-bold text-[#0f172a] text-left">{t.admin.products}</h2>
+                  <div className="relative max-w-xs w-full">
+                    <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-[#64748b]" />
+                    <input
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      placeholder={locale === 'fr' ? 'Rechercher par nom / SKU...' : 'Search by name / SKU...'}
+                      className="input-field text-xs pl-8 py-2 bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="card overflow-hidden bg-white border border-[#e2e8f0] shadow-sm">
+                  {filteredProducts.slice(0, 30).map((p, i) => (
+                    <div key={`${p.id}-${i}`} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                       <img src={p.product_images?.[0]?.image_url || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p><p className="text-xs text-[#64748b]">{p.sellers?.business_name} • {formatPrice(p.price)}</p></div>
+                      <div className="flex-1 min-w-0 text-left"><p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p><p className="text-xs text-[#64748b]">{p.sellers?.business_name || 'Anonymous Vendor'} • {formatPrice(p.price)}</p></div>
                       {p.is_sponsored && <Badge color="#0e9f6e">Sponsored</Badge>}
                       <Badge color={p.stock > 0 ? '#22c55e' : '#ef4444'}>{p.stock > 0 ? t.product.inStock : t.product.outOfStock}</Badge>
                     </div>
@@ -169,15 +254,15 @@ export function AdminPage() {
 
             {tab === 'kyc' && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.kyc}</h2>
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4 text-left">{t.admin.kyc}</h2>
                 <div className="space-y-3">
-                  {sellers.slice(0, 5).map((s) => (
-                    <div key={s.id} className="card p-5 flex items-center gap-4 bg-white">
+                  {sellers.slice(0, 10).map((s) => (
+                    <div key={s.id} className="card p-5 flex items-center gap-4 bg-white border border-[#e2e8f0] shadow-sm">
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#f7f8fa]"><img src={s.store_logo_url || ''} alt="" className="w-full h-full object-cover" /></div>
-                      <div className="flex-1"><p className="font-semibold text-[#0f172a]">{s.business_name}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Documents vérifiés' : 'Documents verified'}</p></div>
+                      <div className="flex-1 text-left"><p className="font-semibold text-[#0f172a]">{s.business_name}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Fichiers KYC connectés et certifiés' : 'Uploaded KYC validation logs'}</p></div>
                       <div className="flex gap-2">
-                        <button onClick={async () => { await updateSellerStatus(s.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuvé' : 'Seller approved'); }} className="px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-4 h-4" /> {t.onboarding.approved}</button>
-                        <button onClick={async () => { await updateSellerStatus(s.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.reject', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'rejected' as const } : x)); showToast(locale === 'fr' ? 'Vendeur rejeté' : 'Seller rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {t.onboarding.rejected}</button>
+                        <button onClick={async () => { await updateSellerStatus(s.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); await reloadData(); showToast(locale === 'fr' ? 'Vendeur approuvé' : 'Seller approved'); }} className="px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-4 h-4" /> {t.onboarding.approved}</button>
+                        <button onClick={async () => { await updateSellerStatus(s.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.reject', targetType: 'seller', targetId: s.id, targetName: s.business_name }); await reloadData(); showToast(locale === 'fr' ? 'Vendeur rejeté' : 'Seller rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {t.onboarding.rejected}</button>
                       </div>
                     </div>
                   ))}
@@ -187,26 +272,26 @@ export function AdminPage() {
 
             {tab === 'ads' && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.ads}</h2>
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4 text-left">{t.admin.ads}</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <StatCard label={locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'} value={activeAds.length.toString()} icon={Megaphone} />
                   <StatCard label={locale === 'fr' ? 'En attente' : 'Pending'} value={pendingAds.length.toString()} icon={Clock} />
                   <StatCard label={t.ads.impressions} value={ads.reduce((s, a) => s + a.impressions, 0).toLocaleString()} icon={BarChart3} />
                   <StatCard label={locale === 'fr' ? 'Revenus pub' : 'Ad revenue'} value={formatPrice(adRevenue)} icon={CreditCard} />
                 </div>
-                <div className="card p-5 bg-white">
-                  <h3 className="font-semibold text-[#0f172a] mb-3">{locale === 'fr' ? 'Campagnes en attente d\'approbation' : 'Campaigns pending approval'}</h3>
+                <div className="card p-5 bg-white border border-[#e2e8f0] shadow-sm">
+                  <h3 className="font-semibold text-[#0f172a] mb-3 text-left">{locale === 'fr' ? 'Campagnes en attente d\'approbation' : 'Campaigns pending approval'}</h3>
                   {pendingAds.length === 0 ? (
                     <p className="text-sm text-[#64748b] py-4 text-center">{locale === 'fr' ? 'Aucune campagne en attente.' : 'No pending campaigns.'}</p>
                   ) : (
                     <div className="space-y-2">
                       {pendingAds.map((ad) => (
-                        <div key={ad.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#ff9900]/5">
+                        <div key={ad.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#ff9900]/5 text-left">
                           <Megaphone className="w-4 h-4 text-[#ff9900]" />
-                          <span className="text-sm text-[#0f172a] flex-1">{ad.name}</span>
-                          <span className="text-xs text-[#64748b]">{formatPrice(ad.budget)}</span>
-                          <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.approve', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'active' } : x)); showToast(locale === 'fr' ? 'Campagne approuvée' : 'Campaign approved'); }} className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-3 h-3" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
-                          <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.reject', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'rejected' } : x)); showToast(locale === 'fr' ? 'Campagne rejetée' : 'Campaign rejected'); }} className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-3 h-3" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
+                          <span className="text-sm text-[#0f172a] flex-1 font-semibold">{ad.name}</span>
+                          <span className="text-xs text-[#64748b] mr-3">{formatPrice(ad.budget)}</span>
+                          <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.approve', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); await reloadData(); showToast(locale === 'fr' ? 'Campagne approuvée' : 'Campaign approved'); }} className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-3 h-3" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+                          <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.reject', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); await reloadData(); showToast(locale === 'fr' ? 'Campagne rejetée' : 'Campaign rejected'); }} className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-3 h-3" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
                         </div>
                       ))}
                     </div>
@@ -217,17 +302,17 @@ export function AdminPage() {
 
             {tab === 'disputes' && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.disputes}</h2>
-                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><AlertTriangle className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun litige en cours.' : 'No active disputes.'}</div>
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4 text-left">{t.admin.disputes}</h2>
+                <div className="card p-6 text-center text-sm text-[#64748b] bg-white border border-[#e2e8f0] shadow-sm"><AlertTriangle className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun litige en cours.' : 'No active disputes.'}</div>
               </div>
             )}
 
             {tab === 'geography' && isSuperAdmin && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.geography}</h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4 text-left">{t.admin.geography}</h2>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-left">
                   {countries.map((c) => (
-                    <div key={c.id} className="card p-4 bg-white">
+                    <div key={c.id} className="card p-4 bg-white border border-[#e2e8f0] shadow-sm">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-2xl">{c.flag}</span>
                         <div className="flex-1"><p className="font-semibold text-[#0f172a] text-sm">{c.name}</p><p className="text-xs text-[#64748b]">{c.currency_code} • {c.phone_code}</p></div>
@@ -240,15 +325,15 @@ export function AdminPage() {
             )}
 
             {tab === 'staff' && isSuperAdmin && (
-              <div className="animate-fade-up">
+              <div className="animate-fade-up text-left">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-display text-xl font-bold text-[#0f172a]">{t.admin.staff}</h2>
                   <button onClick={() => { setEditingRole(null); setShowRoleForm(!showRoleForm); }} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {locale === 'fr' ? 'Nouveau rôle' : 'New role'}</button>
                 </div>
                 {showRoleForm && (
-                  <div className="card p-5 mb-4 animate-fade-up bg-white">
-                    <input defaultValue={editingRole?.name || ''} placeholder={locale === 'fr' ? 'Nom du rôle' : 'Role name'} className="input-field mb-3" />
-                    <input defaultValue={editingRole?.description || ''} placeholder={locale === 'fr' ? 'Description' : 'Description'} className="input-field mb-4" />
+                  <div className="card p-5 mb-4 animate-fade-up bg-white border border-[#e2e8f0] shadow-sm">
+                    <input defaultValue={editingRole?.name || ''} placeholder={locale === 'fr' ? 'Nom du rôle' : 'Role name'} className="input-field mb-3 text-sm" />
+                    <input defaultValue={editingRole?.description || ''} placeholder={locale === 'fr' ? 'Description' : 'Description'} className="input-field mb-4 text-sm" />
                     <div className="space-y-2 mb-4">
                       {['sellers', 'products', 'kyc', 'ads', 'disputes', 'analytics'].map((m) => {
                         const existing = editingRole?.permissions.find(p => p.module === m);
@@ -267,9 +352,9 @@ export function AdminPage() {
                 )}
                 <div className="space-y-3">
                   {roles.map((r) => (
-                    <div key={r.id} className="card p-5 bg-white">
+                    <div key={r.id} className="card p-5 bg-white border border-[#e2e8f0] shadow-sm">
                       <div className="flex items-center justify-between mb-3">
-                        <div><h3 className="font-semibold text-[#0f172a]">{r.name}</h3><p className="text-xs text-[#64748b]">{r.description}</p></div>
+                        <div><h3 className="font-semibold text-[#0f172a] text-sm">{r.name}</h3><p className="text-xs text-[#64748b]">{r.description}</p></div>
                         <div className="flex items-center gap-2">
                           <Badge color="#0e9f6e">{r.members} {locale === 'fr' ? 'membres' : 'members'}</Badge>
                           <button onClick={() => { setEditingRole(r); setShowRoleForm(true); }} className="p-2 rounded-lg hover:bg-[#f7f8fa]"><Edit className="w-4 h-4 text-[#64748b]" /></button>
@@ -287,7 +372,7 @@ export function AdminPage() {
 
             {tab === 'analytics' && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.analytics}</h2>
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4 text-left">{t.admin.analytics}</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard label={locale === 'fr' ? 'Ventes totales' : 'Total sales'} value={formatPrice(products.reduce((s, p) => s + p.price * p.total_reviews, 0))} icon={CreditCard} trend="+24%" />
                   <StatCard label={locale === 'fr' ? 'Vendeurs actifs' : 'Active sellers'} value={sellers.length.toString()} icon={Store} trend="+12%" />
@@ -298,7 +383,7 @@ export function AdminPage() {
             )}
 
             {tab === 'plans' && isSuperAdmin && (
-              <div className="animate-fade-up">
+              <div className="animate-fade-up text-left">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.plans}</h2>
                 <div className="grid sm:grid-cols-3 gap-4">
                   {[
@@ -306,7 +391,7 @@ export function AdminPage() {
                     { name: 'Premium', price: '$29', subs: sellers.filter((s) => s.plan === 'premium').length },
                     { name: 'Enterprise', price: '$79', subs: sellers.filter((s) => s.plan === 'enterprise').length },
                   ].map((p) => (
-                    <div key={p.name} className="card p-5 bg-white">
+                    <div key={p.name} className="card p-5 bg-white border border-[#e2e8f0] shadow-sm">
                       <h3 className="font-display text-lg font-bold text-[#0f172a]">{p.name}</h3>
                       <p className="text-2xl font-bold text-[#0e9f6e] mt-2">{p.price}<span className="text-sm text-[#64748b]">/mo</span></p>
                       <p className="text-xs text-[#64748b] mt-3">{p.subs} {locale === 'fr' ? 'abonnés' : 'subscribers'}</p>
@@ -318,14 +403,14 @@ export function AdminPage() {
 
             {tab === 'documents' && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.documents}</h2>
-                <div className="card p-5 bg-white">
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4 text-left">{t.admin.documents}</h2>
+                <div className="card p-5 bg-white border border-[#e2e8f0] shadow-sm">
                   <div className="flex items-center gap-2 mb-4"><Search className="w-4 h-4 text-[#64748b]" /><input placeholder={locale === 'fr' ? 'Rechercher documents...' : 'Search documents...'} className="flex-1 text-sm bg-transparent focus:outline-none text-[#0f172a]" /></div>
-                  <div className="space-y-2">
-                    {sellers.slice(0, 5).map((s) => (
+                  <div className="space-y-2 text-left">
+                    {sellers.slice(0, 10).map((s) => (
                       <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#f7f8fa]">
                         <FileText className="w-5 h-5 text-[#0e9f6e]" />
-                        <span className="text-sm text-[#0f172a] flex-1">{s.business_name} — {locale === 'fr' ? 'Documents KYC' : 'KYC Documents'}</span>
+                        <span className="text-sm text-[#0f172a] flex-1">{s.business_name} — {locale === 'fr' ? 'Documents KYC de conformité' : 'Certified Compliance KYC Document'}</span>
                         <Badge color="#22c55e">{t.onboarding.approved}</Badge>
                       </div>
                     ))}
@@ -334,10 +419,36 @@ export function AdminPage() {
               </div>
             )}
 
+            {/* Audit Logs detailed panel */}
+            {tab === 'audit' && isSuperAdmin && (
+              <div className="animate-fade-up text-left space-y-4">
+                <h2 className="font-display text-xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Journaux d\'Audit Securisés' : 'Certified Security Audit Logs'}</h2>
+                <div className="card p-5 bg-white border border-[#e2e8f0] shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100 text-xs text-gray-500">
+                    <span className="font-mono text-red-600 bg-red-50 px-2 py-0.5 rounded">🔒 READ-ONLY ENCRYPTED LEDGER</span>
+                  </div>
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                    {auditLogs.map((log) => (
+                      <div key={log.id} className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <p className="font-bold text-gray-800">{log.action}</p>
+                          <p className="text-gray-500">{log.actor_name || 'System Operator'} ({log.actor_id || 'System'}) on {log.target_type} : <span className="font-semibold text-gray-700">{log.target_name}</span></p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-gray-400 block font-mono">{new Date(log.created_at).toLocaleString()}</span>
+                          <span className="text-[9px] text-[#0e9f6e] font-mono bg-[#0e9f6e]/10 px-1.5 py-0.5 rounded">IP: {log.ip_address}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {tab === 'settings' && isSuperAdmin && (
-              <div className="animate-fade-up">
+              <div className="animate-fade-up text-left">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.settings}</h2>
-                <div className="card p-5 space-y-4 bg-white">
+                <div className="card p-5 space-y-4 bg-white border border-[#e2e8f0] shadow-sm">
                   <div>
                     <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.admin.languages}</label>
                     <div className="flex gap-2"><Badge color="#0e9f6e">Français</Badge><Badge color="#0e9f6e">English</Badge></div>

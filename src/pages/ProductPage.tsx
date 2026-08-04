@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import { fetchProductById, fetchProducts } from '@/lib/db';
 import type { Product } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
-import { Star, ShoppingCart, Truck, ShieldCheck, Minus, Plus, ChevronRight, Store, Heart, Share2, CheckCircle, MapPin, BadgeCheck, Crown, Award, Search } from 'lucide-react';
+import { Star, ShoppingCart, Truck, ShieldCheck, Minus, Plus, ChevronRight, Store, Heart, Share2, CheckCircle, MapPin, BadgeCheck, Crown, Award, Search, ArrowLeft } from 'lucide-react';
 
 export function ProductPage() {
   const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user, formatPrice } = useApp();
@@ -64,14 +64,21 @@ export function ProductPage() {
   return (
     <div className="motif-bg min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <nav className="flex items-center gap-2 text-xs text-[#64748b] mb-6 flex-wrap">
-          <button onClick={() => navigate('home')} className="hover:text-[#0e9f6e]">{t.nav.home}</button>
-          <ChevronRight className="w-3 h-3" />
-          <button onClick={() => navigate('catalog')} className="hover:text-[#0e9f6e]">{t.nav.catalog}</button>
-          {category && <><ChevronRight className="w-3 h-3" /><span className="text-[#0f172a] font-medium">{category.name}</span></>}
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-[#0f172a] font-medium">{product.name}</span>
-        </nav>
+
+        {/* Navigation bar with visible Back trigger */}
+        <div className="flex items-center gap-3 mb-4">
+          <button onClick={() => navigate('catalog')} className="p-2.5 bg-white hover:bg-[#0f172a]/5 rounded-xl border border-[#0f172a]/10 transition-colors shadow-sm">
+            <ArrowLeft className="w-4 h-4 text-[#0f172a]" />
+          </button>
+          <nav className="flex items-center gap-2 text-xs text-[#64748b] flex-wrap">
+            <button onClick={() => navigate('home')} className="hover:text-[#0e9f6e]">{t.nav.home}</button>
+            <ChevronRight className="w-3 h-3" />
+            <button onClick={() => navigate('catalog')} className="hover:text-[#0e9f6e]">{t.nav.catalog}</button>
+            {category && <><ChevronRight className="w-3 h-3" /><span className="text-[#0f172a] font-medium">{category.name}</span></>}
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-[#0f172a] font-medium">{product.name}</span>
+          </nav>
+        </div>
 
         <div className="grid lg:grid-cols-12 gap-8">
           {/* Gallery */}
