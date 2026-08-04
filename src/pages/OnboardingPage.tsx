@@ -4,24 +4,7 @@ import { Logo } from '@/components/Logo';
 import { UploadCloud, FileText, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Clock, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Search, Globe } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-// High-fidelity worldwide country database
-const WORLD_COUNTRIES = [
-  { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', phone_code: '+225', currency: 'XOF', localities: ['Abidjan', 'Bouaké', 'Yamoussoukro', 'San-Pédro', 'Korhogo'] },
-  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', phone_code: '+221', currency: 'XOF', localities: ['Dakar', 'Thiès', 'Kaolack', 'Saint-Louis', 'Ziguinchor'] },
-  { code: 'NG', name: 'Nigeria', flag: '🇳🇬', phone_code: '+234', currency: 'NGN', localities: ['Lagos', 'Abuja', 'Kano', 'Ibadan', 'Port Harcourt'] },
-  { code: 'KE', name: 'Kenya', flag: '🇰🇪', phone_code: '+254', currency: 'KES', localities: ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'] },
-  { code: 'GH', name: 'Ghana', flag: '🇬🇭', phone_code: '+233', currency: 'GHS', localities: ['Accra', 'Kumasi', 'Tamale', 'Takoradi', 'Temale'] },
-  { code: 'ZA', name: 'South Africa', flag: '🇿🇦', phone_code: '+27', currency: 'ZAR', localities: ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth'] },
-  { code: 'EG', name: 'Egypt', flag: '🇪🇬', phone_code: '+20', currency: 'EGP', localities: ['Cairo', 'Alexandria', 'Giza', 'Shubra El Kheima', 'Port Said'] },
-  { code: 'MA', name: 'Morocco', flag: '🇲🇦', phone_code: '+212', currency: 'MAD', localities: ['Casablanca', 'Rabat', 'Marrakech', 'Fes', 'Tangier'] },
-  { code: 'FR', name: 'France', flag: '🇫🇷', phone_code: '+33', currency: 'EUR', localities: ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice'] },
-  { code: 'US', name: 'United States', flag: '🇺🇸', phone_code: '+1', currency: 'USD', localities: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami'] },
-  { code: 'CN', name: 'China', flag: '🇨🇳', phone_code: '+86', currency: 'CNY', localities: ['Beijing', 'Shanghai', 'Shenzhen', 'Guangzhou', 'Chengdu'] },
-  { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪', phone_code: '+971', currency: 'AED', localities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Al Ain'] },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', phone_code: '+44', currency: 'GBP', localities: ['London', 'Birmingham', 'Manchester', 'Glasgow', 'Leeds'] },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦', phone_code: '+1', currency: 'CAD', localities: ['Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Ottawa'] },
-  { code: 'IN', name: 'India', flag: '🇮🇳', phone_code: '+91', currency: 'INR', localities: ['Mumbai', 'Delhi', 'Bangalore', 'Kolkata', 'Chennai'] },
-];
+import { WORLD_COUNTRIES } from '@/lib/countriesList';
 
 export function OnboardingPage() {
   const { t, navigate, locale, setUser, refreshSellers, user } = useApp();
@@ -64,7 +47,6 @@ export function OnboardingPage() {
   }, [searchQuery]);
 
   const handleCountrySelect = (c: typeof WORLD_COUNTRIES[0]) => {
-    setSelectedCountry(c);
     setForm(prev => ({
       ...prev,
       countryId: c.code,
@@ -79,7 +61,6 @@ export function OnboardingPage() {
   };
 
   const handleCustomCountryChange = (field: string, val: string) => {
-    setSelectedCountry(null); // break custom coupling to let users type custom items
     setForm(prev => ({
       ...prev,
       [field]: val

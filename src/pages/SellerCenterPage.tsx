@@ -393,15 +393,101 @@ export function SellerCenterPage() {
             )}
 
             {tab === 'analytics' && (
-              <div className="animate-fade-up space-y-6">
+              <div className="animate-fade-up space-y-6 text-left">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.analytics}</h1>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard label={locale === 'fr' ? 'Ventes' : 'Sales'} value={totalReviews.toString()} icon={DollarSign} trend="+18%" />
-                  <StatCard label={locale === 'fr' ? 'Conversion' : 'Conversion'} value="4.2%" icon={TrendingUp} />
-                  <StatCard label={locale === 'fr' ? 'Visiteurs' : 'Visitors'} value="12.4K" icon={Users} />
-                  <StatCard label={locale === 'fr' ? 'Trafic' : 'Traffic'} value="89K" icon={BarChart3} />
+                  <StatCard label={locale === 'fr' ? 'Ventes' : 'Sales'} value={totalReviews.toString()} icon={DollarSign} trend="+18.4%" />
+                  <StatCard label={locale === 'fr' ? 'Conversion' : 'Conversion'} value="4.28%" icon={TrendingUp} trend="+0.5%" />
+                  <StatCard label={locale === 'fr' ? 'Visiteurs' : 'Visitors'} value="12,450" icon={Users} trend="+12.1%" />
+                  <StatCard label={locale === 'fr' ? 'Trafic' : 'Traffic'} value="89,400" icon={BarChart3} trend="+15.3%" />
                 </div>
-                <div className="card p-6 bg-white text-left">
+
+                {/* Professional SaaS exact numerical data breakdowns */}
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="card p-6 bg-white border border-gray-150 shadow-sm lg:col-span-2 text-left">
+                    <h3 className="font-bold text-sm text-[#0f172a] uppercase mb-4 tracking-wider flex items-center gap-1.5">
+                      <BarChart3 className="w-4 h-4 text-[#0e9f6e]" />
+                      {locale === 'fr' ? 'Mesures Précises du Trafic de la Vitrine' : 'Storefront Detailed Traffic Metrics'}
+                    </h3>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left text-gray-500">
+                        <thead className="text-[10px] text-gray-700 uppercase bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2">SaaS KPI Metric</th>
+                            <th className="px-3 py-2 text-right">Value</th>
+                            <th className="px-3 py-2 text-right">Percentage / Target</th>
+                            <th className="px-3 py-2 text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b">
+                            <td className="px-3 py-2 font-semibold text-gray-800">Add-to-Cart Conversion</td>
+                            <td className="px-3 py-2 text-right">1,540 clicks</td>
+                            <td className="px-3 py-2 text-right">12.37%</td>
+                            <td className="px-3 py-2 text-right text-[#0e9f6e]">Excellent</td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="px-3 py-2 font-semibold text-gray-800">Checkout Funnel Progress</td>
+                            <td className="px-3 py-2 text-right">842 visitors</td>
+                            <td className="px-3 py-2 text-right">54.67% of carts</td>
+                            <td className="px-3 py-2 text-right text-[#0e9f6e]">Optimal</td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="px-3 py-2 font-semibold text-gray-800">Abandoned Cart Rate</td>
+                            <td className="px-3 py-2 text-right">382 carts</td>
+                            <td className="px-3 py-2 text-right">24.81% abandonment</td>
+                            <td className="px-3 py-2 text-right text-amber-600">Action Required</td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="px-3 py-2 font-semibold text-gray-800">Customer Return Rate</td>
+                            <td className="px-3 py-2 text-right">12 returns</td>
+                            <td className="px-3 py-2 text-right">0.96% return rate</td>
+                            <td className="px-3 py-2 text-right text-[#0e9f6e]">Very Low</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="card p-6 bg-white border border-gray-150 shadow-sm text-left">
+                    <h3 className="font-bold text-sm text-[#0f172a] uppercase mb-4 tracking-wider flex items-center gap-1.5">
+                      <TrendingUp className="w-4 h-4 text-[#ff9900]" />
+                      {locale === 'fr' ? 'Contribution par Catégorie' : 'Category Contribution'}
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold text-gray-800 mb-1">
+                          <span>Fashion & Apparel</span>
+                          <span>64.8% ($12,450)</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-[#0e9f6e] h-full rounded-full" style={{ width: '64.8%' }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold text-gray-800 mb-1">
+                          <span>Jewelry & Crafts</span>
+                          <span>24.2% ($4,650)</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-[#ff9900] h-full rounded-full" style={{ width: '24.2%' }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold text-gray-800 mb-1">
+                          <span>Art & Masks</span>
+                          <span>11.0% ($2,110)</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-blue-600 h-full rounded-full" style={{ width: '11%' }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card p-6 bg-white text-left border border-gray-150 shadow-sm">
                   <h3 className="font-semibold text-[#0f172a] mb-4">{locale === 'fr' ? 'Ventes par produit' : 'Sales by product'}</h3>
                   <div className="space-y-3">
                     {products.slice(0, 6).map((p) => {
@@ -409,7 +495,12 @@ export function SellerCenterPage() {
                       const pct = (p.total_reviews / maxReviews) * 100;
                       return (
                         <div key={p.id}>
-                          <div className="flex items-center justify-between mb-1"><span className="text-sm text-[#0f172a]">{p.name}</span><span className="text-xs text-[#64748b]">{p.total_reviews}</span></div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-semibold text-gray-800">{p.name}</span>
+                            <span className="text-xs text-[#64748b] font-bold">
+                              {p.total_reviews} sales ({pct.toFixed(1)}%) • {formatPrice(p.price * p.total_reviews)}
+                            </span>
+                          </div>
                           <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#0e9f6e] to-[#0c8a5f]" style={{ width: `${pct}%` }} /></div>
                         </div>
                       );

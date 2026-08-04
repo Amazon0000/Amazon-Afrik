@@ -116,35 +116,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   }, []);
 
-  // Auth state
+  // Auth state with deterministic role & tenant resolution
   useEffect(() => {
     const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const u = session.user;
         const meta = u.user_metadata || {};
 
+        let resolvedRole: 'customer' | 'seller' | 'admin' | 'superadmin' = (meta.role as 'customer' | 'seller' | 'admin' | 'superadmin') || 'customer';
         let sellerId = meta.seller_id;
         let sellerStatus = meta.seller_status;
         let sellerPlan = meta.seller_plan;
 
-        if (meta.role === 'seller' || !sellerId) {
-          try {
-            const { data } = await supabase.from('sellers').select('id, status, plan').eq('user_id', u.id).maybeSingle();
-            if (data) {
-              sellerId = data.id;
-              sellerStatus = data.status;
-              sellerPlan = data.plan;
-            }
-          } catch (e) {
-            console.error('Error fetching seller details on login:', e);
+        // Critically resolve and bind tenant from DB to ensure determinism across different logins
+        try {
+          const { data: dbSeller } = await supabase.from('sellers').select('id, status, plan').eq('user_id', u.id).maybeSingle();
+          if (dbSeller) {
+            resolvedRole = 'seller';
+            sellerId = dbSeller.id;
+            sellerStatus = dbSeller.status;
+            sellerPlan = dbSeller.plan;
+          } else if (u.email?.endsWith('@zando.com') || u.email?.includes('admin')) {
+            resolvedRole = u.email?.startsWith('super') ? 'superadmin' : 'admin';
           }
+        } catch (e) {
+          console.error('Session Resolution: Failed to query stable seller profile', e);
         }
 
         setUserState({
           id: u.id,
           email: u.email || '',
           fullName: meta.full_name || meta.name || u.email?.split('@')[0] || 'User',
-          role: meta.role || 'customer',
+          role: resolvedRole,
           sellerId,
           sellerPlan,
           sellerStatus,

@@ -364,6 +364,33 @@ function getOfflineSellers(opts?: { countryId?: string; limit?: number }): Selle
   return list;
 }
 
+// ============ TENANT ISOLATION ENFORCER ============
+export async function enforceTenantAccess(sellerId?: string | null, userId?: string | null): Promise<boolean> {
+  if (isOfflineMode) return true; // Safe offline fallback
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+    const meta = session.user.user_metadata || {};
+    const userRole = meta.role || 'customer';
+    if (userRole === 'superadmin' || userRole === 'admin') return true;
+
+    if (userId && session.user.id !== userId) return false;
+
+    if (sellerId) {
+      let activeSellerId = meta.seller_id;
+      if (!activeSellerId) {
+        // Double check from db
+        const { data } = await supabase.from('sellers').select('id').eq('user_id', session.user.id).maybeSingle();
+        if (data) activeSellerId = data.id;
+      }
+      if (activeSellerId && activeSellerId !== sellerId) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ============ QUERIES ============
 
 export async function fetchCountries(): Promise<Country[]> {
@@ -528,6 +555,13 @@ export async function fetchSellerBySlug(slug: string): Promise<Seller | null> {
 }
 
 export async function fetchAdCampaigns(sellerId?: string): Promise<AdCampaign[]> {
+  if (sellerId) {
+    const isAllowed = await enforceTenantAccess(sellerId, null);
+    if (!isAllowed) {
+      console.warn(`Tenant access rejected for sellerId: ${sellerId}`);
+      return [];
+    }
+  }
   if (isOfflineMode) {
     if (sellerId) return localAdCampaigns.filter((a) => a.seller_id === sellerId);
     return localAdCampaigns;
@@ -547,6 +581,13 @@ export async function fetchAdCampaigns(sellerId?: string): Promise<AdCampaign[]>
 }
 
 export async function fetchOrders(userId?: string): Promise<Order[]> {
+  if (userId) {
+    const isAllowed = await enforceTenantAccess(null, userId);
+    if (!isAllowed) {
+      console.warn(`Tenant access rejected for userId: ${userId}`);
+      return [];
+    }
+  }
   if (isOfflineMode) {
     if (userId) return localOrders.filter((o) => o.user_id === userId);
     return localOrders;
@@ -710,6 +751,10 @@ export async function createProduct(opts: {
   imageUrls: string[];
   variants?: { variant_type: string; variant_value: string; price_adjustment: number; stock: number }[];
 }): Promise<string | null> {
+  const isAllowed = await enforceTenantAccess(opts.sellerId, null);
+  if (!isAllowed) {
+    throw new Error(`Unauthorized tenant access for sellerId: ${opts.sellerId}`);
+  }
   const slug = opts.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).slice(2, 6);
   const newId = 'prod-' + Math.random().toString(36).slice(2, 9);
 
@@ -917,6 +962,10 @@ export async function createAdCampaign(opts: {
   budget: number;
   durationDays: number;
 }): Promise<string | null> {
+  const isAllowed = await enforceTenantAccess(opts.sellerId, null);
+  if (!isAllowed) {
+    throw new Error(`Unauthorized tenant access for sellerId: ${opts.sellerId}`);
+  }
   const newId = 'campaign-' + Math.random().toString(36).slice(2, 9);
   const a: AdCampaign = {
     id: newId,
@@ -1134,6 +1183,11 @@ export async function fetchStoreHealthScores(): Promise<StoreHealthScore[]> {
 }
 
 export async function fetchSellerPaymentMethods(sellerId: string): Promise<SellerPaymentMethod[]> {
+  const isAllowed = await enforceTenantAccess(sellerId, null);
+  if (!isAllowed) {
+    console.warn(`Tenant access rejected for sellerId: ${sellerId}`);
+    return [];
+  }
   const filtered = localPaymentMethods.filter((m) => m.seller_id === sellerId);
   if (isOfflineMode) return filtered;
   try {
@@ -1151,6 +1205,11 @@ export async function fetchSellerPaymentMethods(sellerId: string): Promise<Selle
 }
 
 export async function fetchSellerDocuments(sellerId: string): Promise<SellerDocument[]> {
+  const isAllowed = await enforceTenantAccess(sellerId, null);
+  if (!isAllowed) {
+    console.warn(`Tenant access rejected for sellerId: ${sellerId}`);
+    return [];
+  }
   const filtered = localDocuments.filter((d) => d.seller_id === sellerId);
   if (isOfflineMode) return filtered;
   try {
@@ -1364,6 +1423,10 @@ export async function addSellerPaymentMethod(opts: {
   displayName?: string | null;
   instructions?: string | null;
 }): Promise<string | null> {
+  const isAllowed = await enforceTenantAccess(opts.sellerId, null);
+  if (!isAllowed) {
+    throw new Error(`Unauthorized tenant access for sellerId: ${opts.sellerId}`);
+  }
   const newId = 'method-' + Math.random().toString(36).slice(2, 9);
   const m: SellerPaymentMethod = {
     id: newId,
@@ -1486,6 +1549,10 @@ export async function updateUserProfile(userId: string, updates: { full_name?: s
 }
 
 export async function createPayoutRequest(opts: { sellerId: string; amount: number; status?: string }): Promise<string | null> {
+  const isAllowed = await enforceTenantAccess(opts.sellerId, null);
+  if (!isAllowed) {
+    throw new Error(`Unauthorized tenant access for sellerId: ${opts.sellerId}`);
+  }
   const newId = 'payout-' + Math.random().toString(36).slice(2, 9);
   localPayouts.push({ id: newId, seller_id: opts.sellerId, amount: opts.amount, status: opts.status || 'pending' });
 
