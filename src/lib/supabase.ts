@@ -25,6 +25,9 @@ const fallbackAuth = {
     error: null,
   }),
   resetPasswordForEmail: async () => ({ error: null }),
+  getUser: async () => ({ data: { user: null }, error: null }),
+  getSession: async () => ({ data: { session: null }, error: null }),
+  updateUser: async () => ({ data: { user: null }, error: null }),
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

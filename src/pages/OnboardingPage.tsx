@@ -378,19 +378,30 @@ export function OnboardingPage() {
       let userId: string | undefined;
 
       // Check if user is already authenticated
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      let currentUser = null;
+      try {
+        const { data } = await supabase.auth.getUser();
+        currentUser = data?.user;
+      } catch (e) {
+        console.warn('supabase.auth.getUser failed or is not available:', e);
+      }
+
       if (currentUser) {
         userId = currentUser.id;
         // Update user metadata so they have the seller role and status
-        await supabase.auth.updateUser({
-          data: {
-            full_name: form.storeName || form.businessName,
-            role: 'seller',
-            seller_plan: form.plan,
-            seller_status: 'pending',
-            phone: form.phone,
-          }
-        });
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              full_name: form.storeName || form.businessName,
+              role: 'seller',
+              seller_plan: form.plan,
+              seller_status: 'pending',
+              phone: form.phone,
+            }
+          });
+        } catch (updErr) {
+          console.warn('Failed to update user metadata:', updErr);
+        }
       } else {
         // Attempt signup
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
