@@ -1119,3 +1119,22 @@ export async function createPayoutRequest(opts: { sellerId: string; amount: numb
   if (error || !data) { console.error('createPayoutRequest:', error.message); return null; }
   return data.id;
 }
+
+export function updateProductStatusInMock(productId: string, status: 'approved' | 'rejected', categoryId?: string, reason?: string) {
+  const prod = MOCK_PRODUCTS.find(p => p.id === productId);
+  if (prod) {
+    prod.approval_status = status;
+    if (categoryId) prod.category_id = categoryId;
+    prod.rejection_reason = reason || null;
+  }
+}
+
+export function toggleProductVisibilityInMock(productId: string, isActive: boolean) {
+  const prod = MOCK_PRODUCTS.find(p => p.id === productId);
+  if (prod) prod.is_active = isActive;
+}
+
+export function deleteProductImageInMock(productId: string) {
+  const prod = MOCK_PRODUCTS.find(p => p.id === productId);
+  if (prod) prod.product_images = [];
+}

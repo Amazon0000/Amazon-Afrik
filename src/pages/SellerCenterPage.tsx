@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, createPayoutRequest } from '@/lib/db';
+import { fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, createPayoutRequest } from '@/lib/db';
 import type { Product, Order, AdCampaign } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2 } from 'lucide-react';
@@ -19,7 +19,7 @@ type NewProduct = {
 const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', currencyCode: 'USD' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, navigate, showToast, categories, currencies } = useApp();
+  const { t, locale, user, navigate, showToast, categories, currencies, products: globalProducts, refreshProducts } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -33,16 +33,20 @@ export function SellerCenterPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!user) return;
+    const sellerId = user.sellerId || user.id;
+    setProducts(globalProducts.filter((p) => p.seller_id === sellerId));
+  }, [globalProducts, user]);
+
+  useEffect(() => {
     (async () => {
       if (!user?.sellerId && !user?.id) { setLoading(false); return; }
       try {
         const sellerId = user.sellerId || user.id;
-        const [prods, ords, adCamp] = await Promise.all([
-          fetchProducts({ sellerId, limit: 50 }),
+        const [ords, adCamp] = await Promise.all([
           fetchOrders(),
           fetchAdCampaigns(sellerId),
         ]);
-        setProducts(prods);
         setOrders(ords.slice(0, 10));
         setAds(adCamp);
       } catch (e) { console.error(e); }
@@ -75,12 +79,6 @@ export function SellerCenterPage() {
   const lowStock = products.filter((p) => p.stock > 0 && p.stock < 5);
   const outOfStock = products.filter((p) => p.stock === 0);
 
-  const reloadProducts = async () => {
-    if (!user?.sellerId && !user?.id) return;
-    const sellerId = user.sellerId || user.id;
-    const prods = await fetchProducts({ sellerId, limit: 50 });
-    setProducts(prods);
-  };
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -132,7 +130,7 @@ export function SellerCenterPage() {
       setNewProduct(emptyProduct);
       setUploadedImages([]);
       setShowAddProduct(false);
-      await reloadProducts();
+      await refreshProducts();
     } else {
       showToast(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating product');
     }

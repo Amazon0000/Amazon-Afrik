@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, updateProductStatusInMock, toggleProductVisibilityInMock, deleteProductImageInMock } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import type { Seller, Product, Country, AdCampaign, PaymentProvider, Order, ComplianceReport } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
@@ -20,7 +20,7 @@ const initialRoles: StaffRole[] = [
 ];
 
 export function AdminPage() {
-  const { t, locale, user, navigate, showToast, categories } = useApp();
+  const { t, locale, user, navigate, showToast, categories, products: globalProducts, refreshProducts } = useApp();
   const [tab, setTab] = useState('overview');
   const [roles, setRoles] = useState<StaffRole[]>(initialRoles);
   const [showRoleForm, setShowRoleForm] = useState(false);
@@ -47,11 +47,15 @@ export function AdminPage() {
   const isSuperAdmin = user?.role === 'superadmin';
 
   useEffect(() => {
+    setProducts(globalProducts);
+  }, [globalProducts]);
+
+  useEffect(() => {
     (async () => {
       try {
         const [s, p, c, a, pp] = await Promise.all([
           fetchSellers({ limit: 50 }),
-          fetchProducts({ limit: 50 }),
+          fetchProducts({ limit: 50, isPublic: false }),
           fetchCountries(),
           fetchAdCampaigns(),
           fetchPaymentProviders(),
@@ -303,7 +307,8 @@ export function AdminPage() {
                               onClick={async () => {
                                 const newActive = !p.is_active;
                                 await supabase.from('products').update({ is_active: newActive }).eq('id', p.id);
-                                setProducts(products.map(x => x.id === p.id ? { ...x, is_active: newActive } : x));
+                                toggleProductVisibilityInMock(p.id, newActive);
+                                await refreshProducts();
                                 showToast(newActive ? 'Produit rendu visible' : 'Produit masqué avec succès');
                               }}
                               className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 transition-colors"
@@ -313,7 +318,8 @@ export function AdminPage() {
                             <button
                               onClick={async () => {
                                 await supabase.from('product_images').delete().eq('product_id', p.id);
-                                setProducts(products.map(x => x.id === p.id ? { ...x, product_images: [] } : x));
+                                deleteProductImageInMock(p.id);
+                                await refreshProducts();
                                 showToast(locale === 'fr' ? 'Photo supprimée' : 'Photo deleted successfully');
                               }}
                               className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 transition-colors"
@@ -376,8 +382,9 @@ export function AdminPage() {
                           onClick={async () => {
                             const catId = editedCategories[p.id] || p.category_id;
                             await supabase.from('products').update({ approval_status: 'approved', category_id: catId }).eq('id', p.id);
+                            updateProductStatusInMock(p.id, 'approved', catId || undefined);
                             await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.approve', targetType: 'product', targetId: p.id, targetName: p.name });
-                            setProducts(products.map(x => x.id === p.id ? { ...x, approval_status: 'approved', category_id: catId } as Product : x));
+                            await refreshProducts();
                             showToast(locale === 'fr' ? 'Produit approuvé' : 'Product approved');
                           }}
                           className="px-3.5 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"
@@ -388,8 +395,9 @@ export function AdminPage() {
                           onClick={async () => {
                             const reason = rejectionReasons[p.id] || '';
                             await supabase.from('products').update({ approval_status: 'rejected', rejection_reason: reason }).eq('id', p.id);
+                            updateProductStatusInMock(p.id, 'rejected', undefined, reason);
                             await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.reject', targetType: 'product', targetId: p.id, targetName: p.name });
-                            setProducts(products.map(x => x.id === p.id ? { ...x, approval_status: 'rejected', rejection_reason: reason } as Product : x));
+                            await refreshProducts();
                             showToast(locale === 'fr' ? 'Produit rejeté' : 'Product rejected');
                           }}
                           className="px-3.5 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"

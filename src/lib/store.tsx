@@ -53,6 +53,7 @@ type AppState = {
   loadingReference: boolean;
   referenceError: string | null;
   formatPrice: (amount: number, productCurrencyCode?: string) => string;
+  refreshProducts: () => Promise<void>;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -272,6 +273,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return `${targetCurr.symbol}${finalPrice.toFixed(2)}`;
   }, [currencies, currencyCode]);
 
+  const refreshProducts = useCallback(async () => {
+    try {
+      const prods = await import('@/lib/db').then((m) => m.fetchProducts({ limit: 50 }));
+      setProducts(prods);
+    } catch (e) {
+      console.error('Failed to refresh products', e);
+    }
+  }, []);
+
   return (
     <AppContext.Provider value={{
       locale, setLocale, t: dictionaries[locale],
@@ -282,7 +292,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toasts, showToast, dismissToast,
       countries, currencies, categories, currencyCode, setCurrencyCode,
       products, loadingProducts,
-      loadingReference, referenceError, formatPrice,
+      loadingReference, referenceError, formatPrice, refreshProducts,
     }}>
       {children}
     </AppContext.Provider>
