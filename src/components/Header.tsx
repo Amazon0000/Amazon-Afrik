@@ -211,7 +211,7 @@ export function Header() {
           <button onClick={() => setCartDrawerOpen(true)} className="relative flex items-end gap-1 px-2.5 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white transition-all text-white">
             <div className="relative flex items-center">
               <ShoppingBag className="w-7 h-7 text-white" />
-              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-5 text-xs font-bold flex items-center justify-center rounded-full bg-[#0e9f6e] text-white">
+              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-5 text-xs font-bold flex items-center justify-center rounded-full bg-[#ffc439] text-black">
                 {cartCount}
               </span>
             </div>
@@ -232,7 +232,7 @@ export function Header() {
                 {item.label}
               </button>
             ))}
-            <button onClick={() => go('sell')} className="px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white font-bold text-[#0e9f6e] whitespace-nowrap transition-all shrink-0">
+            <button onClick={() => go('sell')} className="px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white font-bold text-[#ffc439] whitespace-nowrap transition-all shrink-0">
               {t.nav.becomeSeller}
             </button>
           </div>
@@ -246,15 +246,15 @@ export function Header() {
           <div className="absolute top-full left-0 right-0 bg-white border-t border-[#dddddd] shadow-2xl z-50 animate-fade-up max-h-[75vh] overflow-y-auto text-[#111111]">
             <div className="max-w-7xl mx-auto px-6 py-8">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#eee]">
-                <h3 className="text-base font-bold text-[#111111] flex items-center gap-2"><Store className="w-5 h-5 text-[#0e9f6e]" /> {t.home.categoriesTitle}</h3>
+                <h3 className="text-base font-bold text-[#111111] flex items-center gap-2"><Store className="w-5 h-5 text-[#0070ba]" /> {t.home.categoriesTitle}</h3>
                 <button onClick={() => setMegaOpen(false)} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-2">
                 {MEGA_CATEGORIES.map((item) => (
                   <button key={item.label} onClick={() => handleMegaNav(item)}
-                    className="flex items-center justify-between px-2 py-1.5 rounded text-sm text-[#111111] hover:bg-[#f3f3f3] hover:text-[#0e9f6e] transition-colors text-left group">
+                    className="flex items-center justify-between px-2 py-1.5 rounded text-sm text-[#111111] hover:bg-[#f3f3f3] hover:text-[#0070ba] transition-colors text-left group">
                     <span className="truncate">{item.label}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#bbb] group-hover:text-[#0e9f6e] transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-[#bbb] group-hover:text-[#0070ba] transition-colors shrink-0" />
                   </button>
                 ))}
               </div>
@@ -289,9 +289,9 @@ export function Header() {
             {/* Drawer Header */}
             <div className="p-4 border-b border-[#dddddd] flex items-center justify-between bg-[#f3f3f3]">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-[#0e9f6e]" />
+                <ShoppingCart className="w-5 h-5 text-[#0070ba]" />
                 <h2 className="text-base font-bold text-[#111111]">{locale === 'fr' ? 'Votre Panier Zando' : 'Your Zando Cart'}</h2>
-                <span className="text-xs bg-[#0e9f6e] text-white px-2 py-0.5 rounded-full font-bold">{cartCount}</span>
+                <span className="text-xs bg-[#0070ba] text-white px-2 py-0.5 rounded-full font-bold">{cartCount}</span>
               </div>
               <button onClick={() => setCartDrawerOpen(false)} className="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-black transition-colors">
                 <X className="w-5 h-5" />
@@ -312,7 +312,7 @@ export function Header() {
                   <div key={item.productId} className="flex gap-3 border-b border-[#eee] pb-4 last:border-none">
                     <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} className="w-16 h-16 rounded object-cover border border-gray-200 shrink-0 cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }} />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-[#111111] line-clamp-2 leading-tight hover:text-[#0e9f6e] cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }}>
+                      <h4 className="text-xs font-bold text-[#111111] line-clamp-2 leading-tight hover:text-[#0070ba] cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }}>
                         {item.product!.name}
                       </h4>
                       <p className="text-[10px] text-gray-500 mt-0.5">{item.product!.sellers?.business_name}</p>
