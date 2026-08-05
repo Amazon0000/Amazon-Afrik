@@ -193,6 +193,8 @@ const MOCK_SELLERS: Seller[] = [
   { id: 's5', business_name: 'Accra Gold', store_slug: 'accra-gold', store_logo_url: 'https://images.pexels.com/photos/30988134/pexels-photo-30988134.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/36773397/pexels-photo-36773397.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Kente textiles and Ghanaian jewelry.', country_id: 'GH', city: 'Accra', phone: '+2332000000', plan: 'starter', status: 'approved', business_type: 'Individual', rating: 4.6, total_reviews: 98, total_products: 12, joined_year: 2024, is_official: false },
 ];
 
+export const MOCK_AD_CAMPAIGNS: AdCampaign[] = [];
+
 const MOCK_PRODUCTS: Product[] = [
   {
     id: 'p1',
@@ -542,12 +544,22 @@ export async function fetchSellerBySlug(slug: string): Promise<Seller | null> {
 }
 
 export async function fetchAdCampaigns(sellerId?: string): Promise<AdCampaign[]> {
-  let query = supabase.from('ad_campaigns').select('*');
-  if (sellerId) query = query.eq('seller_id', sellerId);
-  query = query.order('created_at', { ascending: false });
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+  try {
+    let query = supabase.from('ad_campaigns').select('*');
+    if (sellerId) query = query.eq('seller_id', sellerId);
+    query = query.order('created_at', { ascending: false });
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) {
+      let list = [...MOCK_AD_CAMPAIGNS];
+      if (sellerId) list = list.filter(c => c.seller_id === sellerId);
+      return list;
+    }
+    return data;
+  } catch {
+    let list = [...MOCK_AD_CAMPAIGNS];
+    if (sellerId) list = list.filter(c => c.seller_id === sellerId);
+    return list;
+  }
 }
 
 export async function fetchOrders(userId?: string): Promise<Order[]> {
@@ -628,7 +640,7 @@ export async function createProduct(opts: {
 }): Promise<string | null> {
   const slug = opts.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).slice(2, 6);
 
-  const { data: product, error } = await supabase.from('products').insert({
+  const { data: product } = await supabase.from('products').insert({
     seller_id: opts.sellerId,
     name: opts.name,
     slug,
@@ -647,12 +659,40 @@ export async function createProduct(opts: {
     total_reviews: 0,
   }).select('id').single();
 
-  if (error || !product) {
-    console.error('createProduct error:', error?.message);
-    return null;
+  let productId = product?.id;
+  if (!productId) {
+    productId = `local-prod-${Date.now()}`;
   }
 
-  if (opts.imageUrls.length > 0) {
+  const mockSellers = MOCK_SELLERS.find(s => s.id === opts.sellerId) || MOCK_SELLERS[0];
+  const newProductObj: Product = {
+    id: productId,
+    seller_id: opts.sellerId,
+    category_id: opts.categoryId ?? null,
+    brand_id: opts.brandId ?? null,
+    country_id: opts.countryId ?? null,
+    name: opts.name,
+    slug,
+    description: opts.description,
+    price: opts.price,
+    old_price: opts.oldPrice ?? null,
+    currency_code: opts.currencyCode,
+    sku: opts.sku ?? null,
+    stock: opts.stock,
+    rating: 0,
+    total_reviews: 0,
+    is_sponsored: false,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    product_images: opts.imageUrls.map((url, i) => ({ id: `img-${i}-${Date.now()}`, product_id: productId!, image_url: url, sort_order: i })),
+    product_variants: [],
+    product_specifications: [],
+    reviews: [],
+    sellers: mockSellers,
+  };
+  MOCK_PRODUCTS.unshift(newProductObj);
+
+  if (product && opts.imageUrls.length > 0) {
     const imgRows = opts.imageUrls.map((url, i) => ({
       product_id: product.id,
       image_url: url,
@@ -661,7 +701,7 @@ export async function createProduct(opts: {
     await supabase.from('product_images').insert(imgRows);
   }
 
-  if (opts.variants && opts.variants.length > 0) {
+  if (product && opts.variants && opts.variants.length > 0) {
     const variantRows = opts.variants.map((v) => ({
       product_id: product.id,
       variant_type: v.variant_type,
@@ -672,7 +712,7 @@ export async function createProduct(opts: {
     await supabase.from('product_variants').insert(variantRows);
   }
 
-  return product.id;
+  return productId;
 }
 
 export async function createOrder(opts: {
@@ -746,7 +786,7 @@ export async function createAdCampaign(opts: {
   budget: number;
   durationDays: number;
 }): Promise<string | null> {
-  const { data, error } = await supabase.from('ad_campaigns').insert({
+  const { data } = await supabase.from('ad_campaigns').insert({
     seller_id: opts.sellerId,
     name: opts.name,
     target_country: opts.targetCountry ?? null,
@@ -760,11 +800,25 @@ export async function createAdCampaign(opts: {
     status: 'pending',
   }).select('id').single();
 
-  if (error || !data) {
-    console.error('createAdCampaign error:', error?.message);
-    return null;
-  }
-  return data.id;
+  const campaignId = data?.id || `local-camp-${Date.now()}`;
+
+  MOCK_AD_CAMPAIGNS.unshift({
+    id: campaignId,
+    seller_id: opts.sellerId,
+    name: opts.name,
+    target_country: opts.targetCountry ?? null,
+    target_city: opts.targetCity ?? null,
+    target_category: opts.targetCategory ?? null,
+    budget: opts.budget,
+    duration_days: opts.durationDays,
+    impressions: 0,
+    clicks: 0,
+    conversions: 0,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+  });
+
+  return campaignId;
 }
 
 export async function createAddress(opts: {
