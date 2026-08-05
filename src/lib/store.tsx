@@ -133,11 +133,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const u = session.user;
         const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
         const fullName = asString(meta.full_name) || asString(meta.name) || asString(u.email?.split('@')[0]) || 'User';
+        const userEmail = (u.email || '').toLowerCase().trim();
+        const isSuperAdminEmail = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com'].includes(userEmail);
+        const resolvedRole = isSuperAdminEmail ? 'superadmin' : (asUserRole(meta.role) || 'customer');
         setUserState({
           id: u.id,
           email: u.email || '',
           fullName,
-          role: asUserRole(meta.role) || 'customer',
+          role: resolvedRole,
           sellerId: asString(meta.seller_id) || undefined,
           sellerPlan: asSellerPlan(meta.seller_plan),
           sellerStatus: asSellerStatus(meta.seller_status),
