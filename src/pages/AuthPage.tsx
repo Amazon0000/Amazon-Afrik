@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Crown, Eye, EyeOff, ChevronRight } from 'lucide-react';
 
 export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
-  const { t, navigate, setUser, locale, params } = useApp();
+  const { t, navigate, setUser, locale, params, showToast } = useApp();
   const [isSeller, setIsSeller] = useState(mode === 'signup' && !!params.plan);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,11 +59,44 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) { setError(signInError.message); setSubmitting(false); return; }
 
-        const meta = data.user?.user_metadata || {};
-        if (meta.role === 'seller') {
-          navigate('seller-center');
-        } else if (meta.role === 'superadmin' || meta.role === 'admin') {
-          navigate('admin');
+        const u = data.user;
+        if (u) {
+          // Check super_admins table
+          const { data: sa } = await supabase
+            .from('super_admins')
+            .select('*')
+            .eq('email', u.email)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (sa) {
+            navigate('admin');
+            setSubmitting(false);
+            return;
+          }
+
+          // Check sellers table
+          const { data: seller } = await supabase
+            .from('sellers')
+            .select('*')
+            .eq('user_id', u.id)
+            .maybeSingle();
+
+          if (seller) {
+            navigate('seller-center');
+            setSubmitting(false);
+            return;
+          }
+
+          // Fallback to user_metadata roles
+          const meta = u.user_metadata || {};
+          if (meta.role === 'seller') {
+            navigate('seller-center');
+          } else if (meta.role === 'superadmin' || meta.role === 'admin') {
+            navigate('admin');
+          } else {
+            navigate('home');
+          }
         } else {
           navigate('home');
         }
@@ -86,8 +119,17 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   };
 
   const loginAsAdmin = () => {
-    setUser({ id: 'admin-1', email: 'admin@zando.africa', fullName: 'Admin Zando', role: 'superadmin' });
-    navigate('admin');
+    setError('');
+    const emailInput = document.querySelector('input[type="email"]') as HTMLInputElement;
+    if (emailInput) {
+      emailInput.focus();
+    }
+    showToast(
+      locale === 'fr'
+        ? 'Veuillez saisir vos identifiants Super Admin enregistrés pour vous connecter en toute sécurité.'
+        : 'Please enter your registered Super Admin credentials to log in securely.',
+      'info'
+    );
   };
 
   if (checkEmail) {
@@ -277,8 +319,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 
           {mode === 'login' && (
             <div className="mt-4 pt-4 border-t border-[#0e9f6e]/20">
-              <button onClick={loginAsAdmin} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a] hover:bg-[#0f172a]/5 transition-colors">
-                <Crown className="w-4 h-4 text-[#0e9f6e]" /> {locale === 'fr' ? 'Connexion Super Admin (démo)' : 'Super Admin login (demo)'}
+              <button onClick={loginAsAdmin} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium border border-[#0e9f6e]/20 text-[#0e9f6e] hover:bg-[#0e9f6e]/5 transition-colors">
+                <Crown className="w-4 h-4 text-[#0e9f6e]" /> {locale === 'fr' ? 'Portail Super Admin Sécurisé' : 'Secure Super Admin Portal'}
               </button>
             </div>
           )}

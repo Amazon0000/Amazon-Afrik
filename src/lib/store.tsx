@@ -127,23 +127,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Auth state
   useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string; email?: string; user_metadata?: Record<string, unknown> } } | null) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (event: string, session: { user?: { id: string; email?: string; user_metadata?: Record<string, unknown> } } | null) => {
       if (session?.user) {
         const u = session.user;
         const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
         const fullName = asString(meta.full_name) || asString(meta.name) || asString(u.email?.split('@')[0]) || 'User';
+
+        let resolvedRole: NonNullable<User>['role'] = asUserRole(meta.role) || 'customer';
+        let resolvedSellerId: string | undefined = asString(meta.seller_id) || undefined;
+        let resolvedSellerPlan: NonNullable<User>['sellerPlan'] = asSellerPlan(meta.seller_plan);
+        let resolvedSellerStatus: NonNullable<User>['sellerStatus'] = asSellerStatus(meta.seller_status);
+
+        try {
+          const { data: sa, error: saError } = await supabase
+            .from('super_admins')
+            .select('*')
+            .eq('email', u.email)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (!saError && sa) {
+            resolvedRole = 'superadmin';
+          } else {
+            const { data: seller, error: sError } = await supabase
+              .from('sellers')
+              .select('*')
+              .eq('user_id', u.id)
+              .maybeSingle();
+
+            if (!sError && seller) {
+              resolvedRole = 'seller';
+              resolvedSellerId = seller.id;
+              resolvedSellerPlan = asSellerPlan(seller.plan);
+              resolvedSellerStatus = asSellerStatus(seller.status);
+            }
+          }
+        } catch (err) {
+          console.error('Error resolving user role', err);
+        }
+
         setUserState({
           id: u.id,
           email: u.email || '',
           fullName,
-          role: asUserRole(meta.role) || 'customer',
-          sellerId: asString(meta.seller_id) || undefined,
-          sellerPlan: asSellerPlan(meta.seller_plan),
-          sellerStatus: asSellerStatus(meta.seller_status),
+          role: resolvedRole,
+          sellerId: resolvedSellerId,
+          sellerPlan: resolvedSellerPlan,
+          sellerStatus: resolvedSellerStatus,
         });
       } else if (event !== 'INITIAL_SESSION') {
-        // Real sign-out (not just "no session found on first load with no prior local admin-demo user")
-        setUserState((prev) => (prev?.id === 'admin-1' ? prev : null));
+        setUserState(null);
       }
     });
     return () => subscription.subscription.unsubscribe();
