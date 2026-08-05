@@ -25,31 +25,49 @@ const fallbackAuth = {
     error: null,
   }),
   resetPasswordForEmail: async () => ({ error: null }),
+  updateUser: async () => ({ error: null }),
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const fallbackSupabase: any = {
   auth: fallbackAuth,
-  from: () => ({
-    select: () => ({
-      eq: () => ({
-        order: () => ({ then: (resolve: (value: unknown) => void) => resolve({ data: [], error: null }) }),
-        maybeSingle: async () => ({ data: null, error: null }),
-        limit: () => ({ then: (resolve: (value: unknown) => void) => resolve({ data: [], error: null }) }),
-      }),
-      order: () => ({ then: (resolve: (value: unknown) => void) => resolve({ data: [], error: null }) }),
-      limit: () => ({ then: (resolve: (value: unknown) => void) => resolve({ data: [], error: null }) }),
-    }),
-    insert: async () => ({ data: null, error: null }),
-    update: () => ({ eq: async () => ({ data: null, error: null }) }),
-    delete: () => ({ eq: async () => ({ data: null, error: null }) }),
-    upsert: async () => ({ data: null, error: null }),
-  }),
+  from: (table: string) => {
+    const createChain = (isMutation: boolean) => {
+      let isSingle = false;
+      const targetFn = () => {};
+      const proxy: any = new Proxy(targetFn, {
+        get: (target, prop) => {
+          if (prop === 'then') {
+            const mockValue = isMutation
+              ? { data: { id: `local-${table}-${Date.now()}`, status: 'approved' }, error: null }
+              : { data: isSingle ? null : [], error: null };
+            return (resolve: any) => Promise.resolve(resolve(mockValue));
+          }
+          if (typeof prop === 'string' && (prop.toLowerCase().includes('single') || prop === 'maybesingle')) {
+            isSingle = true;
+          }
+          return () => proxy;
+        },
+        apply: () => {
+          return proxy;
+        }
+      });
+      return proxy;
+    };
+
+    return {
+      select: () => createChain(false),
+      insert: () => createChain(true),
+      update: () => createChain(true),
+      delete: () => createChain(true),
+      upsert: () => createChain(true),
+    };
+  },
   storage: {
     from: () => ({
       upload: async () => ({ error: null }),
-      getPublicUrl: () => ({ data: { publicUrl: '' } }),
+      getPublicUrl: () => ({ data: { publicUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop' } }),
     }),
   },
 };
