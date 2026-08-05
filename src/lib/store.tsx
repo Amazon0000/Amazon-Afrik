@@ -52,6 +52,7 @@ type AppState = {
   loadingProducts: boolean;
   loadingReference: boolean;
   referenceError: string | null;
+  formatPrice: (amount: number, productCurrencyCode?: string) => string;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -261,6 +262,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setCurrencyCode = (c: string) => setCurrencyCodeState(c);
 
+  const formatPrice = useCallback((amount: number, productCurrencyCode = 'USD') => {
+    const prodCurr = currencies.find((c) => c.code === productCurrencyCode) || { exchange_rate: 1.0 };
+    const priceInUSD = amount / prodCurr.exchange_rate;
+
+    const targetCurr = currencies.find((c) => c.code === currencyCode) || { exchange_rate: 1.0, symbol: '$' };
+    const finalPrice = priceInUSD * targetCurr.exchange_rate;
+
+    return `${targetCurr.symbol}${finalPrice.toFixed(2)}`;
+  }, [currencies, currencyCode]);
+
   return (
     <AppContext.Provider value={{
       locale, setLocale, t: dictionaries[locale],
@@ -271,7 +282,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toasts, showToast, dismissToast,
       countries, currencies, categories, currencyCode, setCurrencyCode,
       products, loadingProducts,
-      loadingReference, referenceError,
+      loadingReference, referenceError, formatPrice,
     }}>
       {children}
     </AppContext.Provider>

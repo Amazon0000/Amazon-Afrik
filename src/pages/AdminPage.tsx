@@ -281,11 +281,46 @@ export function AdminPage() {
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.products}</h2>
                 <div className="card overflow-hidden bg-white">
                   {products.slice(0, 20).map((p, i) => (
-                    <div key={p.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
-                      <img src={p.product_images?.[0]?.image_url || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p><p className="text-xs text-[#64748b]">{p.sellers?.business_name} • ${p.price}</p></div>
-                      {p.is_sponsored && <Badge color="#0e9f6e">Sponsored</Badge>}
-                      <Badge color={p.stock > 0 ? '#22c55e' : '#ef4444'}>{p.stock > 0 ? t.product.inStock : t.product.outOfStock}</Badge>
+                    <div key={p.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
+                      <div className="flex items-center gap-3">
+                        <img src={p.product_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p>
+                          <p className="text-xs text-[#64748b]">{p.sellers?.business_name} • ${p.price} {!p.is_active && '• (Invisible)'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        {p.is_sponsored && <Badge color="#0e9f6e">Sponsored</Badge>}
+                        <Badge color={p.is_active ? '#22c55e' : '#64748b'}>{p.is_active ? (locale === 'fr' ? 'Visible' : 'Visible') : (locale === 'fr' ? 'Masqué' : 'Hidden')}</Badge>
+                        <Badge color={p.stock > 0 ? '#22c55e' : '#ef4444'}>{p.stock > 0 ? t.product.inStock : t.product.outOfStock}</Badge>
+
+                        {/* Super Admin Moderation Actions */}
+                        {isSuperAdmin && (
+                          <div className="flex gap-1.5 ml-2">
+                            <button
+                              onClick={async () => {
+                                const newActive = !p.is_active;
+                                await supabase.from('products').update({ is_active: newActive }).eq('id', p.id);
+                                setProducts(products.map(x => x.id === p.id ? { ...x, is_active: newActive } : x));
+                                showToast(newActive ? 'Produit rendu visible' : 'Produit masqué avec succès');
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 transition-colors"
+                            >
+                              {p.is_active ? (locale === 'fr' ? 'Masquer' : 'Hide') : (locale === 'fr' ? 'Afficher' : 'Show')}
+                            </button>
+                            <button
+                              onClick={async () => {
+                                await supabase.from('product_images').delete().eq('product_id', p.id);
+                                setProducts(products.map(x => x.id === p.id ? { ...x, product_images: [] } : x));
+                                showToast(locale === 'fr' ? 'Photo supprimée' : 'Photo deleted successfully');
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 transition-colors"
+                            >
+                              {locale === 'fr' ? 'Sup. Photo' : 'Delete Photo'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

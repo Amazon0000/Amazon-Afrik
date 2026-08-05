@@ -13,12 +13,13 @@ type NewProduct = {
   stock: string;
   sku: string;
   categoryId: string;
+  currencyCode: string;
 };
 
-const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '' };
+const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', currencyCode: 'USD' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, navigate, showToast, categories } = useApp();
+  const { t, locale, user, navigate, showToast, categories, currencies } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -119,7 +120,7 @@ export function SellerCenterPage() {
       description: newProduct.description.trim(),
       price: parseFloat(newProduct.price),
       oldPrice: newProduct.oldPrice ? parseFloat(newProduct.oldPrice) : null,
-      currencyCode: 'USD',
+      currencyCode: newProduct.currencyCode || 'USD',
       categoryId: newProduct.categoryId || null,
       stock: parseInt(newProduct.stock, 10),
       sku: newProduct.sku.trim() || null,
@@ -260,6 +261,11 @@ export function SellerCenterPage() {
                         <select value={newProduct.categoryId} onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })} className="input-field cursor-pointer">
                           <option value="">—</option>
                           {categories.filter((c) => !c.parent_id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
+                      <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Devise' : 'Currency'}</label>
+                        <select value={newProduct.currencyCode} onChange={(e) => setNewProduct({ ...newProduct, currencyCode: e.target.value })} className="input-field cursor-pointer">
+                          {currencies.map((curr) => <option key={curr.code} value={curr.code}>{curr.code} ({curr.symbol})</option>)}
                         </select>
                       </div>
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.description}</label><textarea value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Description du produit...' : 'Product description...'} /></div>

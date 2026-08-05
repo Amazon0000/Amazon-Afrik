@@ -7,7 +7,8 @@ import { useState } from 'react';
 
 export type InfoKey =
   | 'about' | 'sell-guide' | 'help' | 'shipping' | 'returns' | 'payment-methods'
-  | 'terms' | 'privacy' | 'cookies' | 'legal-notice' | 'careers' | 'contact';
+  | 'terms' | 'privacy' | 'cookies' | 'legal-notice' | 'careers' | 'contact'
+  | 'brand-protection' | 'sell-on-zando' | 'fulfillment' | 'supply-to-zando' | 'affiliate' | 'advertise' | 'recalls-safety';
 
 const infoMeta: Record<InfoKey, { icon: typeof Info; frTitle: string; enTitle: string }> = {
   'about': { icon: Info, frTitle: 'À propos de Zando', enTitle: 'About Zando' },
@@ -22,6 +23,13 @@ const infoMeta: Record<InfoKey, { icon: typeof Info; frTitle: string; enTitle: s
   'legal-notice': { icon: FileText, frTitle: 'Mentions légales', enTitle: 'Legal Notice' },
   'careers': { icon: Briefcase, frTitle: 'Carrières', enTitle: 'Careers' },
   'contact': { icon: Mail, frTitle: 'Contact', enTitle: 'Contact Us' },
+  'brand-protection': { icon: ShieldCheck, frTitle: 'Protéger votre marque', enTitle: 'Protect & build your brand' },
+  'sell-on-zando': { icon: Briefcase, frTitle: 'Vendre sur Zando', enTitle: 'Sell on Zando' },
+  'fulfillment': { icon: Truck, frTitle: 'Expédition par le vendeur (Fulfillment)', enTitle: 'Fulfillment (by vendor)' },
+  'supply-to-zando': { icon: Briefcase, frTitle: 'Approvisionner Zando', enTitle: 'Supply to Zando' },
+  'affiliate': { icon: Globe, frTitle: 'Devenir un Affilié', enTitle: 'Become an Affiliate' },
+  'advertise': { icon: Headphones, frTitle: 'Publicité de vos produits', enTitle: 'Advertise Your Products' },
+  'recalls-safety': { icon: ShieldCheck, frTitle: 'Rappels et alertes de sécurité', enTitle: 'Recalls & Product Safety Alerts' },
 };
 
 type FAQItem = { q: string; a: string };
@@ -507,6 +515,10 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               <Section title="Propriété intellectuelle">
                 <p>La marque Zando, son logo et tous les contenus du site sont la propriété exclusive de Liafrik. Toute reproduction, totale ou partielle, est interdite sans autorisation écrite.</p>
               </Section>
+              <Section title="Protection des Acheteurs & Clause Pénale">
+                <p><strong>Très important :</strong> Zando n'encaisse pas et ne retient pas les fonds des transactions des clients. Les paiements de vente sont versés directement au vendeur professionnel concerné. En conséquence, la seule rémunération de Zando provient des abonnements récurrents payés par les vendeurs.</p>
+                <p>En cas de réclamation, fraude, défaut majeur ou non-conformité avérée de la part d'un vendeur, <strong>Zando engagera immédiatement des poursuites judiciaires strictes à l'encontre du vendeur responsable</strong> afin de protéger l'acheteur. Zando s'engage à ce que l'acheteur soit intégralement remboursé et soutenu tout au long de la procédure.</p>
+              </Section>
             </>
           ) : (
             <>
@@ -524,6 +536,10 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="Intellectual Property">
                 <p>The Zando brand, its logo, and all site content are the exclusive property of Liafrik. Any reproduction, in whole or in part, is prohibited without written authorization.</p>
+              </Section>
+              <Section title="Buyer Protection & Penal Clause">
+                <p><strong>Very important Notice:</strong> Zando does not receive, hold, or store customer funds from commercial transactions. All sale settlements are directly routed and credited to the respective seller's accounts. Zando's sole remuneration rests exclusively on the flat-rate subscriptions paid by vendors.</p>
+                <p>Therefore, if a customer files a complaint regarding non-delivery, fraud, or counterfeit goods, <strong>Zando will systematically and vigorously prosecute the responsible vendor in court</strong>, ensuring the buyer is fully protected and comprehensively reimbursed.</p>
               </Section>
             </>
           ))}
@@ -607,6 +623,104 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
             </>
           )}
+
+          {pageKey === 'brand-protection' && (locale === 'fr' ? (
+            <>
+              <Section title="Protéger & développer votre marque">
+                <p>Zando s'engage à lutter contre la contrefaçon et à valoriser les marques authentiques d'Afrique et d'ailleurs. Notre Registre des Marques offre aux propriétaires de marques des outils pour signaler les infractions et protéger leur propriété intellectuelle.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Protect & Build Your Brand">
+                <p>Zando is highly committed to fighting counterfeiting and celebrating authentic brands from Africa and beyond. Our Brand Registry provides IP owners with robust self-service tools to report violations and actively build their brand presence.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'sell-on-zando' && (locale === 'fr' ? (
+            <>
+              <Section title="Vendre sur Zando">
+                <p>Rejoignez des milliers de commerçants professionnels. Avec notre formule 0% commission, vous gardez l'intégralité du fruit de votre travail. Vous ne payez qu'un abonnement mensuel transparent.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Sell on Zando">
+                <p>Join thousands of professional merchants. With our 0% sales commission architecture, you retain 100% of your earnings. You only pay a transparent, flat-rate monthly subscription.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'fulfillment' && (locale === 'fr' ? (
+            <>
+              <Section title="Fulfillment (par le vendeur)">
+                <p>Zando favorise un modèle décentralisé où chaque vendeur livre lui-même les produits à ses clients. Cela permet d'optimiser les coûts logistiques locaux et d'offrir une réactivité et une proximité exceptionnelles.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Fulfillment (by vendor)">
+                <p>Zando empowers a decentralized commerce model where each vendor fulfills their own orders. This directly optimizes local logistics costs and enables customized local customer tracking.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'supply-to-zando' && (locale === 'fr' ? (
+            <>
+              <Section title="Approvisionner Zando">
+                <p>Si vous êtes grossiste ou fabricant de matières premières, de textiles ou d'artisanat, vous pouvez approvisionner directement notre réseau de vendeurs en publiant vos offres B2B.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Supply to Zando">
+                <p>If you are a manufacturer, wholesale distributor, or craft supplier, you can directly supply our active merchant network by publishing bulk B2B listings on the platform.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'affiliate' && (locale === 'fr' ? (
+            <>
+              <Section title="Devenir un Affilié">
+                <p>Gagnez de l'argent en recommandant des produits Zando. Recevez des commissions attractives à chaque fois qu'un achat est effectué via vos liens d'affiliation uniques.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Become an Affiliate">
+                <p>Earn passive income by recommending premium Zando products. Get paid attractive referral percentages whenever someone buys through your unique affiliate tracking links.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'advertise' && (locale === 'fr' ? (
+            <>
+              <Section title="Faites de la publicité pour vos produits">
+                <p>Boostez vos ventes en mettant vos produits en avant sur Zando. Ciblez des clients précis par pays, ville et catégorie avec des campagnes adaptées à votre budget.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Advertise Your Products">
+                <p>Boost your sales velocity by featuring your products in highly visible zones. Target specific audiences by country, city, and category with campaigns suited for any budget size.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'recalls-safety' && (locale === 'fr' ? (
+            <>
+              <Section title="Rappels et alertes de sécurité">
+                <p>La sécurité de nos clients est notre priorité absolue. Nous publions régulièrement les rappels officiels et alertes de sécurité pour tous les produits suspectés de présenter un risque.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Recalls & Product Safety Alerts">
+                <p>Our customers' safety is our absolute priority. We regularly publish legal recall notices and safety updates for any products suspected of posing health or compliance risks.</p>
+              </Section>
+            </>
+          ))}
         </div>
 
         {/* Back to home */}

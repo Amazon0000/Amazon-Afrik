@@ -12,21 +12,20 @@ export function Footer() {
       title: locale === 'fr' ? 'Zando' : 'Zando',
       items: [
         { label: t.nav.becomeSeller, page: 'sell' },
-        { label: t.nav.sellers, page: 'sellers' },
-        { label: t.nav.plans, page: 'plans' },
-        { label: t.nav.ads, page: 'ads' },
-        { label: locale === 'fr' ? 'Carrières' : 'Careers', page: 'info', params: { k: 'careers' } },
+        { label: locale === 'fr' ? 'Vendre sur Zando' : 'Sell on Zando', page: 'info', params: { k: 'sell-on-zando' } },
+        { label: locale === 'fr' ? 'Expédié par le vendeur' : 'Fulfillment (by vendor)', page: 'info', params: { k: 'fulfillment' } },
+        { label: locale === 'fr' ? 'Approvisionner Zando' : 'Supply to Zando', page: 'info', params: { k: 'supply-to-zando' } },
+        { label: locale === 'fr' ? 'Devenir un Affilié' : 'Become an Affiliate', page: 'info', params: { k: 'affiliate' } },
+        { label: locale === 'fr' ? 'Publicité' : 'Advertise Your Products', page: 'info', params: { k: 'advertise' } },
       ],
     },
     {
-      title: locale === 'fr' ? 'Aide' : 'Help',
+      title: locale === 'fr' ? 'Aide' : 'Let Us Help You',
       items: [
-        { label: locale === 'fr' ? "Centre d'aide" : 'Help Center', page: 'info', params: { k: 'help' } },
-        { label: locale === 'fr' ? 'Suivi de commande' : 'Track Order', page: 'delivery' },
-        { label: locale === 'fr' ? 'Retours' : 'Returns', page: 'info', params: { k: 'returns' } },
-        { label: locale === 'fr' ? 'Livraison' : 'Shipping', page: 'info', params: { k: 'shipping' } },
-        { label: locale === 'fr' ? 'Modes de paiement' : 'Payment Methods', page: 'info', params: { k: 'payment-methods' } },
-        { label: locale === 'fr' ? 'Contact' : 'Contact', page: 'info', params: { k: 'contact' } },
+        { label: locale === 'fr' ? 'Aide' : 'Help', page: 'info', params: { k: 'help' } },
+        { label: locale === 'fr' ? 'Livraison & Expédition' : 'Shipping & Delivery', page: 'info', params: { k: 'shipping' } },
+        { label: locale === 'fr' ? 'Retours & Remplacements' : 'Returns & Replacements', page: 'info', params: { k: 'returns' } },
+        { label: locale === 'fr' ? 'Rappels et sécurité' : 'Recalls and Product Safety Alerts', page: 'info', params: { k: 'recalls-safety' } },
       ],
     },
     {
@@ -34,6 +33,8 @@ export function Footer() {
       items: [
         { label: locale === 'fr' ? 'À propos de Zando' : 'About Zando', page: 'info', params: { k: 'about' } },
         { label: locale === 'fr' ? 'Comment vendre' : 'How to Sell', page: 'info', params: { k: 'sell-guide' } },
+        { label: locale === 'fr' ? 'Protéger votre marque' : 'Protect & build your brand', page: 'info', params: { k: 'brand-protection' } },
+        { label: locale === 'fr' ? 'Carrières' : 'Careers', page: 'info', params: { k: 'careers' } },
       ],
     },
     {
