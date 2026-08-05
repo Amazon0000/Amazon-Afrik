@@ -236,10 +236,6 @@ export function Header() {
               {t.nav.becomeSeller}
             </button>
           </div>
-          <div className="hidden lg:flex items-center gap-1.5 text-[#ff9900] font-bold px-3 shrink-0">
-            <span>🇿🇦 🇰🇪 🇳🇬 🇨🇮 🇸🇳 🇬🇭</span>
-            <span className="text-[#cccccc] text-xs font-normal">SaaS Marketplace</span>
-          </div>
         </div>
       </div>
 
