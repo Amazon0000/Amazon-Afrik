@@ -46,6 +46,7 @@ type AppState = {
   countries: Country[];
   currencies: Currency[];
   categories: Category[];
+  setCategories: (c: Category[]) => void;
   currencyCode: string;
   setCurrencyCode: (c: string) => void;
   products: Product[];
@@ -236,7 +237,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cart, addToCart, removeFromCart, updateCartQty, clearCart, cartCount,
       wishlist, toggleWishlist,
       toasts, showToast, dismissToast,
-      countries, currencies, categories, currencyCode, setCurrencyCode,
+      countries, currencies, categories, setCategories, currencyCode, setCurrencyCode,
       products, loadingProducts,
       loadingReference, referenceError,
     }}>

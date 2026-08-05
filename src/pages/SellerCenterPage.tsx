@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, createPayoutRequest } from '@/lib/db';
 import type { Product, Order, AdCampaign } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
@@ -18,7 +19,7 @@ type NewProduct = {
 const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, navigate, showToast, categories } = useApp();
+  const { t, locale, user, navigate, showToast, categories, setCategories } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,6 +31,63 @@ export function SellerCenterPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic Category & Subcategory Creation
+  const [showNewCatForm, setShowNewCatForm] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatParentId, setNewCatParentId] = useState('');
+  const [creatingCat, setCreatingCat] = useState(false);
+
+  const handleCreateCategory = async () => {
+    if (!newCatName.trim()) {
+      showToast(locale === 'fr' ? 'Nom de catégorie requis' : 'Category name required', 'error');
+      return;
+    }
+    setCreatingCat(true);
+    const slug = newCatName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).slice(2, 6);
+    const parentId = newCatParentId || null;
+
+    try {
+      const { data, error } = await supabase.from('categories').insert({
+        name: newCatName.trim(),
+        parent_id: parentId,
+        slug,
+        is_active: true,
+      }).select('*').single();
+
+      if (error || !data) {
+        // Fallback local mock persistence
+        const mockNewCat = {
+          id: 'cat-' + Date.now(),
+          parent_id: parentId,
+          name: newCatName.trim(),
+          slug,
+          is_active: true,
+          icon: 'FolderPlus',
+          banner_url: null,
+          is_featured: false,
+          is_trending: false,
+          sort_order: 10,
+        };
+        const updated = [...categories, mockNewCat];
+        setCategories(updated);
+        setNewProduct((prev) => ({ ...prev, categoryId: mockNewCat.id }));
+        showToast(locale === 'fr' ? 'Catégorie créée (Mode Démo / Local)' : 'Category created (Demo / Local Mode)');
+      } else {
+        const updated = [...categories, data as typeof categories[0]];
+        setCategories(updated);
+        setNewProduct((prev) => ({ ...prev, categoryId: data.id }));
+        showToast(locale === 'fr' ? 'Catégorie créée avec succès' : 'Category created successfully');
+      }
+      setNewCatName('');
+      setNewCatParentId('');
+      setShowNewCatForm(false);
+    } catch {
+      showToast(locale === 'fr' ? 'Erreur lors de la création de la catégorie' : 'Error creating category', 'error');
+    } finally {
+      setCreatingCat(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -256,11 +314,57 @@ export function SellerCenterPage() {
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.stock} *</label><input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} className="input-field" placeholder="12" /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Ancien prix' : 'Compare price'}</label><input type="number" value={newProduct.oldPrice} onChange={(e) => setNewProduct({ ...newProduct, oldPrice: e.target.value })} className="input-field" placeholder="60" /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">SKU</label><input value={newProduct.sku} onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })} className="input-field" placeholder="ZND-001" /></div>
-                      <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.category}</label>
+                      <div className="sm:col-span-2 premium-card p-4 bg-[#f8fbfa] border-[#0e9f6e]/20 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase">{t.seller.category} *</label>
+                          <button type="button" onClick={() => setShowNewCatForm(!showNewCatForm)} className="text-xs font-semibold text-[#0e9f6e] hover:underline flex items-center gap-1">
+                            <Plus className="w-3.5 h-3.5" />
+                            {locale === 'fr' ? 'Créer une catégorie ou sous-catégorie' : 'Create category or subcategory'}
+                          </button>
+                        </div>
                         <select value={newProduct.categoryId} onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })} className="input-field cursor-pointer">
                           <option value="">—</option>
-                          {categories.filter((c) => !c.parent_id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          {categories.filter((c) => !c.parent_id).map((parent) => (
+                            <optgroup key={parent.id} label={parent.name}>
+                              <option value={parent.id}>{parent.name} ({locale === 'fr' ? 'Principale' : 'Main'})</option>
+                              {categories.filter((sub) => sub.parent_id === parent.id).map((sub) => (
+                                <option key={sub.id} value={sub.id}>↳ {sub.name}</option>
+                              ))}
+                            </optgroup>
+                          ))}
                         </select>
+
+                        {showNewCatForm && (
+                          <div className="p-3 border border-[#0e9f6e]/10 bg-white rounded-lg space-y-3 animate-fade-up">
+                            <h4 className="text-xs font-bold text-[#0f172a] flex items-center gap-1">
+                              <Plus className="w-4 h-4 text-[#0e9f6e]" />
+                              {locale === 'fr' ? 'Nouvelle catégorie ou sous-catégorie' : 'New category or subcategory'}
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">{locale === 'fr' ? 'Nom de la catégorie' : 'Category Name'}</label>
+                                <input value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Ex: Robes Wax, Objets Sculptés" className="input-field" />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">{locale === 'fr' ? 'Catégorie parente (Optionnel)' : 'Parent Category (Optional)'}</label>
+                                <select value={newCatParentId} onChange={(e) => setNewCatParentId(e.target.value)} className="input-field cursor-pointer">
+                                  <option value="">{locale === 'fr' ? 'Aucune (Catégorie Principale)' : 'None (Main Category)'}</option>
+                                  {categories.filter((c) => !c.parent_id).map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={handleCreateCategory} disabled={creatingCat} className="btn-gold text-xs py-1.5 px-4 disabled:opacity-50 flex items-center gap-1">
+                                {creatingCat ? (locale === 'fr' ? 'Création...' : 'Creating...') : (locale === 'fr' ? 'Créer' : 'Create')}
+                              </button>
+                              <button type="button" onClick={() => { setShowNewCatForm(false); setNewCatName(''); setNewCatParentId(''); }} className="btn-cocoa text-xs py-1.5 px-4">
+                                {t.common.cancel}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.description}</label><textarea value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Description du produit...' : 'Product description...'} /></div>
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.uploadImages} *</label>
@@ -407,6 +511,21 @@ export function SellerCenterPage() {
             {tab === 'wallet' && (
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Portefeuille' : 'Wallet'}</h1>
+
+                <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-green-800">
+                      {locale === 'fr' ? '0% de commission sur les ventes !' : '0% sales commission!'}
+                    </p>
+                    <p className="text-xs text-green-700 mt-1 leading-relaxed">
+                      {locale === 'fr'
+                        ? 'Sur Zando, tout l\'argent de vos ventes vous revient directement lors de la transaction. Zando ne prélève aucune commission sur vos ventes. Le seul argent perçu par la plateforme provient de votre abonnement mensuel.'
+                        : 'On Zando, all sales revenue goes directly to you during the transaction. Zando takes 0% commission on your sales. The only platform revenue comes from your monthly subscription.'}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="card p-6 bg-gradient-to-br from-[#0e9f6e]/10 to-transparent border-[#0e9f6e]/20">
                   <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Solde disponible' : 'Available balance'}</p>
                   <p className="text-4xl font-bold text-[#0f172a] mt-2">${totalRevenue.toFixed(2)}</p>

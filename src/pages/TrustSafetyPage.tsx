@@ -19,6 +19,32 @@ type Tab = 'overview' | 'verification' | 'documents' | 'reports' | 'cases' | 'he
 
 export function TrustSafetyPage() {
   const { locale, user, navigate } = useApp();
+  const allowedEmails = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com'];
+  const hasAccess = user && allowedEmails.includes(user.email.toLowerCase());
+
+  if (!hasAccess) {
+    return (
+      <div className="bg-[#f7f8fa] min-h-screen flex items-center justify-center px-4">
+        <div className="card p-8 max-w-md text-center animate-fade-up bg-white">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <XCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="font-display text-xl font-bold text-[#0f172a] mb-2">
+            {locale === 'fr' ? 'Accès Restreint' : 'Access Restricted'}
+          </h2>
+          <p className="text-sm text-[#64748b] mb-6">
+            {locale === 'fr'
+              ? 'Désolé, seul le super administrateur officiel de Zando a accès à ce module de gestion.'
+              : 'Sorry, only the official Zando super administrator has access to this management module.'}
+          </p>
+          <button onClick={() => navigate('home')} className="w-full btn-gold py-2.5 rounded-xl font-semibold">
+            {locale === 'fr' ? 'Retour à l\'accueil' : 'Back to Home'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [tab, setTab] = useState<Tab>('overview');
   const [sellers, setSellers] = useState<ComplianceSeller[]>([]);
   const [logs, setLogs] = useState<AuditLog[]>([]);

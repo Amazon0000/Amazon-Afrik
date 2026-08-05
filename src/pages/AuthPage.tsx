@@ -164,8 +164,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
               <div>
                 <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.auth.email}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field pl-10" placeholder="awa@example.com" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field pl-12" placeholder="awa@example.com" />
                 </div>
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
@@ -216,19 +216,19 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 
           <form onSubmit={submit} className="space-y-4">
             {mode === 'signup' && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.auth.fullName}</label>
                   <div className="relative">
-                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
-                    <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-field pl-10" placeholder="Awa Koné" />
+                    <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
+                    <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-field pl-12" placeholder="Awa Koné" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.auth.email}</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field pl-10" placeholder="awa@example.com" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field pl-12" placeholder="awa@example.com" />
                   </div>
                 </div>
               </div>
@@ -237,16 +237,16 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
               <div>
                 <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.auth.email}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field pl-10" placeholder="awa@example.com" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field pl-12" placeholder="awa@example.com" />
                 </div>
               </div>
             )}
             <div>
               <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.auth.password}</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="input-field pl-10 pr-10" placeholder="••••••••" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="input-field pl-12 pr-10" placeholder="••••••••" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a]">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

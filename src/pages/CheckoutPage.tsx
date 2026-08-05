@@ -175,6 +175,19 @@ export function CheckoutPage() {
             {/* Payment */}
             <div className="premium-card p-5 rounded-2xl">
               <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0e9f6e]" /> {t.checkout.paymentMethod}</h2>
+
+              <div className="p-3 bg-green-50 border border-green-200 rounded-xl mb-4">
+                <p className="text-xs font-bold text-green-800 flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  {locale === 'fr' ? 'Paiement Direct sans Commission (0%)' : 'Direct Payment - 0% Commission'}
+                </p>
+                <p className="text-[11px] text-green-700 mt-1 leading-relaxed">
+                  {locale === 'fr'
+                    ? 'Zando ne prend aucune commission sur les ventes. Votre paiement va à 100% directement sur le compte connecté du vendeur !'
+                    : 'Zando takes 0% commission on sales. Your payment goes 100% directly to the seller\'s connected account!'}
+                </p>
+              </div>
+
               <div className="space-y-2">
                 {paymentProviders.map((p) => (
                   <button key={p.id} onClick={() => setPaymentMethod(p.slug)}
