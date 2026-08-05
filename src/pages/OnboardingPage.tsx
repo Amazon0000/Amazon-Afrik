@@ -375,24 +375,66 @@ export function OnboardingPage() {
     setError('');
 
     try {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
+      let userId: string | undefined;
+
+      // Check if user is already authenticated
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        userId = currentUser.id;
+        // Update user metadata so they have the seller role and status
+        await supabase.auth.updateUser({
           data: {
             full_name: form.storeName || form.businessName,
             role: 'seller',
             seller_plan: form.plan,
             seller_status: 'pending',
             phone: form.phone,
+          }
+        });
+      } else {
+        // Attempt signup
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: {
+            data: {
+              full_name: form.storeName || form.businessName,
+              role: 'seller',
+              seller_plan: form.plan,
+              seller_status: 'pending',
+              phone: form.phone,
+            },
           },
-        },
-      });
+        });
 
-      if (signUpError) { setError(signUpError.message); setSubmitting(false); return; }
+        if (signUpError) {
+          // If already registered, attempt login
+          if (signUpError.message.toLowerCase().includes('already') || signUpError.message.toLowerCase().includes('taken')) {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: form.email,
+              password: form.password
+            });
+            if (signInError) {
+              setError(locale === 'fr' ? 'Cet e-mail est déjà enregistré avec un autre mot de passe.' : 'This email is already registered with a different password.');
+              setSubmitting(false);
+              return;
+            }
+            userId = signInData.user?.id;
+          } else {
+            setError(signUpError.message);
+            setSubmitting(false);
+            return;
+          }
+        } else {
+          userId = signUpData.user?.id;
+        }
+      }
 
-      const userId = signUpData.user?.id;
-      if (!userId) { setError(locale === 'fr' ? 'Erreur : Aucun ID utilisateur reçu' : 'Error: No user ID received'); setSubmitting(false); return; }
+      if (!userId) {
+        setError(locale === 'fr' ? 'Erreur : Aucun ID utilisateur reçu' : 'Error: No user ID received');
+        setSubmitting(false);
+        return;
+      }
 
       const { data: sellerData, error: sellerError } = await supabase.from('sellers').insert({
         user_id: userId,
@@ -499,7 +541,7 @@ export function OnboardingPage() {
 
   return (
     <div className="bg-[#eaeded] min-h-screen font-sans">
-      <header className="bg-[#131921] sticky top-0 z-50 py-3 px-4">
+      <header className="bg-[#0a2240] sticky top-0 z-50 py-3 px-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate('sell')} className="focus:outline-none">
             <Logo size={42} />
