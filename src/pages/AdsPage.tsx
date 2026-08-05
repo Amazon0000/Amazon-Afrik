@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchAdCampaigns, createAdCampaign, type AdCampaign } from '@/lib/db';
+import { fetchAdCampaigns, createAdCampaign, fetchProducts, type AdCampaign, type Product } from '@/lib/db';
 import { StatCard } from '@/components/ui';
 import { Megaphone, MousePointerClick, Eye, Target, Plus, Gift, Calculator, ChevronRight } from 'lucide-react';
 
@@ -20,17 +20,20 @@ const REACH_LEVELS = [
 export function AdsPage() {
   const { t, locale, user, navigate, showToast, categories, countries } = useApp();
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: '', country: '', city: '', category: '',
     duration: 7, dailyBudget: 5, placement: 'search', reach: 'national',
+    productId: '',
   });
 
   useEffect(() => {
     if (!user?.sellerId && !user?.id) return;
     const sellerId = user.sellerId || user.id;
     fetchAdCampaigns(sellerId).then((data) => { setCampaigns(data); setLoading(false); });
+    fetchProducts({ sellerId }).then((prods) => setSellerProducts(prods));
   }, [user]);
 
   const selectedPlacement = PLACEMENT_TYPES.find((p) => p.id === form.placement) || PLACEMENT_TYPES[0];
@@ -63,6 +66,7 @@ export function AdsPage() {
       targetCategory: form.category || null,
       budget: totalCost,
       durationDays: duration,
+      productId: form.productId || null,
     });
     if (id) {
       const newCampaign: AdCampaign = {
@@ -71,9 +75,10 @@ export function AdsPage() {
         target_category: form.category || null, budget: totalCost,
         duration_days: duration, impressions: 0, clicks: 0, conversions: 0,
         status: 'pending', created_at: new Date().toISOString(),
+        product_id: form.productId || null,
       };
       setCampaigns([newCampaign, ...campaigns]);
-      setForm({ name: '', country: '', city: '', category: '', duration: 7, dailyBudget: 5, placement: 'search', reach: 'national' });
+      setForm({ name: '', country: '', city: '', category: '', duration: 7, dailyBudget: 5, placement: 'search', reach: 'national', productId: '' });
       setShowForm(false);
       showToast(locale === 'fr' ? "Campagne créée — en attente d'approbation" : 'Campaign created — pending approval');
     } else {
@@ -128,6 +133,15 @@ export function AdsPage() {
                 <div>
                   <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.campaignName}</label>
                   <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" placeholder={locale === 'fr' ? 'Soldes Wax' : 'Wax Sale'} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Produit à promouvoir' : 'Product to Advertise'}</label>
+                  <select value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })} className="input-field">
+                    <option value="">— {locale === 'fr' ? 'Sélectionner un produit' : 'Select a product'} —</option>
+                    {sellerProducts.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} (${p.price})</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

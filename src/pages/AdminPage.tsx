@@ -20,7 +20,7 @@ const initialRoles: StaffRole[] = [
 ];
 
 export function AdminPage() {
-  const { t, locale, user, navigate, showToast } = useApp();
+  const { t, locale, user, navigate, showToast, categories } = useApp();
   const [tab, setTab] = useState('overview');
   const [roles, setRoles] = useState<StaffRole[]>(initialRoles);
   const [showRoleForm, setShowRoleForm] = useState(false);
@@ -41,6 +41,8 @@ export function AdminPage() {
   const [reviewsConfirmedOnly, setReviewsConfirmedOnly] = useState(true);
   const [productApprovalRequired, setProductApprovalRequired] = useState(true);
   const [guestCheckoutEnabled, setGuestCheckoutEnabled] = useState(true);
+  const [editedCategories, setEditedCategories] = useState<Record<string, string>>({});
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
 
   const isSuperAdmin = user?.role === 'superadmin';
 
@@ -335,16 +337,65 @@ export function AdminPage() {
                   <p className="text-sm text-[#0f172a]">{locale === 'fr' ? 'Les produits doivent être approuvés avant d\u00eatre mis en ligne. Approuvez ou rejetez les produits ci-dessous.' : 'Products must be approved before going live. Approve or reject products below.'}</p>
                 </div>
                 <div className="space-y-3">
-                  {products.filter((p) => !(p as Record<string, unknown>).approval_status || (p as Record<string, unknown>).approval_status === 'pending').slice(0, 20).map((p) => (
-                    <div key={p.id} className="card p-4 flex items-center gap-4 bg-white">
-                      <img src={p.product_images?.[0]?.image_url || ''} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p>
-                        <p className="text-xs text-[#64748b]">{p.sellers?.business_name} • ${p.price} • {p.sellers?.city}</p>
+                  {products.filter((p) => !p.approval_status || p.approval_status === 'pending').slice(0, 20).map((p) => (
+                    <div key={p.id} className="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <img src={p.product_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'} alt="" className="w-14 h-14 rounded-lg object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p>
+                          <p className="text-xs text-[#64748b]">{p.sellers?.business_name} • ${p.price} • {p.sellers?.city}</p>
+
+                          {/* Category Correction Selector */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="text-[11px] font-semibold text-gray-500 uppercase">{locale === 'fr' ? 'Corriger Catégorie :' : 'Correct Category:'}</span>
+                            <select
+                              value={editedCategories[p.id] || p.category_id || ''}
+                              onChange={(e) => setEditedCategories({ ...editedCategories, [p.id]: e.target.value })}
+                              className="input-field max-w-[200px] text-xs py-1"
+                            >
+                              <option value="">—</option>
+                              {categories.filter(c => !c.parent_id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                          </div>
+
+                          {/* Rejection motif text input */}
+                          <div className="mt-2 max-w-sm">
+                            <input
+                              type="text"
+                              placeholder={locale === 'fr' ? 'Motif du rejet (si applicable)...' : 'Reason for rejection (if applicable)...'}
+                              value={rejectionReasons[p.id] || ''}
+                              onChange={(e) => setRejectionReasons({ ...rejectionReasons, [p.id]: e.target.value })}
+                              className="input-field text-xs py-1"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={async () => { await supabase.from('products').update({ approval_status: 'approved' }).eq('id', p.id); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.approve', targetType: 'product', targetId: p.id, targetName: p.name }); setProducts(products.map(x => x.id === p.id ? { ...x, ...{ approval_status: 'approved' } } as Product : x)); showToast(locale === 'fr' ? 'Produit approuvé' : 'Product approved'); }} className="px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-4 h-4" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
-                        <button onClick={async () => { await supabase.from('products').update({ approval_status: 'rejected' }).eq('id', p.id); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.reject', targetType: 'product', targetId: p.id, targetName: p.name }); setProducts(products.map(x => x.id === p.id ? { ...x, ...{ approval_status: 'rejected' } } as Product : x)); showToast(locale === 'fr' ? 'Produit rejeté' : 'Product rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
+
+                      <div className="flex gap-2 self-end md:self-auto shrink-0">
+                        <button
+                          onClick={async () => {
+                            const catId = editedCategories[p.id] || p.category_id;
+                            await supabase.from('products').update({ approval_status: 'approved', category_id: catId }).eq('id', p.id);
+                            await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.approve', targetType: 'product', targetId: p.id, targetName: p.name });
+                            setProducts(products.map(x => x.id === p.id ? { ...x, approval_status: 'approved', category_id: catId } as Product : x));
+                            showToast(locale === 'fr' ? 'Produit approuvé' : 'Product approved');
+                          }}
+                          className="px-3.5 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"
+                        >
+                          <CheckCircle className="w-4 h-4" /> {locale === 'fr' ? 'Approuver' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const reason = rejectionReasons[p.id] || '';
+                            await supabase.from('products').update({ approval_status: 'rejected', rejection_reason: reason }).eq('id', p.id);
+                            await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.reject', targetType: 'product', targetId: p.id, targetName: p.name });
+                            setProducts(products.map(x => x.id === p.id ? { ...x, approval_status: 'rejected', rejection_reason: reason } as Product : x));
+                            showToast(locale === 'fr' ? 'Produit rejeté' : 'Product rejected');
+                          }}
+                          className="px-3.5 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"
+                        >
+                          <XCircle className="w-4 h-4" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -426,7 +477,21 @@ export function AdminPage() {
                           <Megaphone className="w-4 h-4 text-[#ff9900]" />
                           <span className="text-sm text-[#0f172a] flex-1">{ad.name}</span>
                           <span className="text-xs text-[#64748b]">${ad.budget}</span>
-                          <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.approve', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'active' } : x)); showToast(locale === 'fr' ? 'Campagne approuvée' : 'Campaign approved'); }} className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-3 h-3" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+                          <button
+                            onClick={async () => {
+                              await updateAdCampaignStatus(ad.id, 'active');
+                              if (ad.product_id) {
+                                await supabase.from('products').update({ is_sponsored: true }).eq('id', ad.product_id);
+                                setProducts(products.map(p => p.id === ad.product_id ? { ...p, is_sponsored: true } : p));
+                              }
+                              await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.approve', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name });
+                              setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'active' } : x));
+                              showToast(locale === 'fr' ? 'Campagne approuvée' : 'Campaign approved');
+                            }}
+                            className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"
+                          >
+                            <CheckCircle className="w-3 h-3" /> {locale === 'fr' ? 'Approuver' : 'Approve'}
+                          </button>
                           <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.reject', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'rejected' } : x)); showToast(locale === 'fr' ? 'Campagne rejetée' : 'Campaign rejected'); }} className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-3 h-3" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
                         </div>
                       ))}

@@ -42,6 +42,8 @@ export type Product = {
   price: number; old_price: number | null; currency_code: string; sku: string | null;
   stock: number; rating: number; total_reviews: number;
   is_sponsored: boolean; is_active: boolean; created_at: string;
+  approval_status?: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string | null;
   product_images?: ProductImage[];
   product_variants?: ProductVariant[];
   product_specifications?: ProductSpec[];
@@ -57,6 +59,8 @@ export type AdCampaign = {
   target_city: string | null; target_category: string | null; budget: number;
   duration_days: number; impressions: number; clicks: number; conversions: number;
   status: 'pending' | 'active' | 'ended' | 'rejected'; created_at: string;
+  product_id?: string | null;
+  products?: Product;
 };
 
 export type PaymentProvider = {
@@ -430,12 +434,18 @@ export async function fetchProducts(opts?: {
   countryId?: string; categoryId?: string; sellerId?: string;
   sponsored?: boolean; limit?: number; search?: string;
   sort?: string; minPrice?: number; maxPrice?: number;
+  isPublic?: boolean;
 }): Promise<Product[]> {
   try {
     let query = supabase.from('products').select(`
       *, product_images(*), product_variants(*), product_specifications(*),
       reviews(*), sellers(*), categories(*), brands(*), countries(*)
     `).eq('is_active', true);
+
+    const isPublic = opts?.isPublic !== false && !opts?.sellerId;
+    if (isPublic) {
+      query = query.eq('approval_status', 'approved');
+    }
 
     if (opts?.countryId) query = query.eq('country_id', opts.countryId);
     if (opts?.categoryId) query = query.eq('category_id', opts.categoryId);
@@ -453,9 +463,12 @@ export async function fetchProducts(opts?: {
 
     if (opts?.limit) query = query.limit(opts.limit);
 
-    const { data, error } = await query;
-    if (error || !data || data.length === 0) {
+    const { data } = await query;
+    if (!data || data.length === 0) {
       let list = [...MOCK_PRODUCTS];
+      if (isPublic) {
+        list = list.filter(p => p.approval_status === 'approved');
+      }
       if (opts?.countryId) list = list.filter(p => p.country_id?.toLowerCase() === opts.countryId?.toLowerCase());
       if (opts?.categoryId) list = list.filter(p => p.category_id === opts.categoryId);
       if (opts?.sellerId) list = list.filter(p => p.seller_id === opts.sellerId);
@@ -657,6 +670,8 @@ export async function createProduct(opts: {
     is_sponsored: false,
     rating: 0,
     total_reviews: 0,
+    approval_status: 'pending',
+    rejection_reason: null,
   }).select('id').single();
 
   let productId = product?.id;
@@ -683,6 +698,8 @@ export async function createProduct(opts: {
     total_reviews: 0,
     is_sponsored: false,
     is_active: true,
+    approval_status: 'pending',
+    rejection_reason: null,
     created_at: new Date().toISOString(),
     product_images: opts.imageUrls.map((url, i) => ({ id: `img-${i}-${Date.now()}`, product_id: productId!, image_url: url, sort_order: i })),
     product_variants: [],
@@ -785,6 +802,7 @@ export async function createAdCampaign(opts: {
   targetCategory?: string | null;
   budget: number;
   durationDays: number;
+  productId?: string | null;
 }): Promise<string | null> {
   const { data } = await supabase.from('ad_campaigns').insert({
     seller_id: opts.sellerId,
@@ -798,6 +816,7 @@ export async function createAdCampaign(opts: {
     clicks: 0,
     conversions: 0,
     status: 'pending',
+    product_id: opts.productId ?? null,
   }).select('id').single();
 
   const campaignId = data?.id || `local-camp-${Date.now()}`;
@@ -815,6 +834,7 @@ export async function createAdCampaign(opts: {
     clicks: 0,
     conversions: 0,
     status: 'pending',
+    product_id: opts.productId ?? null,
     created_at: new Date().toISOString(),
   });
 

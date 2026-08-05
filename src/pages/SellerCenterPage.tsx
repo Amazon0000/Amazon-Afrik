@@ -315,6 +315,16 @@ export function SellerCenterPage() {
                       <div className="text-right">
                         <p className="font-bold text-[#0f172a]">${p.price}</p>
                         <p className={`text-xs ${p.stock === 0 ? 'text-red-500' : p.stock < 5 ? 'text-[#ff9900]' : 'text-[#64748b]'}`}>{t.seller.stock}: {p.stock}</p>
+                        <div className="mt-1 flex flex-col items-end gap-1">
+                          {(!p.approval_status || p.approval_status === 'pending') && <Badge color="#ff9900">{locale === 'fr' ? 'En attente' : 'Pending Approval'}</Badge>}
+                          {p.approval_status === 'approved' && <Badge color="#22c55e">{locale === 'fr' ? 'En ligne' : 'Approved'}</Badge>}
+                          {p.approval_status === 'rejected' && (
+                            <>
+                              <Badge color="#ef4444">{locale === 'fr' ? 'Rejeté' : 'Rejected'}</Badge>
+                              {p.rejection_reason && <span className="text-[10px] text-red-500 max-w-[150px] truncate" title={p.rejection_reason}>{p.rejection_reason}</span>}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
