@@ -141,6 +141,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
           sellerPlan: asSellerPlan(meta.seller_plan),
           sellerStatus: asSellerStatus(meta.seller_status),
         });
+
+        // Deterministic database-backed lookup to prevent metadata discrepancies
+        (async () => {
+          try {
+            // Check if they are listed as a superadmin
+            const { data: superAdmin } = await supabase
+              .from('super_admins')
+              .select('*')
+              .eq('email', u.email || '')
+              .eq('is_active', true)
+              .maybeSingle();
+
+            if (superAdmin) {
+              setUserState((prev) => prev ? { ...prev, role: 'superadmin' } : null);
+              return;
+            }
+
+            // Check if they have a seller profile
+            const { data: seller } = await supabase
+              .from('sellers')
+              .select('*')
+              .eq('user_id', u.id)
+              .maybeSingle();
+
+            if (seller) {
+              setUserState((prev) => prev ? {
+                ...prev,
+                role: 'seller',
+                sellerId: seller.id,
+                sellerPlan: asSellerPlan(seller.plan),
+                sellerStatus: asSellerStatus(seller.status),
+              } : null);
+            }
+          } catch (err) {
+            console.error('Error in deterministic user lookup:', err);
+          }
+        })();
       } else if (event !== 'INITIAL_SESSION') {
         // Real sign-out (not just "no session found on first load with no prior local admin-demo user")
         setUserState((prev) => (prev?.id === 'admin-1' ? prev : null));

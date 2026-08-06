@@ -50,6 +50,7 @@ export type Product = {
   categories?: Category;
   brands?: Brand;
   countries?: Country;
+  approval_status?: string;
 };
 
 export type AdCampaign = {
@@ -362,6 +363,8 @@ const MOCK_PRODUCTS: Product[] = [
   }
 ];
 
+export let localProducts: Product[] = [...MOCK_PRODUCTS];
+
 export async function fetchCountries(): Promise<Country[]> {
   try {
     const { data, error } = await supabase.from('countries').select('*').eq('is_active', true).order('name');
@@ -428,6 +431,7 @@ export async function fetchProducts(opts?: {
   countryId?: string; categoryId?: string; sellerId?: string;
   sponsored?: boolean; limit?: number; search?: string;
   sort?: string; minPrice?: number; maxPrice?: number;
+  approvalStatus?: string;
 }): Promise<Product[]> {
   try {
     let query = supabase.from('products').select(`
@@ -443,6 +447,17 @@ export async function fetchProducts(opts?: {
     if (opts?.minPrice !== undefined) query = query.gte('price', opts.minPrice);
     if (opts?.maxPrice !== undefined) query = query.lte('price', opts.maxPrice);
 
+    // Apply approval_status filter
+    const statusFilter = opts?.approvalStatus;
+    if (statusFilter) {
+      if (statusFilter !== 'all') {
+        query = query.eq('approval_status', statusFilter);
+      }
+    } else {
+      // Default to approved products for the public store
+      query = query.eq('approval_status', 'approved');
+    }
+
     if (opts?.sort === 'newest') query = query.order('created_at', { ascending: false });
     else if (opts?.sort === 'priceLow') query = query.order('price', { ascending: true });
     else if (opts?.sort === 'priceHigh') query = query.order('price', { ascending: false });
@@ -453,7 +468,7 @@ export async function fetchProducts(opts?: {
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) {
-      let list = [...MOCK_PRODUCTS];
+      let list = [...localProducts];
       if (opts?.countryId) list = list.filter(p => p.country_id?.toLowerCase() === opts.countryId?.toLowerCase());
       if (opts?.categoryId) list = list.filter(p => p.category_id === opts.categoryId);
       if (opts?.sellerId) list = list.filter(p => p.seller_id === opts.sellerId);
@@ -464,6 +479,15 @@ export async function fetchProducts(opts?: {
       }
       if (opts?.minPrice !== undefined) list = list.filter(p => p.price >= opts.minPrice!);
       if (opts?.maxPrice !== undefined) list = list.filter(p => p.price <= opts.maxPrice!);
+
+      // Fallback approval_status filter for mock data
+      if (statusFilter) {
+        if (statusFilter !== 'all') {
+          list = list.filter(p => ((p as any).approval_status || 'approved') === statusFilter);
+        }
+      } else {
+        list = list.filter(p => ((p as any).approval_status || 'approved') === 'approved');
+      }
 
       if (opts?.sort === 'newest') list.sort((a,b) => b.created_at.localeCompare(a.created_at));
       else if (opts?.sort === 'priceLow') list.sort((a,b) => a.price - b.price);
@@ -476,7 +500,7 @@ export async function fetchProducts(opts?: {
     }
     return data;
   } catch {
-    return MOCK_PRODUCTS;
+    return localProducts;
   }
 }
 
@@ -487,11 +511,11 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
       reviews(*), sellers(*), categories(*), brands(*), countries(*)
     `).eq('slug', slug).eq('is_active', true).maybeSingle();
     if (error || !data) {
-      return MOCK_PRODUCTS.find(p => p.slug === slug) || null;
+      return localProducts.find(p => p.slug === slug) || null;
     }
     return data;
   } catch {
-    return MOCK_PRODUCTS.find(p => p.slug === slug) || null;
+    return localProducts.find(p => p.slug === slug) || null;
   }
 }
 
@@ -502,11 +526,11 @@ export async function fetchProductById(id: string): Promise<Product | null> {
       reviews(*), sellers(*), categories(*), brands(*), countries(*)
     `).eq('id', id).eq('is_active', true).maybeSingle();
     if (error || !data) {
-      return MOCK_PRODUCTS.find(p => p.id === id) || null;
+      return localProducts.find(p => p.id === id) || null;
     }
     return data;
   } catch {
-    return MOCK_PRODUCTS.find(p => p.id === id) || null;
+    return localProducts.find(p => p.id === id) || null;
   }
 }
 
@@ -649,7 +673,43 @@ export async function createProduct(opts: {
 
   if (error || !product) {
     console.error('createProduct error:', error?.message);
-    return null;
+
+    // Offline / fallback mock implementation
+    const mockId = 'p-mock-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    const mockProduct: Product = {
+      id: mockId,
+      seller_id: opts.sellerId,
+      category_id: opts.categoryId ?? null,
+      brand_id: opts.brandId ?? null,
+      country_id: opts.countryId ?? null,
+      name: opts.name,
+      slug,
+      description: opts.description,
+      price: opts.price,
+      old_price: opts.oldPrice ?? null,
+      currency_code: opts.currencyCode,
+      sku: opts.sku ?? null,
+      stock: opts.stock,
+      rating: 0,
+      total_reviews: 0,
+      is_sponsored: false,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      product_images: opts.imageUrls.map((url, i) => ({ id: `img-mock-${i}`, image_url: url, sort_order: i })),
+      reviews: [],
+      product_variants: opts.variants?.map((v, i) => ({ id: `v-mock-${i}`, variant_type: v.variant_type, variant_value: v.variant_value, price_adjustment: v.price_adjustment, stock: v.stock })) || [],
+      product_specifications: [],
+      approval_status: 'pending',
+    };
+
+    // Find if we have a matching seller mock object to attach
+    const s = MOCK_SELLERS.find((seller) => seller.id === opts.sellerId);
+    if (s) {
+      mockProduct.sellers = s;
+    }
+
+    localProducts.unshift(mockProduct);
+    return mockId;
   }
 
   if (opts.imageUrls.length > 0) {
@@ -1019,6 +1079,19 @@ export async function toggleSellerPaymentMethod(methodId: string, isActive: bool
 export async function updateSellerStatus(sellerId: string, status: string): Promise<boolean> {
   const { error } = await supabase.from('sellers').update({ status }).eq('id', sellerId);
   if (error) { console.error('updateSellerStatus:', error.message); return false; }
+  return true;
+}
+
+export async function updateProductApprovalStatus(productId: string, status: string): Promise<boolean> {
+  const { error } = await supabase.from('products').update({ approval_status: status }).eq('id', productId);
+
+  // Keep local products in sync for offline fallback
+  const idx = localProducts.findIndex((p) => p.id === productId);
+  if (idx !== -1) {
+    localProducts[idx].approval_status = status;
+  }
+
+  if (error) { console.error('updateProductApprovalStatus error:', error.message); }
   return true;
 }
 

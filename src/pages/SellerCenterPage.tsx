@@ -37,7 +37,7 @@ export function SellerCenterPage() {
       try {
         const sellerId = user.sellerId || user.id;
         const [prods, ords, adCamp] = await Promise.all([
-          fetchProducts({ sellerId, limit: 50 }),
+          fetchProducts({ sellerId, limit: 50, approvalStatus: 'all' }),
           fetchOrders(),
           fetchAdCampaigns(sellerId),
         ]);
@@ -77,7 +77,7 @@ export function SellerCenterPage() {
   const reloadProducts = async () => {
     if (!user?.sellerId && !user?.id) return;
     const sellerId = user.sellerId || user.id;
-    const prods = await fetchProducts({ sellerId, limit: 50 });
+    const prods = await fetchProducts({ sellerId, limit: 50, approvalStatus: 'all' });
     setProducts(prods);
   };
 

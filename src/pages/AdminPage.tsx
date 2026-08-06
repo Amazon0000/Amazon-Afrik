@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateProductApprovalStatus, updateAdCampaignStatus, logAuditAction } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import type { Seller, Product, Country, AdCampaign, PaymentProvider, Order, ComplianceReport } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
@@ -49,7 +49,7 @@ export function AdminPage() {
       try {
         const [s, p, c, a, pp] = await Promise.all([
           fetchSellers({ limit: 50 }),
-          fetchProducts({ limit: 50 }),
+          fetchProducts({ limit: 100, approvalStatus: 'all' }),
           fetchCountries(),
           fetchAdCampaigns(),
           fetchPaymentProviders(),
@@ -308,8 +308,8 @@ export function AdminPage() {
                         <p className="text-xs text-[#64748b]">{p.sellers?.business_name} • ${p.price} • {p.sellers?.city}</p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={async () => { await supabase.from('products').update({ approval_status: 'approved' }).eq('id', p.id); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.approve', targetType: 'product', targetId: p.id, targetName: p.name }); setProducts(products.map(x => x.id === p.id ? { ...x, ...{ approval_status: 'approved' } } as Product : x)); showToast(locale === 'fr' ? 'Produit approuvé' : 'Product approved'); }} className="px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-4 h-4" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
-                        <button onClick={async () => { await supabase.from('products').update({ approval_status: 'rejected' }).eq('id', p.id); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.reject', targetType: 'product', targetId: p.id, targetName: p.name }); setProducts(products.map(x => x.id === p.id ? { ...x, ...{ approval_status: 'rejected' } } as Product : x)); showToast(locale === 'fr' ? 'Produit rejeté' : 'Product rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
+                        <button onClick={async () => { await updateProductApprovalStatus(p.id, 'approved'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.approve', targetType: 'product', targetId: p.id, targetName: p.name }); setProducts(products.map(x => x.id === p.id ? { ...x, ...{ approval_status: 'approved' } } as Product : x)); showToast(locale === 'fr' ? 'Produit approuvé' : 'Product approved'); }} className="px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-4 h-4" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+                        <button onClick={async () => { await updateProductApprovalStatus(p.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.reject', targetType: 'product', targetId: p.id, targetName: p.name }); setProducts(products.map(x => x.id === p.id ? { ...x, ...{ approval_status: 'rejected' } } as Product : x)); showToast(locale === 'fr' ? 'Produit rejeté' : 'Product rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
                       </div>
                     </div>
                   ))}
