@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --font-display: system-ui, -apple-system, sans-serif;
+  --font-body: system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --white: #ffffff;
+  --bg: #eaeded;
+  --ink: #0f1111;
+  --ink-2: #333333;
+  --ink-3: #565959;
+  --ink-4: #888888;
+  --green: #007600;
+  --green-dark: #004b00;
+  --orange: #e47911;
+  --orange-dark: #b12704;
+  --border: #dddddd;
+  --card: #ffffff;
+}
+
+html { scroll-behavior: smooth; }
+
+* { box-sizing: border-box; }
+img { max-width: 100%; display: block; }
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #eaeded;
+  color: #0f1111;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, input, select, textarea { font: inherit; }
+
+@media (max-width: 640px) {
+  .card {
+    border-radius: 8px;
+  }
+
+  .btn-gold,
+  .btn-cocoa,
+  .btn-green {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.font-display {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Bright clean background */
+.motif-bg {
+  background-color: #eaeded;
+}
+
+.motif-dark {
+  background-color: #131921;
+  background-image: none;
+}
+
+.gold-line {
+  background: #e7f4f5;
+  height: 1px;
+}
+
+.gold-text {
+  color: #e47911;
+}
+
+/* Primary CTA — Amazon Yellow Button */
+.btn-gold {
+  background: linear-gradient(to bottom, #f7dfa5, #f0c14b);
+  border: 1px solid #a88734;
+  color: #111111;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 8px 16px;
+  transition: all 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255,255,255,.4) inset;
+}
+.btn-gold:hover {
+  background: linear-gradient(to bottom, #f5d78e, #eeb933);
+  border-color: #846a29;
+}
+.btn-gold:active {
+  background: #f0c14b;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2) inset;
+}
+
+/* Secondary CTA — Amazon Grey/White Button */
+.btn-cocoa {
+  background: linear-gradient(to bottom, #f7f8fa, #e7e9ec);
+  border: 1px solid #adb1b8;
+  color: #111111;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 8px 16px;
+  transition: all 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset;
+}
+.btn-cocoa:hover {
+  background: linear-gradient(to bottom, #eef0f3, #dadde2);
+  border-color: #a2a6ac;
+}
+.btn-cocoa:active {
+  background: #e7e9ec;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15) inset;
+}
+
+/* Accent — Amazon Orange/Dark-Yellow Button */
+.btn-green {
+  background: linear-gradient(to bottom, #f5b166, #e77600);
+  border: 1px solid #a65205;
+  color: #ffffff;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 8px 16px;
+  transition: all 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.btn-green:hover {
+  background: linear-gradient(to bottom, #f3a144, #ce6a00);
+  border-color: #884303;
+}
+.btn-green:active {
+  background: #ce6a00;
+}
+
+/* Amazon Style Cards */
+.card {
+  background: #ffffff;
+  border: 1px solid #e7e7e7;
+  border-radius: 4px;
+  transition: none;
+  box-shadow: none;
+}
+.card:hover {
+  border-color: #dddddd;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  transform: none;
+}
+
+.premium-card {
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.soft-glow {
+  box-shadow: none;
+}
+
+.premium-pill {
+  background: #f0f2f2;
+  border: 1px solid #d5d9d9;
+  border-radius: 20px;
+}
+
+.input-field {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #888c8c;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #111111;
+  font-size: 13px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.input-field:focus {
+  outline: none;
+  border-color: #e77600;
+  box-shadow: 0 0 3px 2px rgba(228, 121, 17, 0.5);
+}
+.input-field::placeholder {
+  color: #565959;
+}
+
+/* Animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.25s ease-out both; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.2s ease-out both; }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #f3f3f3, #e2e2e2, #f3f3f3);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Safe area for PWA */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Professional layout helpers */
+.section-shell {
+  @apply mx-auto max-w-7xl px-4;
+}
+
+.section-head {
+  @apply mb-4 flex items-center justify-between gap-3;
+}
+
+.hero-panel {
+  border: none;
+  box-shadow: none;
+}
+
+.section-title {
+  @apply text-xl font-bold text-[#111111] font-display;
+}
+
+.section-subtitle {
+  @apply text-xs text-[#565959];
+}
+
+.line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
