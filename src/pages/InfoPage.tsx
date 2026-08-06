@@ -7,7 +7,8 @@ import { useState } from 'react';
 
 export type InfoKey =
   | 'about' | 'sell-guide' | 'help' | 'shipping' | 'returns' | 'payment-methods'
-  | 'terms' | 'privacy' | 'cookies' | 'legal-notice' | 'careers' | 'contact';
+  | 'terms' | 'privacy' | 'cookies' | 'legal-notice' | 'careers' | 'contact'
+  | 'protect-brand' | 'fulfillment' | 'supply-to-zando' | 'become-affiliate' | 'recalls-safety';
 
 const infoMeta: Record<InfoKey, { icon: typeof Info; frTitle: string; enTitle: string }> = {
   'about': { icon: Info, frTitle: 'À propos de Zando', enTitle: 'About Zando' },
@@ -22,6 +23,11 @@ const infoMeta: Record<InfoKey, { icon: typeof Info; frTitle: string; enTitle: s
   'legal-notice': { icon: FileText, frTitle: 'Mentions légales', enTitle: 'Legal Notice' },
   'careers': { icon: Briefcase, frTitle: 'Carrières', enTitle: 'Careers' },
   'contact': { icon: Mail, frTitle: 'Contact', enTitle: 'Contact Us' },
+  'protect-brand': { icon: ShieldCheck, frTitle: 'Protéger votre marque', enTitle: 'Protect & Build Your Brand' },
+  'fulfillment': { icon: Truck, frTitle: 'Fulfillment par vendeur', enTitle: 'Fulfillment by Vendor' },
+  'supply-to-zando': { icon: Briefcase, frTitle: 'Approvisionner Zando', enTitle: 'Supply to Zando' },
+  'become-affiliate': { icon: Info, frTitle: 'Devenir Affilié', enTitle: 'Become an Affiliate' },
+  'recalls-safety': { icon: HelpCircle, frTitle: 'Rappels & Sécurité', enTitle: 'Recalls & Product Safety' },
 };
 
 type FAQItem = { q: string; a: string };
@@ -607,6 +613,116 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
             </>
           )}
+
+          {pageKey === 'protect-brand' && (locale === 'fr' ? (
+            <>
+              <Section title="Protéger et développer votre marque">
+                <p>Zando prend la protection de la propriété intellectuelle et des marques très au sérieux. Nous offrons des outils pour aider les propriétaires de marques à protéger leurs droits et à développer leur présence sur Zando.</p>
+                <p><strong>Zando Brand Registry :</strong> Enregistrez votre marque pour débloquer une suite d'outils conçus pour vous aider à protéger votre marque et à créer une expérience d'achat unique pour vos clients.</p>
+                <p><strong>Protection proactive :</strong> Notre système utilise des informations sur votre marque pour détecter et bloquer de manière proactive les contrefaçons présumées et les violations de propriété intellectuelle.</p>
+                <p><strong>Signaler une violation :</strong> Si vous constatez qu'un vendeur utilise vos images, votre marque déposée ou vend des contrefaçons, vous pouvez soumettre un signalement immédiat au Centre de Conformité.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Protect and Build Your Brand">
+                <p>Zando takes intellectual property and brand protection very seriously. We offer powerful tools to help brand owners safeguard their rights and expand their presence on our platform.</p>
+                <p><strong>Zando Brand Registry:</strong> Register your brand to unlock a suite of tools designed to protect your trademarks and create a unique, trusted shopping experience for your customers.</p>
+                <p><strong>Proactive Protection:</strong> Our compliance system utilizes your brand information to pro-actively detect and filter suspected counterfeits and intellectual property violations.</p>
+                <p><strong>Report a Violation:</strong> If you believe another merchant is infringing on your registered trademark or copyright, submit an immediate claim via our Trust & Safety dashboard.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'fulfillment' && (locale === 'fr' ? (
+            <>
+              <Section title="Fulfillment par vendeur (FBM)">
+                <p>Chez Zando, le stockage et la livraison sont gérés de manière autonome par le vendeur (Fulfillment by Merchant / Vendor). Cela garantit un service de proximité et supprime les frais d'entrepôt lourds de la plateforme.</p>
+                <p><strong>Comment ça fonctionne :</strong></p>
+                <p>1. Vous stockez vos produits dans votre propre local ou entrepôt.</p>
+                <p>2. Lorsqu'un client passe commande, vous préparez le colis avec soin.</p>
+                <p>3. Vous expédiez le produit via votre transporteur local préféré ou votre propre flotte de livraison.</p>
+                <p>4. Vous mettez à jour le statut de la commande en temps réel sur le Seller Center.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Fulfillment by Vendor (FBM)">
+                <p>At Zando, storage and shipping are managed autonomously by the seller (Fulfillment by Merchant / Vendor). This guarantees localized service and removes heavy platform warehousing fees.</p>
+                <p><strong>How it works:</strong></p>
+                <p>1. You safely store your inventory in your own physical location or warehouse.</p>
+                <p>2. When a buyer places an order, you carefully pack and prepare the parcel.</p>
+                <p>3. You ship the product using your preferred local courier or your own delivery fleet.</p>
+                <p>4. You update the shipment and tracking status in real-time inside your Seller Center dashboard.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'supply-to-zando' && (locale === 'fr' ? (
+            <>
+              <Section title="Approvisionner Zando">
+                <p>Devenez un partenaire d'approvisionnement officiel de Zando ! Si vous êtes un grossiste, un fabricant ou un grand distributeur, vous pouvez approvisionner notre réseau mondial de marchands.</p>
+                <p><strong>Avantages de l'approvisionnement :</strong></p>
+                <p>• Connectez-vous avec des milliers de vendeurs de détail sur Zando.</p>
+                <p>• Vendez en gros volumes avec des contrats d'approvisionnement sécurisés.</p>
+                <p>• Bénéficiez d'un traitement logistique prioritaire et de paiements garantis.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Supply to Zando">
+                <p>Become an official Zando sourcing partner! If you are a wholesaler, manufacturer, or large distributor, you can supply our global merchant network with raw materials or bulk products.</p>
+                <p><strong>Sourcing Benefits:</strong></p>
+                <p>• Connect directly with thousands of retail merchants selling on Zando.</p>
+                <p>• Sell in bulk volumes with secure supply contracts.</p>
+                <p>• Access prioritized logistics routing and guaranteed transaction payouts.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'become-affiliate' && (locale === 'fr' ? (
+            <>
+              <Section title="Devenir un Affilié Zando">
+                <p>Rejoignez le programme d'affiliation Zando et gagnez de l'argent en recommandant des produits africains authentiques à votre communauté !</p>
+                <p><strong>Comment ça fonctionne :</strong></p>
+                <p>1. Inscrivez-vous gratuitement au programme d'affiliation.</p>
+                <p>2. Partagez vos liens d'affiliation uniques sur votre site web, blog, réseaux sociaux ou messageries.</p>
+                <p>3. Gagnez jusqu'à 10% de commission sur chaque achat éligible effectué via vos liens !</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Become a Zando Affiliate">
+                <p>Join the Zando Affiliate Program and earn money by recommending authentic African products to your network and community!</p>
+                <p><strong>How it works:</strong></p>
+                <p>1. Register for free as a Zando Affiliate partner.</p>
+                <p>2. Share your custom affiliate referral links on your website, blog, social media, or chats.</p>
+                <p>3. Earn up to 10% commission on every qualifying purchase completed through your links!</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'recalls-safety' && (locale === 'fr' ? (
+            <>
+              <Section title="Rappels de produits et alertes de sécurité">
+                <p>La sécurité de nos acheteurs est notre priorité absolue. Nous surveillons de près les alertes de sécurité et les rappels de produits pour garantir une expérience d'achat sans risque.</p>
+                <p><strong>Notre politique de sécurité :</strong></p>
+                <p>• Zando interdit formellement la vente de produits dangereux, contrefaits, ou faisant l'objet d'un rappel officiel.</p>
+                <p>• En cas de signalement sur la sécurité d'un produit, notre équipe de conformité suspend immédiatement l'article et mène une enquête approfondie.</p>
+                <p>• Les acheteurs concernés sont notifiés immédiatement avec les instructions de retour et de remboursement total gérées par le vendeur.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="Recalls and Product Safety Alerts">
+                <p>Buyer safety is our absolute priority. Zando actively monitors safety notices and official recalls to maintain a secure shopping ecosystem.</p>
+                <p><strong>Safety & Recalls Policy:</strong></p>
+                <p>• Selling unsafe, banned, or recalled inventory is strictly prohibited on Zando.</p>
+                <p>• Upon receiving a product safety report, our compliance department immediately suspends the listing for a thorough review.</p>
+                <p>• Affected buyers are notified instantly with return instructions and guaranteed total refunds managed by the merchant.</p>
+              </Section>
+            </>
+          ))}
         </div>
 
         {/* Back to home */}

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { type Dict, type Locale, dictionaries } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import type { Country, Currency, Category, Product } from '@/lib/db';
+import type { Session } from '@supabase/supabase-js';
 
 type GeoSelection = {
   countryId: string;
@@ -127,23 +128,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Auth state
   useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string; email?: string; user_metadata?: Record<string, unknown> } } | null) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       if (session?.user) {
         const u = session.user;
         const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
         const fullName = asString(meta.full_name) || asString(meta.name) || asString(u.email?.split('@')[0]) || 'User';
+
+        let resolvedRole: 'customer' | 'seller' | 'admin' | 'superadmin' = asUserRole(meta.role) || 'customer';
+        let sellerId = asString(meta.seller_id) || undefined;
+        let sellerPlan = asSellerPlan(meta.seller_plan);
+        let sellerStatus = asSellerStatus(meta.seller_status);
+
+        if (u.email) {
+          const { data: sa } = await supabase.from('super_admins').select('*').eq('email', u.email).eq('is_active', true).maybeSingle();
+          if (sa) {
+            resolvedRole = 'superadmin';
+          } else {
+            const { data: sel } = await supabase.from('sellers').select('*').eq('id', u.id).maybeSingle();
+            if (sel) {
+              resolvedRole = 'seller';
+              sellerId = sel.id;
+              sellerPlan = sel.plan;
+              sellerStatus = sel.status;
+            }
+          }
+        }
+
         setUserState({
           id: u.id,
           email: u.email || '',
           fullName,
-          role: asUserRole(meta.role) || 'customer',
-          sellerId: asString(meta.seller_id) || undefined,
-          sellerPlan: asSellerPlan(meta.seller_plan),
-          sellerStatus: asSellerStatus(meta.seller_status),
+          role: resolvedRole,
+          sellerId,
+          sellerPlan,
+          sellerStatus,
         });
       } else if (event !== 'INITIAL_SESSION') {
-        // Real sign-out (not just "no session found on first load with no prior local admin-demo user")
-        setUserState((prev) => (prev?.id === 'admin-1' ? prev : null));
+        setUserState(null);
       }
     });
     return () => subscription.subscription.unsubscribe();

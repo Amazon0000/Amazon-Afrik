@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
-import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Crown, Eye, EyeOff, ChevronRight } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Eye, EyeOff, ChevronRight } from 'lucide-react';
 
 export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
-  const { t, navigate, setUser, locale, params } = useApp();
+  const { t, navigate, locale, params } = useApp();
   const [isSeller, setIsSeller] = useState(mode === 'signup' && !!params.plan);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,10 +59,17 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) { setError(signInError.message); setSubmitting(false); return; }
 
-        const meta = data.user?.user_metadata || {};
-        if (meta.role === 'seller') {
+        let role = data.user?.user_metadata?.role || 'customer';
+        if (data.user?.email) {
+          const { data: sa } = await supabase.from('super_admins').select('*').eq('email', data.user.email).eq('is_active', true).maybeSingle();
+          if (sa) {
+            role = 'superadmin';
+          }
+        }
+
+        if (role === 'seller') {
           navigate('seller-center');
-        } else if (meta.role === 'superadmin' || meta.role === 'admin') {
+        } else if (role === 'superadmin' || role === 'admin') {
           navigate('admin');
         } else {
           navigate('home');
@@ -83,11 +90,6 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
     setSubmitting(false);
     if (resetError) { setError(resetError.message); return; }
     setResetSent(true);
-  };
-
-  const loginAsAdmin = () => {
-    setUser({ id: 'admin-1', email: 'admin@zando.africa', fullName: 'Admin Zando', role: 'superadmin' });
-    navigate('admin');
   };
 
   if (checkEmail) {
@@ -274,14 +276,6 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
               {!submitting && <ChevronRight className="w-4 h-4" />}
             </button>
           </form>
-
-          {mode === 'login' && (
-            <div className="mt-4 pt-4 border-t border-[#0e9f6e]/20">
-              <button onClick={loginAsAdmin} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a] hover:bg-[#0f172a]/5 transition-colors">
-                <Crown className="w-4 h-4 text-[#0e9f6e]" /> {locale === 'fr' ? 'Connexion Super Admin (démo)' : 'Super Admin login (demo)'}
-              </button>
-            </div>
-          )}
 
           <p className="text-center text-sm text-[#64748b] mt-5">
             {mode === 'login' ? t.auth.noAccount : t.auth.haveAccount}{' '}
