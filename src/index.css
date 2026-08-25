@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@theme {
-  --font-display: system-ui, -apple-system, sans-serif;
-  --font-body: system-ui, -apple-system, sans-serif;
-}
-
 :root {
   /* Zando Brand Colors — PayPal Blue + Green system */
   --white: #ffffff;
@@ -31,7 +26,7 @@ html { scroll-behavior: smooth; }
 img { max-width: 100%; display: block; }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: #f0f4f8;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
@@ -54,7 +49,7 @@ button, input, select, textarea { font: inherit; }
 }
 
 .font-display {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   letter-spacing: -0.01em;
 }
 

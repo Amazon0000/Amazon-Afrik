@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, AdCampaign, PaymentProvider, Order, ComplianceReport } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
 
@@ -19,6 +19,44 @@ const initialRoles: StaffRole[] = [
   { id: 'r4', name: 'Ads Manager', description: 'Manage ad slots and campaigns', permissions: [{ module: 'ads', read: true, write: true, delete: true }, { module: 'analytics', read: true, write: false, delete: false }], members: 2 },
 ];
 
+function ProductApprovalCard({ product, categories, locale, onApprove, onReject }: {
+  product: Product;
+  categories: Category[];
+  user: { id: string; email: string; fullName: string; role: string } | null;
+  locale: 'fr' | 'en';
+  onApprove: (categoryId?: string) => void | Promise<void>;
+  onReject: (reason: string) => void | Promise<void>;
+}) {
+  const [categoryId, setCategoryId] = useState(product.category_id || '');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [reason, setReason] = useState('');
+
+  return (
+    <div className="card p-4 bg-white flex flex-col sm:flex-row gap-3 sm:items-center">
+      <img src={product.product_images?.[0]?.image_url || ''} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-[#0f172a] truncate">{product.name}</p>
+        <p className="text-xs text-[#64748b]">{product.sellers?.business_name} • ${product.price}</p>
+        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input-field mt-2 text-xs py-1.5">
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        {showRejectForm && (
+          <div className="mt-2 flex gap-2">
+            <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={locale === 'fr' ? 'Motif du rejet' : 'Rejection reason'} className="input-field text-xs py-1.5 flex-1" />
+            <button onClick={() => reason.trim() && onReject(reason.trim())} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold">{locale === 'fr' ? 'Confirmer' : 'Confirm'}</button>
+          </div>
+        )}
+      </div>
+      {!showRejectForm && (
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => onApprove(categoryId)} className="px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-200"><CheckCircle className="w-4 h-4" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+          <button onClick={() => setShowRejectForm(true)} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AdminPage() {
   const { t, locale, user, navigate, showToast } = useApp();
   const [tab, setTab] = useState('overview');
@@ -28,6 +66,7 @@ export function AdminPage() {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [ads, setAds] = useState<AdCampaign[]>([]);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProvider[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -47,14 +86,15 @@ export function AdminPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [s, p, c, a, pp] = await Promise.all([
+        const [s, p, c, cat, a, pp] = await Promise.all([
           fetchSellers({ limit: 50 }),
           fetchProducts({ limit: 50, approvalStatus: 'all' }),
           fetchCountries(),
+          fetchCategories(),
           fetchAdCampaigns(),
           fetchPaymentProviders(),
         ]);
-        setSellers(s); setProducts(p); setCountries(c); setAds(a); setPaymentProviders(pp);
+        setSellers(s); setProducts(p); setCountries(c); setCategories(cat); setAds(a); setPaymentProviders(pp);
         const [ords, reports] = await Promise.all([
           fetchOrders(),
           fetchComplianceReports(),

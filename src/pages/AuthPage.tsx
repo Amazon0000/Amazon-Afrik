@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
-import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Crown, Eye, EyeOff, ChevronRight } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Store, ShoppingBag, Eye, EyeOff, ChevronRight } from 'lucide-react';
 
 export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
-  const { t, navigate, setUser, locale, params } = useApp();
+  const { t, navigate, locale, params } = useApp();
   const [isSeller, setIsSeller] = useState(mode === 'signup' && !!params.plan);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
