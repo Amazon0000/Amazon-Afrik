@@ -1,0 +1,584 @@
+import { useState } from 'react';
+import { useApp } from '@/lib/store';
+import { Logo } from '@/components/Logo';
+import { supabase } from '@/lib/supabase';
+import { uploadSellerAsset, addSellerDocument } from '@/lib/db';
+import { UploadCloud, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Wallet, Sparkles, CheckCircle } from 'lucide-react';
+
+type PaymentMethod = {
+  id: string;
+  label: string;
+  desc: string;
+  icon: typeof Wallet;
+};
+
+const PAYMENT_METHODS: PaymentMethod[] = [
+  { id: 'mobile_money', label: 'Mobile Money', desc: 'Orange Money, MTN MoMo, Wave, M-Pesa', icon: Wallet },
+  { id: 'paystack', label: 'Paystack', desc: 'Cartes bancaires locales & internationales', icon: CreditCard },
+  { id: 'flutterwave', label: 'Flutterwave', desc: 'Paiement transfrontalier Afrique', icon: CreditCard },
+  { id: 'stripe', label: 'Stripe', desc: 'Cartes Visa, Mastercard, Amex', icon: CreditCard },
+  { id: 'paypal', label: 'PayPal', desc: 'Paiement international', icon: CreditCard },
+  { id: 'bank_transfer', label: 'Virement bancaire', desc: 'Virement direct sur votre compte', icon: Banknote },
+];
+
+export function OnboardingPage() {
+  const { t, navigate, locale, countries, setUser, loadingReference, params, showToast } = useApp();
+  const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    email: '', password: '', phone: '',
+    countryId: '', businessType: 'company',
+    businessName: '', registrationNumber: '', vatNumber: '', businessCategory: '', businessAddress: '',
+    idType: 'passport', idFront: null as string | null, idBack: null as string | null, selfie: null as string | null,
+    bankName: '', iban: '', swift: '', mobileMoney: '',
+    storeName: '', storeSlug: '', storeLogo: null as string | null, storeBanner: null as string | null, storeDesc: '', socialFacebook: '', socialInstagram: '',
+    warehouseAddress: '', shippingZone: '',
+    shipNational: true, shipInternational: false, shipExpress: true, shipLocal: true, shipPickup: false,
+    selectedPayments: ['mobile_money', 'paystack'] as string[],
+    paymentDetails: {} as Record<string, string>,
+    plan: (params.plan as string) || 'starter',
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const [tempUploadId] = useState(() => `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+
+  const steps = [
+    { num: 1, label: locale === 'fr' ? 'Compte' : 'Account', icon: User },
+    { num: 2, label: t.onboarding.country, icon: MapPin },
+    { num: 3, label: locale === 'fr' ? 'Entreprise' : 'Business', icon: Building2 },
+    { num: 4, label: locale === 'fr' ? 'Identité' : 'Identity', icon: ShieldCheck },
+    { num: 5, label: locale === 'fr' ? 'Boutique' : 'Store', icon: Store },
+    { num: 6, label: locale === 'fr' ? 'Paiement' : 'Payment', icon: CreditCard },
+    { num: 7, label: locale === 'fr' ? 'Livraison' : 'Shipping', icon: Truck },
+    { num: 8, label: locale === 'fr' ? 'Révision' : 'Review', icon: FileCheck },
+    { num: 9, label: locale === 'fr' ? 'Terminé' : 'Done', icon: CheckCircle },
+  ];
+
+  const canProceed = () => {
+    if (step === 1) return form.email && form.password && form.phone;
+    if (step === 2) return !!form.countryId;
+    if (step === 3) return form.businessName && form.registrationNumber;
+    if (step === 4) return form.idFront && form.idBack && form.selfie;
+    if (step === 5) return form.storeName && form.storeSlug;
+    if (step === 6) return form.selectedPayments.length > 0 && (form.bankName || form.mobileMoney || form.selectedPayments.includes('mobile_money'));
+    if (step === 7) return form.warehouseAddress;
+    return true;
+  };
+
+  const togglePayment = (id: string) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedPayments: prev.selectedPayments.includes(id)
+        ? prev.selectedPayments.filter((p) => p !== id)
+        : [...prev.selectedPayments, id],
+    }));
+  };
+
+  const submit = async () => {
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            full_name: form.storeName || form.businessName,
+            role: 'seller',
+            seller_plan: form.plan,
+            seller_status: 'pending',
+            phone: form.phone,
+          },
+        },
+      });
+
+      if (signUpError) { setError(signUpError.message); setSubmitting(false); return; }
+
+      const userId = signUpData.user?.id;
+      if (!userId) { setError(locale === 'fr' ? 'Erreur: pas de user ID' : 'Error: no user ID'); setSubmitting(false); return; }
+
+      const { data: sellerData, error: sellerError } = await supabase.from('sellers').insert({
+        user_id: userId,
+        business_name: form.businessName,
+        business_type: form.businessType,
+        registration_number: form.registrationNumber,
+        vat_number: form.vatNumber || null,
+        business_address: form.businessAddress || null,
+        country_id: form.countryId || null,
+        store_name: form.storeName,
+        store_slug: form.storeSlug,
+        store_description: form.storeDesc || null,
+        store_logo_url: form.storeLogo || null,
+        store_banner_url: form.storeBanner || null,
+        identity_selfie_url: form.selfie || null,
+        warehouse_address: form.warehouseAddress || null,
+        shipping_zone: form.shippingZone || null,
+        bank_name: form.bankName || null,
+        iban: form.iban || null,
+        swift: form.swift || null,
+        mobile_money: form.mobileMoney || null,
+        ship_national: form.shipNational,
+        ship_international: form.shipInternational,
+        ship_express: form.shipExpress,
+        ship_local: form.shipLocal,
+        ship_pickup: form.shipPickup,
+        plan: form.plan,
+        plan_selected: form.plan,
+        subscription_status: 'trial',
+        trial_starts_at: new Date().toISOString(),
+        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'pending',
+      }).select('id').single();
+
+      if (sellerError) { setError(sellerError.message); setSubmitting(false); return; }
+
+      const sellerId = sellerData.id;
+
+      if (form.idFront) await addSellerDocument({ sellerId, docType: `id_front_${form.idType}`, fileUrl: form.idFront });
+      if (form.idBack) await addSellerDocument({ sellerId, docType: `id_back_${form.idType}`, fileUrl: form.idBack });
+
+      await supabase.from('seller_payment_methods').insert(
+        form.selectedPayments.map((pid) => ({
+          seller_id: sellerId,
+          provider_name: pid,
+          provider_type: pid === 'bank_transfer' ? 'bank' : pid === 'mobile_money' ? 'mobile_money' : 'card',
+          is_active: true,
+          is_verified: false,
+        }))
+      );
+
+      setUser({
+        id: userId,
+        email: form.email,
+        fullName: form.storeName || form.businessName,
+        role: 'seller',
+        sellerId,
+        sellerPlan: form.plan as 'starter' | 'premium' | 'enterprise',
+        sellerStatus: 'pending',
+      });
+
+      setSubmitted(true);
+    } catch {
+      setError(locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="motif-bg min-h-screen flex items-center justify-center px-4">
+        <div className="card p-8 max-w-md text-center animate-fade-up">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center pulse-gold">
+            <CheckCircle className="w-8 h-8 text-[#0e9f6e]" />
+          </div>
+          <h2 className="font-display text-2xl font-semibold text-[#0f172a] mb-2">
+            {locale === 'fr' ? 'Bienvenue sur Zando !' : 'Welcome to Zando!'}
+          </h2>
+          <p className="text-sm text-[#64748b] mb-4">
+            {locale === 'fr'
+              ? 'Votre compte vendeur a été créé. Vous bénéficiez de 14 jours gratuits pour essayer la plateforme.'
+              : 'Your seller account has been created. You get 14 days free to try the platform.'}
+          </p>
+          <div className="p-4 rounded-xl bg-[#0e9f6e]/10 mb-4 flex items-center gap-3">
+            <Sparkles className="w-5 h-5 text-[#0e9f6e] shrink-0" />
+            <p className="text-xs text-[#0f172a] text-left">
+              {locale === 'fr'
+                ? 'Pendant 14 jours, accédez à toutes les fonctionnalités. Après cette période, un abonnement est requis pour continuer à vendre.'
+                : 'For 14 days, access all features. After this period, a subscription is required to continue selling.'}
+            </p>
+          </div>
+          <p className="text-xs text-[#64748b] mb-6">
+            {locale === 'fr' ? 'Nos équipes vérifient votre dossier sous 48h.' : 'Our team reviews your application within 48h.'}
+          </p>
+          <button onClick={() => navigate('seller-center')} className="w-full btn-gold py-3 rounded-xl font-semibold">
+            {t.nav.sellerCenter}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="motif-bg min-h-screen">
+      <header className="sticky top-0 z-50 bg-[#0f172a] safe-top">
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+          <button onClick={() => navigate('sell')}><Logo size={40} /></button>
+          <button onClick={() => navigate('home')} className="text-sm text-[#f7f8fa]/60 hover:text-[#0e9f6e]">
+            {locale === 'fr' ? 'Retour à la boutique' : 'Back to store'}
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div className="text-center mb-6">
+          <h1 className="font-display text-2xl font-semibold text-[#0f172a]">{t.onboarding.title}</h1>
+          <p className="text-sm text-[#64748b] mt-1">{t.onboarding.step} {step} {t.onboarding.of} {steps.length}</p>
+        </div>
+
+        {/* 14-day trial banner */}
+        <div className="card p-4 mb-6 flex items-center gap-3 bg-gradient-to-r from-[#0e9f6e]/10 to-[#0e9f6e]/10 border-[#0e9f6e]/20">
+          <Sparkles className="w-5 h-5 text-[#0e9f6e] shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-[#0f172a]">
+              {locale === 'fr' ? '14 jours gratuits — aucune carte requise' : '14 days free — no card required'}
+            </p>
+            <p className="text-xs text-[#64748b]">
+              {locale === 'fr' ? 'Aucun paiement pendant l\'onboarding. Payez seulement après votre essai.' : 'No payment during onboarding. Pay only after your trial.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="flex items-center justify-between mb-8 overflow-x-auto no-scrollbar">
+          {steps.map((s, i) => (
+            <div key={s.num} className="flex items-center flex-1 last:flex-none min-w-[40px]">
+              <div className="flex flex-col items-center">
+                <div className={'w-8 h-8 rounded-full flex items-center justify-center transition-all ' + (step >= s.num ? 'bg-[#0e9f6e] text-[#0f172a]' : 'bg-white border border-[#0f172a]/15 text-[#64748b]/40')}>
+                  {step > s.num ? <Check className="w-4 h-4" /> : <s.icon className="w-3.5 h-3.5" />}
+                </div>
+              </div>
+              {i < steps.length - 1 && <div className={'h-0.5 flex-1 mx-1 rounded ' + (step > s.num ? 'bg-[#0e9f6e]' : 'bg-[#0f172a]/10')} />}
+            </div>
+          ))}
+        </div>
+
+        <div className="card p-6 sm:p-8 animate-fade-up">
+          {/* Step 1: Account */}
+          {step === 1 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">
+                {locale === 'fr' ? 'Créer votre compte vendeur' : 'Create your seller account'}
+              </h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Vos informations de connexion sécurisées' : 'Your secure login information'}</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input icon={Mail} label={t.auth.email} value={form.email} onChange={(v) => setForm({ ...form, email: v })} type="email" placeholder="you@example.com" />
+                  <Input icon={Phone} label={t.account.phone} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="+225 07 00 00 00" />
+                </div>
+                <Input icon={Lock} label={t.auth.password} value={form.password} onChange={(v) => setForm({ ...form, password: v })} type="password" placeholder="••••••••" />
+                <div className="p-3 rounded-xl bg-[#0e9f6e]/10 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#0e9f6e]" />
+                  <span className="text-xs text-[#64748b]">{locale === 'fr' ? 'Vos données sont chiffrées et sécurisées' : 'Your data is encrypted and secure'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Country */}
+          {step === 2 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">{t.onboarding.selectCountry}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Sélectionnez votre pays d\'activité' : 'Select your country of operation'}</p>
+              {loadingReference && <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</p>}
+              {!loadingReference && countries.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
+                  {countries.map((c) => (
+                    <button key={c.id} onClick={() => setForm({ ...form, countryId: c.id })}
+                      className={'p-3 rounded-xl border-2 text-left transition-all ' + (form.countryId === c.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50')}>
+                      <span className="text-2xl mr-1">{c.flag}</span>
+                      <span className="text-sm font-medium text-[#0f172a]">{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Business Info */}
+          {step === 3 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">{locale === 'fr' ? 'Informations entreprise' : 'Business information'}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Détails légaux de votre entreprise' : 'Legal details of your business'}</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Type d\'entreprise' : 'Business type'}</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      { id: 'company', label: locale === 'fr' ? 'Entreprise' : 'Company' },
+                      { id: 'individual', label: locale === 'fr' ? 'Individuel' : 'Individual' },
+                      { id: 'ngo', label: 'NGO' },
+                    ].map((b) => (
+                      <button key={b.id} onClick={() => setForm({ ...form, businessType: b.id })}
+                        className={'px-3 py-2 text-xs rounded-lg border-2 transition-all ' + (form.businessType === b.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5 text-[#0f172a] font-semibold' : 'border-[#0f172a]/15 text-[#0f172a]')}>
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input label={t.onboarding.companyName} value={form.businessName} onChange={(v) => setForm({ ...form, businessName: v })} placeholder="Maison Baoulé SARL" />
+                  <Input label={t.onboarding.companyNumber} value={form.registrationNumber} onChange={(v) => setForm({ ...form, registrationNumber: v })} placeholder="CI-ABJ-2024-B-12345" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input label={t.onboarding.vatNumber} value={form.vatNumber} onChange={(v) => setForm({ ...form, vatNumber: v })} placeholder="1234567" />
+                  <Input label={locale === 'fr' ? 'Adresse' : 'Address'} value={form.businessAddress} onChange={(v) => setForm({ ...form, businessAddress: v })} placeholder="Cocody, Abidjan" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Identity */}
+          {step === 4 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">{locale === 'fr' ? 'Vérification d\'identité (KYC)' : 'Identity verification (KYC)'}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Téléversez vos documents — JPG, PNG, PDF' : 'Upload your documents — JPG, PNG, PDF'}</p>
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Type de pièce' : 'ID type'}</label>
+                <div className="flex gap-2">
+                  {['passport', 'national_id', 'driving_license'].map((id) => (
+                    <button key={id} onClick={() => setForm({ ...form, idType: id })}
+                      className={'px-3 py-2 text-xs rounded-lg border-2 transition-all ' + (form.idType === id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5 text-[#0f172a] font-semibold' : 'border-[#0f172a]/15 text-[#0f172a]')}>
+                      {id === 'passport' ? (locale === 'fr' ? 'Passeport' : 'Passport') : id === 'national_id' ? (locale === 'fr' ? 'CNI' : 'National ID') : (locale === 'fr' ? 'Permis' : 'License')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <UploadField label={t.onboarding.idFront} value={form.idFront} onFileSelected={async (file) => {
+                  const url = await uploadSellerAsset(file, tempUploadId, 'id-front');
+                  if (url) setForm((f) => ({ ...f, idFront: url }));
+                  else showToast(locale === 'fr' ? 'Échec de l\'envoi du fichier' : 'File upload failed', 'error');
+                }} />
+                <UploadField label={t.onboarding.idBack} value={form.idBack} onFileSelected={async (file) => {
+                  const url = await uploadSellerAsset(file, tempUploadId, 'id-back');
+                  if (url) setForm((f) => ({ ...f, idBack: url }));
+                  else showToast(locale === 'fr' ? 'Échec de l\'envoi du fichier' : 'File upload failed', 'error');
+                }} />
+                <UploadField label={locale === 'fr' ? 'Selfie de vérification' : 'Selfie verification'} value={form.selfie} onFileSelected={async (file) => {
+                  const url = await uploadSellerAsset(file, tempUploadId, 'selfie');
+                  if (url) setForm((f) => ({ ...f, selfie: url }));
+                  else showToast(locale === 'fr' ? 'Échec de l\'envoi du fichier' : 'File upload failed', 'error');
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Store */}
+          {step === 5 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">{locale === 'fr' ? 'Configurez votre boutique' : 'Set up your store'}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'L\'apparence de votre boutique sur Zando' : 'Your store appearance on Zando'}</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input label={locale === 'fr' ? 'Nom de la boutique' : 'Store name'} value={form.storeName} onChange={(v) => setForm({ ...form, storeName: v })} placeholder="Maison Baoulé" />
+                  <Input label="URL" value={form.storeSlug} onChange={(v) => setForm({ ...form, storeSlug: v })} placeholder="maison-baoule" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Description' : 'Description'}</label>
+                  <textarea value={form.storeDesc} onChange={(e) => setForm({ ...form, storeDesc: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Décrivez votre boutique...' : 'Describe your store...'} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <UploadField label={locale === 'fr' ? 'Logo (512x512)' : 'Logo (512x512)'} value={form.storeLogo} onFileSelected={async (file) => {
+                    const url = await uploadSellerAsset(file, tempUploadId, 'logo');
+                    if (url) setForm((f) => ({ ...f, storeLogo: url }));
+                    else showToast(locale === 'fr' ? 'Échec de l\'envoi du fichier' : 'File upload failed', 'error');
+                  }} />
+                  <UploadField label={locale === 'fr' ? 'Bannière (1920x600)' : 'Banner (1920x600)'} value={form.storeBanner} onFileSelected={async (file) => {
+                    const url = await uploadSellerAsset(file, tempUploadId, 'banner');
+                    if (url) setForm((f) => ({ ...f, storeBanner: url }));
+                    else showToast(locale === 'fr' ? 'Échec de l\'envoi du fichier' : 'File upload failed', 'error');
+                  }} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input label="Facebook" value={form.socialFacebook} onChange={(v) => setForm({ ...form, socialFacebook: v })} placeholder="https://facebook.com/..." />
+                  <Input label="Instagram" value={form.socialInstagram} onChange={(v) => setForm({ ...form, socialInstagram: v })} placeholder="https://instagram.com/..." />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 6: Payment — seller configures how they receive money */}
+          {step === 6 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">
+                {locale === 'fr' ? 'Configurez votre moyen de paiement' : 'Configure your payment method'}
+              </h2>
+              <p className="text-sm text-[#64748b] mb-5">
+                {locale === 'fr'
+                  ? 'Configurez comment vous recevez l\'argent de vos ventes. Les acheteurs paient directement chez vous.'
+                  : 'Configure how you receive money from sales. Buyers pay directly to you.'}
+              </p>
+              <div className="space-y-3">
+                {PAYMENT_METHODS.map((pm) => {
+                  const selected = form.selectedPayments.includes(pm.id);
+                  return (
+                    <div key={pm.id}>
+                      <button onClick={() => togglePayment(pm.id)}
+                        className={'w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ' + (selected ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50')}>
+                        <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (selected ? 'bg-[#0e9f6e]/15' : 'bg-[#0f172a]/5')}>
+                          <pm.icon className={'w-5 h-5 ' + (selected ? 'text-[#0e9f6e]' : 'text-[#64748b]')} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-[#0f172a]">{pm.label}</p>
+                          <p className="text-xs text-[#64748b]">{pm.desc}</p>
+                        </div>
+                        <div className={'w-5 h-5 rounded-full border-2 flex items-center justify-center ' + (selected ? 'border-[#0e9f6e] bg-[#0e9f6e]' : 'border-[#0f172a]/20')}>
+                          {selected && <Check className="w-3 h-3 text-[#0f172a]" />}
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-5 space-y-4">
+                <div className="p-4 rounded-xl bg-[#0e9f6e]/5 border border-[#0e9f6e]/20">
+                  <p className="text-xs font-semibold text-[#0f172a] mb-3 flex items-center gap-2">
+                    <Banknote className="w-4 h-4 text-[#0e9f6e]" />
+                    {locale === 'fr' ? 'Coordonnées bancaires (pour recevoir vos paiements)' : 'Bank details (to receive your payments)'}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Input label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName} onChange={(v) => setForm({ ...form, bankName: v })} placeholder="Ecobank" />
+                    <Input label="IBAN" value={form.iban} onChange={(v) => setForm({ ...form, iban: v })} placeholder="CI..." />
+                    <Input label="SWIFT" value={form.swift} onChange={(v) => setForm({ ...form, swift: v })} placeholder="ECOCCIAB" />
+                    <Input label={locale === 'fr' ? 'Numéro Mobile Money' : 'Mobile Money number'} value={form.mobileMoney} onChange={(v) => setForm({ ...form, mobileMoney: v })} placeholder="+225 07 00 00 00" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 7: Shipping & Warehouse */}
+          {step === 7 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">{locale === 'fr' ? 'Livraison & entrepôt' : 'Shipping & warehouse'}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Vos modes de livraison et adresse de stockage' : 'Your delivery methods and storage address'}</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input label={locale === 'fr' ? 'Adresse entrepôt' : 'Warehouse address'} value={form.warehouseAddress} onChange={(v) => setForm({ ...form, warehouseAddress: v })} placeholder="Zone industrielle, Abidjan" />
+                  <Input label={locale === 'fr' ? 'Zone de livraison' : 'Shipping zone'} value={form.shippingZone} onChange={(v) => setForm({ ...form, shippingZone: v })} placeholder="Abidjan, Côte d'Ivoire" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Modes de livraison' : 'Shipping methods'}</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { key: 'shipNational', label: locale === 'fr' ? 'Livraison nationale' : 'National shipping' },
+                      { key: 'shipInternational', label: locale === 'fr' ? 'Livraison internationale' : 'International shipping' },
+                      { key: 'shipExpress', label: locale === 'fr' ? 'Livraison express' : 'Express shipping' },
+                      { key: 'shipLocal', label: locale === 'fr' ? 'Livraison locale' : 'Local delivery' },
+                      { key: 'shipPickup', label: locale === 'fr' ? 'Point de retrait' : 'Pickup point' },
+                    ].map((s) => (
+                      <label key={s.key} className="flex items-center gap-3 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
+                        <input type="checkbox" checked={(form as Record<string, unknown>)[s.key] as boolean} onChange={(e) => setForm({ ...form, [s.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
+                        <span className="text-sm text-[#0f172a]">{s.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 8: Review */}
+          {step === 8 && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-1">{t.onboarding.validation}</h2>
+              <p className="text-sm text-[#64748b] mb-5">{locale === 'fr' ? 'Vérifiez vos informations avant soumission' : 'Review your information before submission'}</p>
+              <div className="space-y-2 text-sm">
+                <SummaryRow label={t.auth.email} value={form.email} />
+                <SummaryRow label={t.account.phone} value={form.phone} />
+                <SummaryRow label={t.onboarding.country} value={countries.find((c) => c.id === form.countryId)?.name || '—'} />
+                <SummaryRow label={t.onboarding.companyName} value={form.businessName} />
+                <SummaryRow label={locale === 'fr' ? 'Boutique' : 'Store'} value={form.storeName} />
+                <SummaryRow label={locale === 'fr' ? 'Paiements' : 'Payments'} value={form.selectedPayments.join(', ')} />
+                <SummaryRow label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName || form.mobileMoney || '—'} />
+              </div>
+              <div className="mt-5 p-4 rounded-xl bg-[#0e9f6e]/10 flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-[#0e9f6e] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-[#0f172a]">
+                    {locale === 'fr' ? 'Plan choisi : ' + form.plan + ' — 14 jours gratuits' : 'Selected plan: ' + form.plan + ' — 14 days free'}
+                  </p>
+                  <p className="text-xs text-[#64748b] mt-1">
+                    {locale === 'fr' ? 'Aucun paiement maintenant. Après 14 jours, un abonnement sera requis.' : 'No payment now. After 14 days, a subscription will be required.'}
+                  </p>
+                </div>
+              </div>
+              {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
+            </div>
+          )}
+
+          {/* Step 9: Done */}
+          {step === 9 && (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-[#0e9f6e]" />
+              </div>
+              <h2 className="font-display text-xl font-semibold text-[#0f172a] mb-2">
+                {locale === 'fr' ? 'Prêt pour soumission' : 'Ready to submit'}
+              </h2>
+              <p className="text-sm text-[#64748b] mb-6">
+                {locale === 'fr' ? 'Soumettez votre dossier. Notre équipe l\'examinera sous 48h.' : 'Submit your application. Our team will review it within 48h.'}
+              </p>
+              <button onClick={submit} disabled={submitting} className="btn-gold px-8 py-3.5 rounded-xl font-semibold flex items-center gap-2 mx-auto disabled:opacity-50">
+                <ShieldCheck className="w-5 h-5" /> {submitting ? (locale === 'fr' ? 'Soumission...' : 'Submitting...') : t.onboarding.submit}
+              </button>
+              {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
+            </div>
+          )}
+
+          {/* Navigation */}
+          {step < 9 && (
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#0e9f6e]/20">
+              <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}
+                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#0f172a] disabled:opacity-30 hover:bg-[#0f172a]/5 rounded-lg transition-colors">
+                <ChevronLeft className="w-4 h-4" /> {t.onboarding.back}
+              </button>
+              <button onClick={() => setStep(step + 1)} disabled={!canProceed()}
+                className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                {t.onboarding.next} <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Input({ icon: Icon, label, value, onChange, type = 'text', placeholder }: { icon?: React.ElementType; label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{label}</label>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />}
+        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+          className={'input-field ' + (Icon ? 'pl-10' : '')} />
+      </div>
+    </div>
+  );
+}
+
+function UploadField({ label, value, onFileSelected }: { label: string; value: string | null; onFileSelected: (file: File) => Promise<void> }) {
+  const [uploading, setUploading] = useState(false);
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{label}</label>
+      <label className={'w-full p-4 rounded-xl border-2 border-dashed transition-all flex items-center gap-3 cursor-pointer ' + (value ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/15 hover:border-[#0e9f6e]/50')}>
+        <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (value ? 'bg-[#0e9f6e]/15' : 'bg-[#0f172a]/5')}>
+          {uploading ? <div className="w-4 h-4 rounded-full border-2 border-[#0e9f6e]/30 border-t-[#0e9f6e] animate-spin" /> : value ? <Check className="w-5 h-5 text-[#0e9f6e]" /> : <UploadCloud className="w-5 h-5 text-[#64748b]" />}
+        </div>
+        <div className="text-left">
+          <p className="text-sm text-[#0f172a]">{uploading ? 'Uploading...' : value ? 'File uploaded' : label}</p>
+          <p className="text-xs text-[#64748b]/60">JPG, PNG, PDF</p>
+        </div>
+        <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" disabled={uploading} onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setUploading(true);
+          try { await onFileSelected(file); } finally { setUploading(false); }
+        }} />
+      </label>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-[#0e9f6e]/10">
+      <span className="text-[#64748b]">{label}</span>
+      <span className="font-semibold text-[#0f172a]">{value || '—'}</span>
+    </div>
+  );
+}
