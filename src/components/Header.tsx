@@ -102,13 +102,13 @@ export function Header() {
   }, [cartItemsResolved]);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#003087] text-white font-sans">
+    <header className="sticky top-0 z-50 bg-[#3d1f00] text-white font-sans">
       {/* Top Navbar */}
       <div className="max-w-[1500px] mx-auto px-4 py-1.5 flex items-center justify-between gap-3 text-sm">
         {/* Left: Logo & Deliver To */}
         <div className="flex items-center gap-4">
           <button onClick={() => go('home')} className="flex items-center hover:outline hover:outline-1 hover:outline-white px-2 py-1 rounded-sm transition-all text-white">
-            <Logo size={28} />
+            <Logo size={28} variant="light" />
           </button>
 
           {/* Deliver to */}
@@ -221,7 +221,7 @@ export function Header() {
       </div>
 
       {/* Subheader Bar */}
-      <div className="bg-[#00255e] text-white">
+      <div className="bg-[#2a1400] text-white">
         <div className="max-w-[1500px] mx-auto px-4 h-10 flex items-center justify-between text-xs sm:text-sm font-medium overflow-hidden">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             <button onClick={() => setMegaOpen(!megaOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white font-bold shrink-0 text-white">
@@ -268,14 +268,14 @@ export function Header() {
 
       {/* Mobile drawer for screens */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-[#dddddd] bg-[#00255e] animate-fade-up py-4 px-4 space-y-2">
+        <div className="lg:hidden border-t border-[#dddddd] bg-[#2a1400] animate-fade-up py-4 px-4 space-y-2">
           <form onSubmit={handleSearch} className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.common.searchPlaceholder} className="input-field pl-9 bg-white" />
           </form>
           <div className="grid grid-cols-2 gap-1.5">
             {MEGA_CATEGORIES.slice(0, 10).map((item) => (
-              <button key={item.label} onClick={() => handleMegaNav(item)} className="text-left px-3 py-2 text-xs text-white rounded hover:bg-[#003087] truncate">{item.label}</button>
+              <button key={item.label} onClick={() => handleMegaNav(item)} className="text-left px-3 py-2 text-xs text-white rounded hover:bg-[#3d1f00] truncate">{item.label}</button>
             ))}
           </div>
         </div>

@@ -120,7 +120,7 @@ export function SellerCard({ seller }: { seller: Seller }) {
       onClick={() => navigate('seller', { id: seller.id })}
       className="bg-white border border-[#e7e7e7] rounded-sm overflow-hidden hover:shadow-md hover:border-[#dddddd] transition-all cursor-pointer group"
     >
-      <div className="relative h-24 overflow-hidden bg-[#003087]">
+      <div className="relative h-24 overflow-hidden bg-[#3d1f00]">
         <img
           src={seller.store_banner_url || ''}
           alt={seller.business_name}

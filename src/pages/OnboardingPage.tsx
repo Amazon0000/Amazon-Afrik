@@ -196,7 +196,7 @@ export function OnboardingPage() {
     <div className="motif-bg min-h-screen">
       <header className="sticky top-0 z-50 bg-[#0f172a] safe-top">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate('sell')}><Logo size={40} /></button>
+          <button onClick={() => navigate('sell')}><Logo size={40} variant="light" /></button>
           <button onClick={() => navigate('home')} className="text-sm text-[#f7f8fa]/60 hover:text-[#0e9f6e]">
             {locale === 'fr' ? 'Retour à la boutique' : 'Back to store'}
           </button>

@@ -1,9 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, createPayoutRequest } from '@/lib/db';
-import type { Product, Order, AdCampaign } from '@/lib/db';
+import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck } from 'lucide-react';
+
+// Major payment service providers by category, with strong African coverage —
+// sellers pick their own PSP here; Zando never touches the funds or takes a cut.
+const PSP_OPTIONS: Record<string, string[]> = {
+  card: ['Flutterwave', 'Paystack', 'Interswitch', 'DPO Pay', 'Peach Payments', 'Yoco', 'PayFast', 'Cellulant (Tingg)', 'Fawry', 'PawaPay', 'Stripe', 'Autre / Other'],
+  mobile_money: ['M-Pesa', 'MTN Mobile Money (MoMo)', 'Orange Money', 'Airtel Money', 'Moov Money', 'Wave', 'Tigo Pesa', 'EcoCash', 'Autre / Other'],
+  bank: ['Virement bancaire direct / Direct bank transfer', 'Autre / Other'],
+  crypto: ['USDT (TRC20)', 'USDT (ERC20)', 'Bitcoin', 'Autre / Other'],
+};
 
 type NewProduct = {
   name: string;
@@ -18,7 +27,7 @@ type NewProduct = {
 const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, navigate, showToast, categories } = useApp();
+  const { t, locale, user, setUser, navigate, showToast, categories } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,6 +39,10 @@ export function SellerCenterPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [paymentMethods, setPaymentMethods] = useState<SellerPaymentMethod[]>([]);
+  const [showAddPayment, setShowAddPayment] = useState(false);
+  const [newPayment, setNewPayment] = useState({ providerName: PSP_OPTIONS.card[0], providerType: 'card', accountIdentifier: '', displayName: '' });
+  const [changingPlan, setChangingPlan] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -44,6 +57,8 @@ export function SellerCenterPage() {
         setProducts(prods);
         setOrders(ords.slice(0, 10));
         setAds(adCamp);
+        const pms = await fetchSellerPaymentMethods(sellerId);
+        setPaymentMethods(pms);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
@@ -59,7 +74,7 @@ export function SellerCenterPage() {
     { id: 'ads', label: t.seller.ads, icon: Megaphone },
     { id: 'analytics', label: t.seller.analytics, icon: BarChart3 },
     { id: 'messages', label: locale === 'fr' ? 'Messages' : 'Messages', icon: MessageSquare },
-    { id: 'wallet', label: locale === 'fr' ? 'Portefeuille' : 'Wallet', icon: Wallet },
+    { id: 'payments', label: locale === 'fr' ? 'Moyens de paiement' : 'Payment methods', icon: Wallet },
     { id: 'invoices', label: locale === 'fr' ? 'Factures' : 'Invoices', icon: FileText },
     { id: 'subscription', label: t.seller.subscription, icon: CreditCard },
     { id: 'settings', label: locale === 'fr' ? 'Paramètres' : 'Settings', icon: Settings },
@@ -404,19 +419,160 @@ export function SellerCenterPage() {
               </div>
             )}
 
-            {tab === 'wallet' && (
+            {tab === 'payments' && (
               <div className="animate-fade-up space-y-6">
-                <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Portefeuille' : 'Wallet'}</h1>
+                <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Moyens de paiement' : 'Payment methods'}</h1>
+                <div className="card p-4 bg-[#0e9f6e]/5 flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-[#0e9f6e] mt-0.5 shrink-0" />
+                  <p className="text-sm text-[#0f172a]">
+                    {locale === 'fr'
+                      ? 'Zando ne prélève aucune commission sur vos ventes. Connectez votre propre PSP (Stripe, Flutterwave, Paystack, Mobile Money, virement bancaire...) : vos clients vous paient directement, sans intermédiaire.'
+                      : "Zando takes zero commission on your sales. Connect your own PSP (Stripe, Flutterwave, Paystack, Mobile Money, bank transfer...): your customers pay you directly, with no middleman."}
+                  </p>
+                </div>
+
+                <div className="card p-6 bg-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-display text-lg font-bold text-[#0f172a]">{locale === 'fr' ? 'Vos PSP connectés' : 'Your connected PSPs'}</h2>
+                    <button onClick={() => setShowAddPayment(!showAddPayment)} className="btn-green px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"><Plus className="w-4 h-4" /> {locale === 'fr' ? 'Connecter un PSP' : 'Connect a PSP'}</button>
+                  </div>
+
+                  {showAddPayment && (
+                    <div className="p-4 rounded-xl bg-[#f7f8fa] mb-4 space-y-3">
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Type de PSP' : 'PSP type'}</label>
+                          <select value={newPayment.providerType} onChange={(e) => setNewPayment({ ...newPayment, providerType: e.target.value, providerName: PSP_OPTIONS[e.target.value][0] })} className="input-field">
+                            <option value="card">{locale === 'fr' ? 'Carte / Passerelle (Stripe, Paystack...)' : 'Card / Gateway (Stripe, Paystack...)'}</option>
+                            <option value="mobile_money">Mobile Money (M-Pesa, Orange Money...)</option>
+                            <option value="bank">{locale === 'fr' ? 'Virement bancaire' : 'Bank transfer'}</option>
+                            <option value="crypto">Crypto</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Fournisseur' : 'Provider'}</label>
+                          <select value={newPayment.providerName} onChange={(e) => setNewPayment({ ...newPayment, providerName: e.target.value })} className="input-field">
+                            {(PSP_OPTIONS[newPayment.providerType] || PSP_OPTIONS.card).map((p) => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      {newPayment.providerName.startsWith('Autre') && (
+                        <input
+                          onChange={(e) => setNewPayment({ ...newPayment, providerName: e.target.value })}
+                          className="input-field"
+                          placeholder={locale === 'fr' ? 'Nom du fournisseur PSP' : 'PSP provider name'}
+                          autoFocus
+                        />
+                      )}
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Identifiant / numéro de compte' : 'Account identifier'}</label>
+                          <input value={newPayment.accountIdentifier} onChange={(e) => setNewPayment({ ...newPayment, accountIdentifier: e.target.value })} className="input-field" placeholder={locale === 'fr' ? 'ID compte, IBAN, numéro...' : 'Account ID, IBAN, number...'} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? "Nom affiché à l'acheteur" : 'Display name to buyer'}</label>
+                          <input value={newPayment.displayName} onChange={(e) => setNewPayment({ ...newPayment, displayName: e.target.value })} className="input-field" placeholder={locale === 'fr' ? 'Ex: Paiement carte via Stripe' : 'E.g. Card payment via Stripe'} />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={async () => {
+                          const sellerId = user?.sellerId || user?.id;
+                          if (!sellerId) return;
+                          if (!newPayment.providerName.trim()) { showToast(locale === 'fr' ? 'Nom du fournisseur requis' : 'Provider name required', 'error'); return; }
+                          const id = await addSellerPaymentMethod({
+                            sellerId,
+                            providerName: newPayment.providerName.trim(),
+                            providerType: newPayment.providerType,
+                            accountIdentifier: newPayment.accountIdentifier || null,
+                            displayName: newPayment.displayName || null,
+                          });
+                          if (id) {
+                            setPaymentMethods([...paymentMethods, {
+                              id, seller_id: sellerId, provider_name: newPayment.providerName.trim(),
+                              provider_type: newPayment.providerType, account_identifier: newPayment.accountIdentifier || null,
+                              is_active: true, is_verified: false, display_name: newPayment.displayName || null,
+                              instructions: null, created_at: new Date().toISOString(),
+                            }]);
+                            setNewPayment({ providerName: PSP_OPTIONS.card[0], providerType: 'card', accountIdentifier: '', displayName: '' });
+                            setShowAddPayment(false);
+                            showToast(locale === 'fr' ? 'PSP connecté' : 'PSP connected');
+                          } else {
+                            showToast(locale === 'fr' ? 'Erreur lors de la connexion' : 'Error connecting PSP', 'error');
+                          }
+                        }} className="btn-green px-5 py-2 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Enregistrer' : 'Save'}</button>
+                        <button onClick={() => setShowAddPayment(false)} className="px-5 py-2 rounded-lg text-xs font-medium border border-[#0f172a]/15 text-[#0f172a]">{t.common.cancel}</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethods.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Wallet className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />
+                      <p className="text-sm text-[#64748b]">{locale === 'fr' ? "Aucun PSP connecté. Vos acheteurs ne peuvent pas encore vous payer — connectez-en un." : "No PSP connected yet. Buyers can't pay you until you connect one."}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {paymentMethods.map((pm) => (
+                        <div key={pm.id} className="flex items-center gap-3 p-3 rounded-lg border border-[#e2e8f0]">
+                          <div className="w-9 h-9 rounded-lg bg-[#0e9f6e]/10 flex items-center justify-center shrink-0"><CreditCard className="w-4 h-4 text-[#0e9f6e]" /></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-[#0f172a]">{pm.display_name || pm.provider_name}</p>
+                            <p className="text-xs text-[#64748b]">{pm.provider_name} • {pm.provider_type}{pm.account_identifier ? ` • ${pm.account_identifier}` : ''}</p>
+                          </div>
+                          <Badge color={pm.is_verified ? '#22c55e' : '#0e9f6e'}>{pm.is_verified ? (locale === 'fr' ? 'Vérifié' : 'Verified') : (locale === 'fr' ? 'En attente' : 'Pending')}</Badge>
+                          <button onClick={async () => {
+                            const ok = await toggleSellerPaymentMethod(pm.id, !pm.is_active);
+                            if (ok) setPaymentMethods(paymentMethods.map(x => x.id === pm.id ? { ...x, is_active: !x.is_active } : x));
+                          }} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold ${pm.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{pm.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</button>
+                          <button onClick={async () => {
+                            const ok = await removeSellerPaymentMethod(pm.id);
+                            if (ok) { setPaymentMethods(paymentMethods.filter(x => x.id !== pm.id)); showToast(locale === 'fr' ? 'PSP retiré' : 'PSP removed'); }
+                          }} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {tab === 'subscription' && (
+              <div className="animate-fade-up space-y-6">
+                <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.subscription}</h1>
                 <div className="card p-6 bg-gradient-to-br from-[#0e9f6e]/10 to-transparent border-[#0e9f6e]/20">
-                  <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Solde disponible' : 'Available balance'}</p>
-                  <p className="text-4xl font-bold text-[#0f172a] mt-2">${totalRevenue.toFixed(2)}</p>
-                  <button onClick={async () => {
-                    if (!user?.sellerId && !user?.id) return;
-                    const sellerId = user.sellerId || user.id;
-                    if (totalRevenue <= 0) { showToast(locale === 'fr' ? 'Solde insuffisant' : 'Insufficient balance'); return; }
-                    const id = await createPayoutRequest({ sellerId, amount: totalRevenue });
-                    showToast(id ? (locale === 'fr' ? 'Demande de paiement envoyée' : 'Payout request submitted') : (locale === 'fr' ? 'Erreur' : 'Error'), id ? 'success' : 'error');
-                  }} className="mt-4 btn-green px-6 py-2.5 rounded-lg text-sm font-semibold">{locale === 'fr' ? 'Demander un paiement' : 'Request payout'}</button>
+                  <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Plan actuel' : 'Current plan'}</p>
+                  <p className="text-3xl font-bold text-[#0f172a] mt-1 capitalize" style={{ color: planColor }}>{plan}</p>
+                  <p className="text-xs text-[#64748b] mt-2">
+                    {locale === 'fr'
+                      ? "C'est votre seul coût fixe chez Zando — aucune commission n'est prélevée sur vos ventes, qui vous sont versées directement via votre PSP."
+                      : "This is your only fixed cost on Zando — zero commission is taken on your sales, which are paid to you directly via your PSP."}
+                  </p>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {(['starter', 'premium', 'enterprise'] as const).map((p) => (
+                    <div key={p} className={`card p-5 ${plan === p ? 'ring-2 ring-[#0e9f6e]' : ''}`}>
+                      <h3 className="font-display text-lg font-bold text-[#0f172a] capitalize mb-2">{p}</h3>
+                      <button
+                        disabled={plan === p || changingPlan}
+                        onClick={async () => {
+                          const sellerId = user?.sellerId || user?.id;
+                          if (!sellerId || !user) return;
+                          setChangingPlan(true);
+                          const ok = await updateSellerPlan(sellerId, p);
+                          if (ok) {
+                            setUser({ ...user, sellerPlan: p });
+                            showToast(locale === 'fr' ? 'Plan mis à jour' : 'Plan updated');
+                          } else {
+                            showToast(locale === 'fr' ? 'Erreur lors du changement de plan' : 'Error changing plan', 'error');
+                          }
+                          setChangingPlan(false);
+                        }}
+                        className={`w-full py-2.5 rounded-lg text-sm font-semibold ${plan === p ? 'bg-[#0f172a]/10 text-[#64748b] cursor-default' : 'btn-green'}`}
+                      >
+                        {plan === p ? (locale === 'fr' ? 'Plan actuel' : 'Current plan') : (locale === 'fr' ? 'Choisir' : 'Choose')}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

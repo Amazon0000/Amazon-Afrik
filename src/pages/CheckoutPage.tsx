@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchPaymentProviders } from '@/lib/db';
-import type { Product, Address, PaymentProvider } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods } from '@/lib/db';
+import type { Product, Address, SellerPaymentMethod } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone } from 'lucide-react';
+import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle } from 'lucide-react';
 
 export function CheckoutPage() {
-  const { t, locale, cart, navigate, clearCart, showToast, user, geo } = useApp();
+  const { t, locale, cart, navigate, clearCart, showToast, user } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [paymentProviders, setPaymentProviders] = useState<PaymentProvider[]>([]);
+  const [sellerPayments, setSellerPayments] = useState<Record<string, SellerPaymentMethod[]>>({});
   const [selectedAddressId, setSelectedAddressId] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [selectedPayment, setSelectedPayment] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderId, setOrderId] = useState('');
+  const [orderIds, setOrderIds] = useState<string[]>([]);
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', address: '', city: '' });
 
   useEffect(() => {
@@ -35,15 +35,30 @@ export function CheckoutPage() {
         setSelectedAddressId(addr.find((a) => a.is_default)?.id || addr[0]?.id || '');
       }
 
-      const pp = await fetchPaymentProviders(geo.countryId);
-      setPaymentProviders(pp);
-      if (pp.length > 0) setPaymentMethod(pp[0].slug);
+      const sellerIds = Array.from(new Set(Object.values(prods).map((p) => p.seller_id)));
+      const paymentsBySeller: Record<string, SellerPaymentMethod[]> = {};
+      const defaults: Record<string, string> = {};
+      await Promise.all(sellerIds.map(async (sellerId) => {
+        const methods = (await fetchSellerPaymentMethods(sellerId)).filter((m) => m.is_active);
+        paymentsBySeller[sellerId] = methods;
+        if (methods.length > 0) defaults[sellerId] = methods[0].id;
+      }));
+      setSellerPayments(paymentsBySeller);
+      setSelectedPayment(defaults);
       setLoading(false);
     })();
-  }, [cart, user, geo.countryId]);
+  }, [cart, user]);
 
   const items = cart.map((c) => ({ ...c, product: products[c.productId] })).filter((i) => i.product);
   const subtotal = items.reduce((sum, i) => sum + (i.product!.price * i.qty), 0);
+
+  const sellerGroups = items.reduce<Record<string, typeof items>>((acc, item) => {
+    const sid = item.product!.seller_id;
+    (acc[sid] ||= []).push(item);
+    return acc;
+  }, {});
+  const sellerIds = Object.keys(sellerGroups);
+  const allSellersHavePayment = sellerIds.every((sid) => selectedPayment[sid]);
 
   const placeOrder = async () => {
     if (items.length === 0) return;
@@ -51,38 +66,51 @@ export function CheckoutPage() {
       showToast(locale === 'fr' ? 'Veuillez remplir vos informations' : 'Please fill your information', 'error');
       return;
     }
+    if (!allSellersHavePayment) {
+      showToast(locale === 'fr' ? "Un vendeur n'a pas encore de moyen de paiement actif" : 'A seller has no active payment method yet', 'error');
+      return;
+    }
     const addr = addresses.find((a) => a.id === selectedAddressId);
     const deliveryAddress = user
       ? (addr ? `${addr.street}, ${addr.city}` : '')
       : `${guestInfo.address}, ${guestInfo.city}`;
-    const id = `ORD-${Date.now().toString().slice(-6)}`;
-    try {
-      const { data: order } = await supabase.from('orders').insert({
-        user_id: user?.id || null,
-        guest_name: !user ? guestInfo.name : null,
-        guest_email: !user ? guestInfo.email : null,
-        guest_phone: !user ? guestInfo.phone : null,
-        seller_id: items[0].product!.seller_id,
-        status: 'confirmed',
-        total: subtotal,
-        payment_method: paymentMethod,
-        delivery_address: deliveryAddress,
-        tracking_id: id,
-      }).select().single();
 
-      if (order) {
-        for (const item of items) {
-          await supabase.from('order_items').insert({
-            order_id: order.id,
-            product_id: item.productId,
-            product_name: item.product!.name,
-            qty: item.qty,
-            price: item.product!.price,
-            image_url: item.product!.product_images?.[0]?.image_url || null,
-          });
+    try {
+      const createdIds: string[] = [];
+      for (const sellerId of sellerIds) {
+        const groupItems = sellerGroups[sellerId];
+        const groupTotal = groupItems.reduce((sum, i) => sum + i.product!.price * i.qty, 0);
+        const method = sellerPayments[sellerId]?.find((m) => m.id === selectedPayment[sellerId]);
+        const trackingId = `ORD-${Date.now().toString().slice(-6)}-${sellerId.slice(0, 4)}`;
+
+        const { data: order } = await supabase.from('orders').insert({
+          user_id: user?.id || null,
+          guest_name: !user ? guestInfo.name : null,
+          guest_email: !user ? guestInfo.email : null,
+          guest_phone: !user ? guestInfo.phone : null,
+          seller_id: sellerId,
+          status: 'confirmed',
+          total: groupTotal,
+          payment_method: method?.display_name || method?.provider_name || null,
+          delivery_address: deliveryAddress,
+          tracking_id: trackingId,
+        }).select().single();
+
+        if (order) {
+          for (const item of groupItems) {
+            await supabase.from('order_items').insert({
+              order_id: order.id,
+              product_id: item.productId,
+              product_name: item.product!.name,
+              qty: item.qty,
+              price: item.product!.price,
+              image_url: item.product!.product_images?.[0]?.image_url || null,
+            });
+          }
+          createdIds.push(trackingId);
         }
       }
-      setOrderId(id);
+      setOrderIds(createdIds);
       setOrderPlaced(true);
       clearCart();
       showToast(t.checkout.orderPlaced);
@@ -100,9 +128,13 @@ export function CheckoutPage() {
           </div>
           <h2 className="font-display text-2xl font-bold text-[#0f172a] mb-2">{t.checkout.orderPlaced}</h2>
           <p className="text-sm text-[#64748b] mb-2">{t.checkout.orderPlacedDesc}</p>
-          <p className="text-xs text-[#64748b] mb-6">{t.delivery.trackingId}: <span className="font-mono font-bold text-[#0f172a]">{orderId}</span></p>
+          <div className="mb-6 space-y-1">
+            {orderIds.map((id) => (
+              <p key={id} className="text-xs text-[#64748b]">{t.delivery.trackingId}: <span className="font-mono font-bold text-[#0f172a]">{id}</span></p>
+            ))}
+          </div>
           <div className="flex gap-3">
-            <button onClick={() => navigate('delivery', { id: orderId })} className="flex-1 btn-gold py-3 rounded-xl font-semibold">{t.delivery.title}</button>
+            <button onClick={() => navigate('delivery', { id: orderIds[0] })} className="flex-1 btn-gold py-3 rounded-xl font-semibold">{t.delivery.title}</button>
             <button onClick={() => navigate('home')} className="flex-1 btn-cocoa py-3 rounded-xl font-semibold">{t.nav.home}</button>
           </div>
         </div>
@@ -172,23 +204,48 @@ export function CheckoutPage() {
               )}
             </div>
 
-            {/* Payment */}
+            {/* Payment — per seller, direct to their own PSP */}
             <div className="premium-card p-5 rounded-2xl">
-              <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0e9f6e]" /> {t.checkout.paymentMethod}</h2>
-              <div className="space-y-2">
-                {paymentProviders.map((p) => (
-                  <button key={p.id} onClick={() => setPaymentMethod(p.slug)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${paymentMethod === p.slug ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50'}`}>
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${paymentMethod === p.slug ? 'bg-[#0e9f6e] text-[#0f172a]' : 'bg-[#0f172a]/5 text-[#64748b]'}`}>
-                      {p.slug.includes('mobile') || p.slug.includes('mpesa') ? <Smartphone className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+              <h2 className="font-display text-lg font-bold text-[#0f172a] mb-1 flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0e9f6e]" /> {t.checkout.paymentMethod}</h2>
+              <p className="text-xs text-[#64748b] mb-4">{t.checkout.directPaymentDesc}</p>
+
+              <div className="space-y-5">
+                {sellerIds.map((sellerId) => {
+                  const groupItems = sellerGroups[sellerId];
+                  const seller = groupItems[0].product!.sellers;
+                  const methods = sellerPayments[sellerId] || [];
+                  return (
+                    <div key={sellerId} className="p-3 rounded-xl bg-[#f7f8fa]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Store className="w-4 h-4 text-[#64748b]" />
+                        <span className="text-sm font-semibold text-[#0f172a]">{seller?.business_name || sellerId}</span>
+                      </div>
+                      {methods.length === 0 ? (
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 text-xs">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          {locale === 'fr' ? "Ce vendeur n'a pas encore connecté de moyen de paiement." : 'This seller has not connected a payment method yet.'}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {methods.map((m) => (
+                            <button key={m.id} onClick={() => setSelectedPayment({ ...selectedPayment, [sellerId]: m.id })}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all bg-white ${selectedPayment[sellerId] === m.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50'}`}>
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedPayment[sellerId] === m.id ? 'bg-[#0e9f6e] text-white' : 'bg-[#0f172a]/5 text-[#64748b]'}`}>
+                                {m.provider_type === 'mobile_money' ? <Smartphone className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                              </div>
+                              <span className="text-sm font-medium text-[#0f172a]">{m.display_name || m.provider_name}</span>
+                              <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 ${selectedPayment[sellerId] === m.id ? 'border-[#0e9f6e] bg-[#0e9f6e]' : 'border-[#0f172a]/20'}`}>
+                                {selectedPayment[sellerId] === m.id && <CheckCircle className="w-4 h-4 text-white mx-auto" />}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-sm font-medium text-[#0f172a]">{p.name}</span>
-                    <div className={`ml-auto w-5 h-5 rounded-full border-2 ${paymentMethod === p.slug ? 'border-[#0e9f6e] bg-[#0e9f6e]' : 'border-[#0f172a]/20'}`}>
-                      {paymentMethod === p.slug && <CheckCircle className="w-4 h-4 text-[#0f172a] mx-auto" />}
-                    </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
+
               <div className="mt-4 p-3 rounded-xl bg-[#0e9f6e]/10 flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#0e9f6e] mt-0.5 shrink-0" />
                 <p className="text-xs text-[#64748b]">{t.checkout.directPaymentDesc}</p>
@@ -220,7 +277,7 @@ export function CheckoutPage() {
                   <span className="text-2xl font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
                 </div>
               </div>
-              <button onClick={placeOrder} disabled={user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address} className="w-full btn-gold py-3.5 rounded-xl font-semibold mt-5 disabled:opacity-50 soft-glow">
+              <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address) || !allSellersHavePayment} className="w-full btn-gold py-3.5 rounded-xl font-semibold mt-5 disabled:opacity-50 soft-glow">
                 {t.checkout.placeOrder}
               </button>
               <button onClick={() => navigate('cart')} className="w-full mt-2 text-sm text-[#64748b] hover:text-[#0f172a] transition-colors">{t.common.back}</button>

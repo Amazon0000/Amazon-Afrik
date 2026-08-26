@@ -1057,6 +1057,14 @@ export async function updateSellerStatus(sellerId: string, status: string): Prom
   return true;
 }
 
+export async function updateSellerPlan(sellerId: string, plan: 'starter' | 'premium' | 'enterprise'): Promise<boolean> {
+  const { error: dbError } = await supabase.from('sellers').update({ plan, plan_selected: plan }).eq('id', sellerId);
+  if (dbError) { console.error('updateSellerPlan:', dbError.message); return false; }
+  const { error: authError } = await supabase.auth.updateUser({ data: { seller_plan: plan } });
+  if (authError) { console.error('updateSellerPlan (auth):', authError.message); }
+  return true;
+}
+
 export async function updateAdCampaignStatus(campaignId: string, status: string): Promise<boolean> {
   const { error } = await supabase.from('ad_campaigns').update({ status }).eq('id', campaignId);
   if (error) { console.error('updateAdCampaignStatus:', error.message); return false; }
@@ -1071,12 +1079,42 @@ export async function updateUserProfile(userId: string, updates: { full_name?: s
   return true;
 }
 
-export async function createPayoutRequest(opts: { sellerId: string; amount: number; status?: string }): Promise<string | null> {
-  const { data, error } = await supabase.from('payouts').insert({
-    seller_id: opts.sellerId,
-    amount: opts.amount,
-    status: opts.status || 'pending',
-  }).select('id').single();
-  if (error || !data) { console.error('createPayoutRequest:', error.message); return null; }
-  return data.id;
+// Zando charges no commission on sales: sellers connect their own PSP
+// (seller_payment_methods) and are paid directly by buyers. Platform revenue
+// comes only from seller subscriptions (sellers.plan) and ad_campaigns spend.
+// Revenue summary for admins — see fetchPlatformRevenue below.
+export type PlatformRevenueSummary = {
+  subscriptionMonthlyRevenue: number;
+  sellersByPlan: Record<'starter' | 'premium' | 'enterprise', number>;
+  adSpendTotal: number;
+  adSpendActive: number;
+};
+
+const PLAN_PRICE_USD: Record<'starter' | 'premium' | 'enterprise', number> = {
+  starter: 0,
+  premium: 29,
+  enterprise: 99,
+};
+
+export async function fetchPlatformRevenue(): Promise<PlatformRevenueSummary> {
+  const sellersByPlan: Record<'starter' | 'premium' | 'enterprise', number> = { starter: 0, premium: 0, enterprise: 0 };
+  let subscriptionMonthlyRevenue = 0;
+  const { data: sellers, error: sellersError } = await supabase.from('sellers').select('plan').eq('status', 'approved');
+  if (!sellersError && sellers) {
+    for (const s of sellers as { plan: string }[]) {
+      const plan = (s.plan as 'starter' | 'premium' | 'enterprise') || 'starter';
+      if (plan in sellersByPlan) sellersByPlan[plan]++;
+      subscriptionMonthlyRevenue += PLAN_PRICE_USD[plan] ?? 0;
+    }
+  }
+  let adSpendTotal = 0;
+  let adSpendActive = 0;
+  const { data: ads, error: adsError } = await supabase.from('ad_campaigns').select('budget, status');
+  if (!adsError && ads) {
+    for (const a of ads as { budget: number; status: string }[]) {
+      adSpendTotal += a.budget || 0;
+      if (a.status === 'active') adSpendActive += a.budget || 0;
+    }
+  }
+  return { subscriptionMonthlyRevenue, sellersByPlan, adSpendTotal, adSpendActive };
 }

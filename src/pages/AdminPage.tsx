@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
 
@@ -126,7 +126,7 @@ export function AdminPage() {
     { id: 'kyc', label: t.admin.kyc, icon: ShieldCheck },
     { id: 'ads', label: t.admin.ads, icon: Megaphone },
     { id: 'disputes', label: t.admin.disputes, icon: AlertTriangle },
-    { id: 'payouts', label: locale === 'fr' ? 'Paiements vendeurs' : 'Seller payouts', icon: DollarSign, superOnly: true },
+    { id: 'revenue', label: locale === 'fr' ? 'Revenus Zando' : 'Zando Revenue', icon: DollarSign, superOnly: true },
     { id: 'geography', label: t.admin.geography, icon: Globe, superOnly: true },
     { id: 'staff', label: t.admin.staff, icon: Users, superOnly: true },
     { id: 'plans', label: t.admin.plans, icon: CreditCard, superOnly: true },
@@ -472,14 +472,14 @@ export function AdminPage() {
               </div>
             )}
 
-            {tab === 'payouts' && isSuperAdmin && (
+            {tab === 'revenue' && isSuperAdmin && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Paiements vendeurs' : 'Seller Payouts'}</h2>
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Revenus Zando' : 'Zando Revenue'}</h2>
                 <div className="card p-5 mb-4 bg-[#0e9f6e]/5 flex items-center gap-3">
                   <DollarSign className="w-5 h-5 text-[#0e9f6e]" />
-                  <p className="text-sm text-[#0f172a]">{locale === 'fr' ? 'Gérez les demandes de paiement des vendeurs. Les paiements sont envoyés directement sur le compte configuré par le vendeur.' : 'Manage seller payout requests. Payments are sent directly to the seller\'s configured account.'}</p>
+                  <p className="text-sm text-[#0f172a]">{locale === 'fr' ? 'Zando ne prélève aucune commission sur les ventes. Chaque vendeur connecte son propre PSP et est payé directement par ses clients. Les revenus de la plateforme proviennent uniquement des abonnements vendeurs et de la publicité interne.' : "Zando takes zero commission on sales. Each seller connects their own PSP and is paid directly by buyers. Platform revenue comes only from seller subscriptions and internal advertising."}</p>
                 </div>
-                <PayoutsTab />
+                <RevenueTab />
               </div>
             )}
 
@@ -720,53 +720,53 @@ function ToggleRow({ label, desc, enabled, onToggle }: { label: string; desc: st
   );
 }
 
-function PayoutsTab() {
-  const { locale, showToast } = useApp();
-  const [payouts, setPayouts] = useState<{ id: string; seller_id: string; amount: number; status: string; created_at: string; sellers?: { business_name: string } }[]>([]);
+function RevenueTab() {
+  const { locale } = useApp();
+  const [revenue, setRevenue] = useState<PlatformRevenueSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('payouts').select('*, sellers(business_name)').order('created_at', { ascending: false }).limit(50);
-      setPayouts((data as typeof payouts) || []);
+      const data = await fetchPlatformRevenue();
+      setRevenue(data);
       setLoading(false);
     })();
   }, []);
 
-  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+  if (loading || !revenue) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  const totalMonthly = revenue.subscriptionMonthlyRevenue + revenue.adSpendActive;
 
   return (
-    <div className="card overflow-hidden bg-white">
-      {payouts.length === 0 ? (
-        <p className="text-sm text-[#64748b] text-center py-8">{locale === 'fr' ? 'Aucune demande de paiement.' : 'No payout requests.'}</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead className="bg-[#f7f8fa] text-xs text-[#64748b] uppercase">
-            <tr>
-              <th className="text-left px-4 py-3">{locale === 'fr' ? 'Vendeur' : 'Seller'}</th>
-              <th className="text-left px-4 py-3">{locale === 'fr' ? 'Montant' : 'Amount'}</th>
-              <th className="text-left px-4 py-3">{locale === 'fr' ? 'Statut' : 'Status'}</th>
-              <th className="text-left px-4 py-3">{locale === 'fr' ? 'Date' : 'Date'}</th>
-              <th className="text-left px-4 py-3">{locale === 'fr' ? 'Action' : 'Action'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payouts.map((p) => (
-              <tr key={p.id} className="border-t border-[#e2e8f0]">
-                <td className="px-4 py-3 text-[#0f172a]">{p.sellers?.business_name || '—'}</td>
-                <td className="px-4 py-3 font-semibold text-[#0f172a]">${Number(p.amount).toFixed(2)}</td>
-                <td className="px-4 py-3"><Badge color={p.status === 'pending' ? '#0e9f6e' : p.status === 'paid' ? '#22c55e' : '#64748b'}>{p.status}</Badge></td>
-                <td className="px-4 py-3 text-xs text-[#64748b]">{new Date(p.created_at).toLocaleDateString()}</td>
-                <td className="px-4 py-3">
-                  {p.status === 'pending' && (
-                    <button onClick={async () => { await supabase.from('payouts').update({ status: 'paid' }).eq('id', p.id); setPayouts(payouts.map(x => x.id === p.id ? { ...x, status: 'paid' } : x)); showToast(locale === 'fr' ? 'Paiement effectué' : 'Payout marked as paid'); }} className="px-3 py-1.5 rounded-lg bg-[#0e9f6e] text-white text-xs font-semibold hover:bg-[#0c8a5e]">{locale === 'fr' ? 'Marquer payé' : 'Mark paid'}</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label={locale === 'fr' ? 'Revenu mensuel total' : 'Total monthly revenue'} value={`$${totalMonthly.toFixed(0)}`} icon={DollarSign} />
+        <StatCard label={locale === 'fr' ? 'Abonnements / mois' : 'Subscriptions / mo'} value={`$${revenue.subscriptionMonthlyRevenue.toFixed(0)}`} icon={CreditCard} />
+        <StatCard label={locale === 'fr' ? 'Pub active (budget)' : 'Active ads (budget)'} value={`$${revenue.adSpendActive.toFixed(0)}`} icon={Megaphone} />
+        <StatCard label={locale === 'fr' ? 'Pub totale (cumul)' : 'Total ad spend (all-time)'} value={`$${revenue.adSpendTotal.toFixed(0)}`} icon={TrendingUp} />
+      </div>
+
+      <div className="card p-6 bg-white">
+        <h3 className="font-display text-lg font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Vendeurs par plan' : 'Sellers by plan'}</h3>
+        <div className="space-y-3">
+          {(['enterprise', 'premium', 'starter'] as const).map((plan) => {
+            const count = revenue.sellersByPlan[plan];
+            const total = revenue.sellersByPlan.starter + revenue.sellersByPlan.premium + revenue.sellersByPlan.enterprise;
+            const pct = total > 0 ? (count / total) * 100 : 0;
+            return (
+              <div key={plan}>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="font-medium text-[#0f172a] capitalize">{plan}</span>
+                  <span className="text-[#64748b]">{count} {locale === 'fr' ? 'vendeurs' : 'sellers'}</span>
+                </div>
+                <div className="h-2 rounded-full bg-[#f0f4f8] overflow-hidden">
+                  <div className="h-full bg-[#d4af37]" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

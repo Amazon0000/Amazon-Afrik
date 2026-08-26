@@ -76,7 +76,7 @@ export function CustomerServicePage() {
     <div className="motif-bg min-h-screen">
       <header className="sticky top-0 z-50 safe-top bg-[#0f172a]" style={{ backdropFilter: 'blur(12px)' }}>
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate('home')}><Logo size={40} /></button>
+          <button onClick={() => navigate('home')}><Logo size={40} variant="light" /></button>
           <div className="flex items-center gap-4">
             <button onClick={() => navigate('login')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#0e9f6e]">{t.nav.login}</button>
             <button onClick={() => navigate('cart')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#0e9f6e]">{locale === 'fr' ? 'Panier' : 'Cart'}</button>
