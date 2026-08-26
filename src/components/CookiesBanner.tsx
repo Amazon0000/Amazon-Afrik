@@ -30,8 +30,8 @@ export function CookiesBanner() {
     <div className="fixed bottom-0 left-0 right-0 z-[100] animate-fade-up">
       <div className="max-w-4xl mx-auto m-4 p-5 rounded-2xl bg-[#0f172a] shadow-2xl border border-white/10">
         <div className="flex flex-col sm:flex-row items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-[#d4af37]/20 flex items-center justify-center shrink-0">
-            <Cookie className="w-5 h-5 text-[#d4af37]" />
+          <div className="w-10 h-10 rounded-xl bg-[#ff7a00]/20 flex items-center justify-center shrink-0">
+            <Cookie className="w-5 h-5 text-[#ff7a00]" />
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-bold text-white mb-1">
@@ -47,7 +47,7 @@ export function CookiesBanner() {
             <button onClick={decline} className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-xs font-medium text-white/70 border border-white/20 hover:bg-white/10 transition-colors">
               {locale === 'fr' ? 'Refuser' : 'Decline'}
             </button>
-            <button onClick={accept} className="flex-1 sm:flex-none px-5 py-2.5 rounded-lg text-xs font-semibold bg-[#d4af37] text-[#0f172a] hover:bg-[#d4af37]/90 transition-colors">
+            <button onClick={accept} className="flex-1 sm:flex-none px-5 py-2.5 rounded-lg text-xs font-semibold bg-[#ff7a00] text-[#0f172a] hover:bg-[#ff7a00]/90 transition-colors">
               {locale === 'fr' ? 'Accepter' : 'Accept'}
             </button>
             <button onClick={decline} className="p-2.5 rounded-lg text-white/40 hover:text-white">

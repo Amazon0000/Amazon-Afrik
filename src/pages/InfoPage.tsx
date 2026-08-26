@@ -69,7 +69,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
       <div className="bg-white border-b border-[#e2e8f0]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
           <nav className="flex items-center gap-2 text-xs text-[#64748b]">
-            <button onClick={() => navigate('home')} className="hover:text-[#d4af37]">Zando</button>
+            <button onClick={() => navigate('home')} className="hover:text-[#ff7a00]">Zando</button>
             <ChevronRight className="w-3 h-3" />
             <span className="text-[#0f172a] font-medium">{title}</span>
           </nav>
@@ -79,8 +79,8 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[#d4af37]/10 flex items-center justify-center">
-            <Icon className="w-7 h-7 text-[#d4af37]" />
+          <div className="w-14 h-14 rounded-2xl bg-[#ff7a00]/10 flex items-center justify-center">
+            <Icon className="w-7 h-7 text-[#ff7a00]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-[#0f172a]">{title}</h1>
@@ -107,7 +107,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p><strong>Qualité :</strong> Nous privilégions des produits authentiques et un service client de premier ordre.</p>
               </Section>
               <Section title="Contact">
-                <p>Pour toute question, contactez-nous à <a href="mailto:cs@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">cs@liafrik.com</a> ou <a href="mailto:zando@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">zando@liafrik.com</a>.</p>
+                <p>Pour toute question, contactez-nous à <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a> ou <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a>.</p>
               </Section>
             </>
           ) : (
@@ -128,7 +128,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p><strong>Quality:</strong> We prioritize authentic products and top-tier customer service.</p>
               </Section>
               <Section title="Contact">
-                <p>For any questions, contact us at <a href="mailto:cs@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">cs@liafrik.com</a> or <a href="mailto:zando@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">zando@liafrik.com</a>.</p>
+                <p>For any questions, contact us at <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a> or <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a>.</p>
               </Section>
             </>
           ))}
@@ -223,8 +223,8 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               <Section title={locale === 'fr' ? 'Contactez-nous' : 'Contact Us'}>
                 <p>{locale === 'fr' ? 'Vous ne trouvez pas votre réponse ? Notre équipe support est disponible 24/7.' : 'Can\'t find your answer? Our support team is available 24/7.'}</p>
                 <div className="flex flex-col gap-2 mt-3">
-                  <a href="mailto:support@liafrik.com" className="text-[#d4af37] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> support@liafrik.com</a>
-                  <a href="mailto:cs@liafrik.com" className="text-[#d4af37] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> cs@liafrik.com</a>
+                  <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> support@liafrik.com</a>
+                  <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> cs@liafrik.com</a>
                 </div>
               </Section>
             </>
@@ -429,7 +429,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Vos données de commande (nom, adresse, téléphone) sont partagées avec le vendeur pour la livraison. Nous ne vendons jamais vos données à des tiers. Les fournisseurs de paiement reçoivent uniquement les données nécessaires à la transaction.</p>
               </Section>
               <Section title="Vos droits">
-                <p>Vous pouvez accéder, modifier ou supprimer vos données à tout moment depuis « Mon compte ». Pour exercer vos droits, contactez-nous à <a href="mailto:cs@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">cs@liafrik.com</a>.</p>
+                <p>Vous pouvez accéder, modifier ou supprimer vos données à tout moment depuis « Mon compte ». Pour exercer vos droits, contactez-nous à <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a>.</p>
               </Section>
               <Section title="Sécurité">
                 <p>Nous utilisons le chiffrement SSL et des fournisseurs certifiés pour protéger vos données. Les documents KYC sont stockés de manière sécurisée.</p>
@@ -452,7 +452,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Your order data (name, address, phone) is shared with the seller for delivery. We never sell your data to third parties. Payment providers receive only the data necessary for the transaction.</p>
               </Section>
               <Section title="Your Rights">
-                <p>You can access, modify, or delete your data at any time from "My Account". To exercise your rights, contact us at <a href="mailto:cs@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">cs@liafrik.com</a>.</p>
+                <p>You can access, modify, or delete your data at any time from "My Account". To exercise your rights, contact us at <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a>.</p>
               </Section>
               <Section title="Security">
                 <p>We use SSL encryption and certified providers to protect your data. KYC documents are stored securely.</p>
@@ -497,9 +497,9 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="Éditeur">
                 <p><strong>Liafrik</strong></p>
-                <p>E-mail : <a href="mailto:zando@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">zando@liafrik.com</a></p>
-                <p>Service client : <a href="mailto:cs@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">cs@liafrik.com</a></p>
-                <p>Support technique : <a href="mailto:support@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">support@liafrik.com</a></p>
+                <p>E-mail : <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a></p>
+                <p>Service client : <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a></p>
+                <p>Support technique : <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
               </Section>
               <Section title="Hébergement">
                 <p>La plateforme Zando est hébergée sur des infrastructures cloud sécurisées avec chiffrement des données.</p>
@@ -515,9 +515,9 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="Publisher">
                 <p><strong>Liafrik</strong></p>
-                <p>Email: <a href="mailto:zando@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">zando@liafrik.com</a></p>
-                <p>Customer service: <a href="mailto:cs@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">cs@liafrik.com</a></p>
-                <p>Technical support: <a href="mailto:support@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">support@liafrik.com</a></p>
+                <p>Email: <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a></p>
+                <p>Customer service: <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a></p>
+                <p>Technical support: <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
               </Section>
               <Section title="Hosting">
                 <p>The Zando platform is hosted on secure cloud infrastructure with data encryption.</p>
@@ -547,7 +547,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>• Finance et paiements</p>
               </Section>
               <Section title="Postuler">
-                <p>Envoyez votre CV et lettre de motivation à <a href="mailto:zando@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">zando@liafrik.com</a> avec l'objet « Candidature ».</p>
+                <p>Envoyez votre CV et lettre de motivation à <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a> avec l'objet « Candidature ».</p>
               </Section>
             </>
           ) : (
@@ -569,7 +569,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>• Finance & Payments</p>
               </Section>
               <Section title="How to Apply">
-                <p>Send your CV and cover letter to <a href="mailto:zando@liafrik.com" className="text-[#d4af37] font-semibold hover:underline">zando@liafrik.com</a> with the subject "Application".</p>
+                <p>Send your CV and cover letter to <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a> with the subject "Application".</p>
               </Section>
             </>
           ))}
@@ -581,29 +581,29 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                 <div className="card p-5">
-                  <Headphones className="w-8 h-8 text-[#d4af37] mb-3" />
+                  <Headphones className="w-8 h-8 text-[#ff7a00] mb-3" />
                   <h3 className="text-sm font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Service Client' : 'Customer Service'}</h3>
-                  <a href="mailto:cs@liafrik.com" className="text-sm text-[#d4af37] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> cs@liafrik.com</a>
+                  <a href="mailto:cs@liafrik.com" className="text-sm text-[#ff7a00] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> cs@liafrik.com</a>
                 </div>
                 <div className="card p-5">
-                  <Briefcase className="w-8 h-8 text-[#d4af37] mb-3" />
+                  <Briefcase className="w-8 h-8 text-[#ff7a00] mb-3" />
                   <h3 className="text-sm font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Partenariats' : 'Partnerships'}</h3>
-                  <a href="mailto:zando@liafrik.com" className="text-sm text-[#d4af37] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> zando@liafrik.com</a>
+                  <a href="mailto:zando@liafrik.com" className="text-sm text-[#ff7a00] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> zando@liafrik.com</a>
                 </div>
                 <div className="card p-5">
-                  <ShieldCheck className="w-8 h-8 text-[#d4af37] mb-3" />
+                  <ShieldCheck className="w-8 h-8 text-[#ff7a00] mb-3" />
                   <h3 className="text-sm font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Support Technique' : 'Technical Support'}</h3>
-                  <a href="mailto:support@liafrik.com" className="text-sm text-[#d4af37] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> support@liafrik.com</a>
+                  <a href="mailto:support@liafrik.com" className="text-sm text-[#ff7a00] font-semibold hover:underline flex items-center gap-2"><Mail className="w-4 h-4" /> support@liafrik.com</a>
                 </div>
                 <div className="card p-5">
-                  <Clock className="w-8 h-8 text-[#d4af37] mb-3" />
+                  <Clock className="w-8 h-8 text-[#ff7a00] mb-3" />
                   <h3 className="text-sm font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Disponibilité' : 'Availability'}</h3>
                   <p className="text-sm text-[#64748b]">{locale === 'fr' ? '24h/24, 7j/7' : '24/7, 365 days a year'}</p>
                 </div>
               </div>
               <Section title={locale === 'fr' ? 'Siège social' : 'Headquarters'}>
-                <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Abidjan, Côte d\'Ivoire' : 'Abidjan, Côte d\'Ivoire'}</p>
-                <p className="flex items-center gap-2"><Globe className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Desserte : 54 pays africains' : 'Coverage: 54 African countries'}</p>
+                <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Abidjan, Côte d\'Ivoire' : 'Abidjan, Côte d\'Ivoire'}</p>
+                <p className="flex items-center gap-2"><Globe className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Desserte : 54 pays africains' : 'Coverage: 54 African countries'}</p>
               </Section>
             </>
           )}
@@ -611,7 +611,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
 
         {/* Back to home */}
         <div className="mt-6 flex items-center justify-center">
-          <button onClick={() => navigate('home')} className="text-sm text-[#64748b] hover:text-[#d4af37] flex items-center gap-2">
+          <button onClick={() => navigate('home')} className="text-sm text-[#64748b] hover:text-[#ff7a00] flex items-center gap-2">
             <ArrowRight className="w-4 h-4 rotate-180" /> {locale === 'fr' ? 'Retour à l\'accueil' : 'Back to home'}
           </button>
         </div>

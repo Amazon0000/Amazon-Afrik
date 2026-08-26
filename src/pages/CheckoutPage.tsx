@@ -131,8 +131,8 @@ export function CheckoutPage() {
     return (
       <div className="motif-bg min-h-screen flex items-center justify-center px-4 py-12">
         <div className="card p-8 max-w-md text-center animate-fade-up">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#d4af37]/15 flex items-center justify-center pulse-gold">
-            <CheckCircle className="w-8 h-8 text-[#b8932a]" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#ff7a00]/15 flex items-center justify-center pulse-gold">
+            <CheckCircle className="w-8 h-8 text-[#e06c00]" />
           </div>
           <h2 className="font-display text-2xl font-bold text-[#0f172a] mb-2">{t.checkout.orderPlaced}</h2>
           <p className="text-sm text-[#64748b] mb-2">{t.checkout.orderPlacedDesc}</p>
@@ -150,7 +150,7 @@ export function CheckoutPage() {
     );
   }
 
-  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" /></div>;
+  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" /></div>;
 
   if (items.length === 0) {
     return (
@@ -171,17 +171,17 @@ export function CheckoutPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Address */}
             <div className="premium-card p-5 rounded-2xl">
-              <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-[#d4af37]" /> {t.checkout.deliveryAddress}</h2>
+              <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-[#ff7a00]" /> {t.checkout.deliveryAddress}</h2>
               {user ? (
                 <>
                   {addresses.length > 0 ? (
                     <div className="space-y-2">
                       {addresses.map((a) => (
                         <button key={a.id} onClick={() => setSelectedAddressId(a.id)}
-                          className={`w-full text-left p-3 rounded-xl border-2 transition-all ${selectedAddressId === a.id ? 'border-[#d4af37] bg-[#d4af37]/5' : 'border-[#0f172a]/10 hover:border-[#d4af37]/50'}`}>
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all ${selectedAddressId === a.id ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#0f172a]/10 hover:border-[#ff7a00]/50'}`}>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-[#0f172a]">{a.label}</span>
-                            {a.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#64748b]">{t.account.defaultAddress}</span>}
+                            {a.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff7a00]/15 text-[#64748b]">{t.account.defaultAddress}</span>}
                           </div>
                           <p className="text-xs text-[#64748b] mt-1">{a.full_name} • {a.phone}</p>
                           <p className="text-xs text-[#64748b]">{a.street}, {a.city}</p>
@@ -191,14 +191,14 @@ export function CheckoutPage() {
                   ) : (
                     <p className="text-sm text-[#64748b] mb-3">{t.account.noAddresses}</p>
                   )}
-                  <button onClick={() => navigate('account')} className="flex items-center gap-2 text-sm font-semibold text-[#d4af37] hover:underline mt-2">
+                  <button onClick={() => navigate('account')} className="flex items-center gap-2 text-sm font-semibold text-[#ff7a00] hover:underline mt-2">
                     <Plus className="w-4 h-4" /> {t.checkout.addNewAddress}
                   </button>
                 </>
               ) : (
                 <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-[#d4af37]/10 flex items-center gap-2 mb-2">
-                    <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
+                  <div className="p-3 rounded-xl bg-[#ff7a00]/10 flex items-center gap-2 mb-2">
+                    <ShieldCheck className="w-4 h-4 text-[#ff7a00]" />
                     <p className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Commandez sans compte. Vos informations sont sécurisées.' : 'Checkout without an account. Your info is secure.'}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -214,7 +214,7 @@ export function CheckoutPage() {
 
             {/* Payment — per seller, direct to their own PSP */}
             <div className="premium-card p-5 rounded-2xl">
-              <h2 className="font-display text-lg font-bold text-[#0f172a] mb-1 flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#d4af37]" /> {t.checkout.paymentMethod}</h2>
+              <h2 className="font-display text-lg font-bold text-[#0f172a] mb-1 flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#ff7a00]" /> {t.checkout.paymentMethod}</h2>
               <p className="text-xs text-[#64748b] mb-4">{t.checkout.directPaymentDesc}</p>
 
               <div className="space-y-5">
@@ -237,12 +237,12 @@ export function CheckoutPage() {
                         <div className="space-y-2">
                           {methods.map((m) => (
                             <button key={m.id} onClick={() => setSelectedPayment({ ...selectedPayment, [sellerId]: m.id })}
-                              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all bg-white ${selectedPayment[sellerId] === m.id ? 'border-[#d4af37] bg-[#d4af37]/5' : 'border-[#0f172a]/10 hover:border-[#d4af37]/50'}`}>
-                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedPayment[sellerId] === m.id ? 'bg-[#d4af37] text-white' : 'bg-[#0f172a]/5 text-[#64748b]'}`}>
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all bg-white ${selectedPayment[sellerId] === m.id ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#0f172a]/10 hover:border-[#ff7a00]/50'}`}>
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedPayment[sellerId] === m.id ? 'bg-[#ff7a00] text-white' : 'bg-[#0f172a]/5 text-[#64748b]'}`}>
                                 {m.provider_type === 'mobile_money' ? <Smartphone className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
                               </div>
                               <span className="text-sm font-medium text-[#0f172a]">{m.display_name || m.provider_name}</span>
-                              <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 ${selectedPayment[sellerId] === m.id ? 'border-[#d4af37] bg-[#d4af37]' : 'border-[#0f172a]/20'}`}>
+                              <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 ${selectedPayment[sellerId] === m.id ? 'border-[#ff7a00] bg-[#ff7a00]' : 'border-[#0f172a]/20'}`}>
                                 {selectedPayment[sellerId] === m.id && <CheckCircle className="w-4 h-4 text-white mx-auto" />}
                               </div>
                             </button>
@@ -254,8 +254,8 @@ export function CheckoutPage() {
                 })}
               </div>
 
-              <div className="mt-4 p-3 rounded-xl bg-[#d4af37]/10 flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#d4af37] mt-0.5 shrink-0" />
+              <div className="mt-4 p-3 rounded-xl bg-[#ff7a00]/10 flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#ff7a00] mt-0.5 shrink-0" />
                 <p className="text-xs text-[#64748b]">{t.checkout.directPaymentDesc}</p>
               </div>
             </div>
@@ -277,10 +277,10 @@ export function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="space-y-2 pt-3 border-t border-[#d4af37]/20">
+              <div className="space-y-2 pt-3 border-t border-[#ff7a00]/20">
                 <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${subtotal.toFixed(2)}</span></div>
-                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#b8932a] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
-                <div className="flex items-center justify-between pt-2 border-t border-[#d4af37]/20">
+                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#e06c00] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
+                <div className="flex items-center justify-between pt-2 border-t border-[#ff7a00]/20">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
                   <span className="text-2xl font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
                 </div>

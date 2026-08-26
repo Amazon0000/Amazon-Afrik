@@ -30,12 +30,12 @@ export function SellerPage() {
     })();
   }, [params.id]);
 
-  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" /></div>;
+  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" /></div>;
 
   if (!seller) return <div className="max-w-7xl mx-auto px-4 py-20 text-center"><p className="text-[#64748b]">{t.catalog.noResults}</p></div>;
 
   const BadgeIcon = seller.is_official ? Crown : seller.plan === 'premium' ? Award : BadgeCheck;
-  const badgeColor = seller.is_official ? '#d4af37' : seller.plan === 'premium' ? '#64748b' : '#0f172a';
+  const badgeColor = seller.is_official ? '#ff7a00' : seller.plan === 'premium' ? '#64748b' : '#0f172a';
 
   return (
     <div className="motif-bg min-h-screen">
@@ -54,10 +54,10 @@ export function SellerPage() {
             <div className="flex items-center justify-center sm:justify-start gap-2">
               <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#0f172a]">{seller.business_name}</h1>
               <BadgeIcon className="w-5 h-5" style={{ color: badgeColor }} />
-              {seller.is_official && <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-[#d4af37] text-[#0f172a]">Official Store</span>}
+              {seller.is_official && <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-[#ff7a00] text-[#0f172a]">Official Store</span>}
             </div>
             <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
-              <div className="flex items-center gap-1"><Star className="w-4 h-4 fill-[#d4af37] text-[#d4af37]" /><span className="text-sm font-medium text-[#0f172a]">{seller.rating}</span><span className="text-xs text-[#64748b]/60">({seller.total_reviews})</span></div>
+              <div className="flex items-center gap-1"><Star className="w-4 h-4 fill-[#ff7a00] text-[#ff7a00]" /><span className="text-sm font-medium text-[#0f172a]">{seller.rating}</span><span className="text-xs text-[#64748b]/60">({seller.total_reviews})</span></div>
               <span className="text-xs text-[#64748b] flex items-center gap-1"><MapPin className="w-3 h-3" />{seller.city}</span>
             </div>
             {seller.description && <p className="text-sm text-[#64748b] mt-2 max-w-lg">{seller.description}</p>}
@@ -65,9 +65,9 @@ export function SellerPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="premium-card p-4 text-center rounded-2xl"><Package className="w-5 h-5 text-[#d4af37] mx-auto mb-1" /><p className="text-xl font-bold text-[#0f172a]">{seller.total_products}</p><p className="text-xs text-[#64748b]">{t.seller.products}</p></div>
-          <div className="premium-card p-4 text-center rounded-2xl"><Star className="w-5 h-5 text-[#d4af37] mx-auto mb-1" /><p className="text-xl font-bold text-[#0f172a]">{seller.rating}</p><p className="text-xs text-[#64748b]">{t.product.reviews}</p></div>
-          <div className="premium-card p-4 text-center rounded-2xl"><Calendar className="w-5 h-5 text-[#d4af37] mx-auto mb-1" /><p className="text-xl font-bold text-[#0f172a]">{seller.joined_year}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Membre depuis' : 'Member since'}</p></div>
+          <div className="premium-card p-4 text-center rounded-2xl"><Package className="w-5 h-5 text-[#ff7a00] mx-auto mb-1" /><p className="text-xl font-bold text-[#0f172a]">{seller.total_products}</p><p className="text-xs text-[#64748b]">{t.seller.products}</p></div>
+          <div className="premium-card p-4 text-center rounded-2xl"><Star className="w-5 h-5 text-[#ff7a00] mx-auto mb-1" /><p className="text-xl font-bold text-[#0f172a]">{seller.rating}</p><p className="text-xs text-[#64748b]">{t.product.reviews}</p></div>
+          <div className="premium-card p-4 text-center rounded-2xl"><Calendar className="w-5 h-5 text-[#ff7a00] mx-auto mb-1" /><p className="text-xl font-bold text-[#0f172a]">{seller.joined_year}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Membre depuis' : 'Member since'}</p></div>
         </div>
 
         <h2 className="font-display text-2xl font-bold text-[#0f172a] mb-5">{products.length} {t.seller.products}</h2>

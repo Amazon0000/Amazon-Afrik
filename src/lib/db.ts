@@ -749,6 +749,17 @@ export async function createSellerDocument(opts: { sellerId: string; docType: st
   return data.id;
 }
 
+export async function submitContactMessage(opts: { firstName: string; lastName: string; email: string; message: string }): Promise<boolean> {
+  const { error } = await supabase.from('contact_messages').insert({
+    first_name: opts.firstName,
+    last_name: opts.lastName,
+    email: opts.email,
+    message: opts.message,
+  });
+  if (error) { console.error('submitContactMessage:', error.message); return false; }
+  return true;
+}
+
 // ============ MUTATIONS ============
 
 export async function createProduct(opts: {

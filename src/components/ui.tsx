@@ -22,14 +22,14 @@ export function Countdown({ endsAt, className = '' }: { endsAt: string; classNam
 
 export function SellerBadge({ plan }: { plan: 'starter' | 'premium' | 'enterprise' }) {
   const Icon = plan === 'enterprise' ? Crown : plan === 'premium' ? Award : BadgeCheck;
-  const color = plan === 'enterprise' ? '#d4af37' : plan === 'premium' ? '#d4af37' : '#64748b';
+  const color = plan === 'enterprise' ? '#ff7a00' : plan === 'premium' ? '#ff7a00' : '#64748b';
   return <Icon className="w-4 h-4" style={{ color }} />;
 }
 
 export function Rating({ value, reviews, size = 14 }: { value: number; reviews?: number; size?: number }) {
   return (
     <div className="flex items-center gap-1">
-      <Star className="w-3.5 h-3.5 fill-[#d4af37] text-[#d4af37]" style={{ width: size, height: size }} />
+      <Star className="w-3.5 h-3.5 fill-[#ff7a00] text-[#ff7a00]" style={{ width: size, height: size }} />
       <span className="text-sm font-medium text-[#0f172a]">{value.toFixed(1)}</span>
       {reviews !== undefined && <span className="text-xs text-[#64748b]">({reviews})</span>}
     </div>
@@ -62,8 +62,8 @@ export function SectionTitle({ title, subtitle, action }: { title: string; subti
 export function EmptyState({ message }: { message: string }) {
   return (
     <div className="text-center py-16">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#d4af37]/10 flex items-center justify-center">
-        <Star className="w-8 h-8 text-[#d4af37]/40" />
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#ff7a00]/10 flex items-center justify-center">
+        <Star className="w-8 h-8 text-[#ff7a00]/40" />
       </div>
       <p className="text-[#64748b]">{message}</p>
     </div>
@@ -74,10 +74,10 @@ export function StatCard({ label, value, icon: Icon, trend }: { label: string; v
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-2">
-        <div className="w-10 h-10 rounded-xl bg-[#d4af37]/10 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-[#d4af37]" />
+        <div className="w-10 h-10 rounded-xl bg-[#ff7a00]/10 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-[#ff7a00]" />
         </div>
-        {trend && <span className="text-xs font-semibold text-[#d4af37]">{trend}</span>}
+        {trend && <span className="text-xs font-semibold text-[#ff7a00]">{trend}</span>}
       </div>
       <p className="text-2xl font-bold text-[#0f172a]">{value}</p>
       <p className="text-xs text-[#64748b] mt-0.5">{label}</p>
@@ -85,7 +85,7 @@ export function StatCard({ label, value, icon: Icon, trend }: { label: string; v
   );
 }
 
-export function Badge({ children, color = '#d4af37' }: { children: React.ReactNode; color?: string }) {
+export function Badge({ children, color = '#ff7a00' }: { children: React.ReactNode; color?: string }) {
   return (
     <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-full" style={{ background: `${color}15`, color }}>
       {children}

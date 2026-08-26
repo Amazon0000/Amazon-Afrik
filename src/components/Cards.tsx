@@ -54,7 +54,7 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="flex-1 flex flex-col justify-between">
         <div>
           {/* Product Name */}
-          <h3 className="text-[13px] font-normal text-[#0f172a] leading-[17px] line-clamp-2 hover:text-[#b8932a] font-sans">
+          <h3 className="text-[13px] font-normal text-[#0f172a] leading-[17px] line-clamp-2 hover:text-[#e06c00] font-sans">
             {product.name}
           </h3>
 
@@ -105,7 +105,7 @@ export function ProductCard({ product }: { product: Product }) {
 
           {/* Fast shipping indicator */}
           <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1 leading-none">
-            <span className="text-[#8a6d00] font-bold">✓ Free Shipping</span> by seller
+            <span className="text-[#cc5f00] font-bold">✓ Free Shipping</span> by seller
           </p>
         </div>
       </div>
@@ -129,7 +129,7 @@ export function SellerCard({ seller }: { seller: Seller }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         {seller.is_official && (
-          <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-[#d4af37] text-black uppercase">
+          <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-[#ff7a00] text-black uppercase">
             Official
           </span>
         )}
@@ -139,7 +139,7 @@ export function SellerCard({ seller }: { seller: Seller }) {
         <div className="w-14 h-14 rounded border border-white overflow-hidden bg-white shadow-sm shrink-0">
           <img src={seller.store_logo_url || ''} alt={seller.business_name} loading="lazy" className="w-full h-full object-cover" />
         </div>
-        <h3 className="mt-2.5 font-bold text-sm text-[#0f172a] group-hover:text-[#b8932a]">{seller.business_name}</h3>
+        <h3 className="mt-2.5 font-bold text-sm text-[#0f172a] group-hover:text-[#e06c00]">{seller.business_name}</h3>
         <div className="flex items-center gap-1 mt-1 text-xs text-[#565959]">
           <Star className="w-3.5 h-3.5 fill-[#de7921] text-[#de7921]" />
           <span className="font-bold text-gray-800">{seller.rating}</span>

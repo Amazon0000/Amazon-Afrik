@@ -42,7 +42,7 @@ export function ProductPage() {
   if (loading) {
     return (
       <div className="bg-[#eaeded] min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" />
+        <div className="w-10 h-10 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" />
       </div>
     );
   }
@@ -112,9 +112,9 @@ export function ProductPage() {
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 py-4">
         {/* Amazon style Breadcrumbs */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-5 flex-wrap font-sans">
-          <button onClick={() => navigate('home')} className="hover:text-[#b8932a] hover:underline font-normal">{t.nav.home}</button>
+          <button onClick={() => navigate('home')} className="hover:text-[#e06c00] hover:underline font-normal">{t.nav.home}</button>
           <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
-          <button onClick={() => navigate('catalog')} className="hover:text-[#b8932a] hover:underline font-normal">{t.nav.catalog}</button>
+          <button onClick={() => navigate('catalog')} className="hover:text-[#e06c00] hover:underline font-normal">{t.nav.catalog}</button>
           {category && (
             <>
               <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
@@ -138,7 +138,7 @@ export function ProductPage() {
                     key={img.id}
                     onMouseEnter={() => setActiveImage(i)}
                     onClick={() => setActiveImage(i)}
-                    className={`w-11 h-11 rounded border transition-all shrink-0 bg-gray-50 p-0.5 ${activeImage === i ? 'border-[#b8932a] ring-1 ring-[#b8932a]' : 'border-gray-300 hover:border-[#b8932a]'}`}
+                    className={`w-11 h-11 rounded border transition-all shrink-0 bg-gray-50 p-0.5 ${activeImage === i ? 'border-[#e06c00] ring-1 ring-[#e06c00]' : 'border-gray-300 hover:border-[#e06c00]'}`}
                   >
                     <img src={img.image_url} alt="" className="w-full h-full object-contain" />
                   </button>
@@ -218,9 +218,9 @@ export function ProductPage() {
             <div className="pb-4 border-b border-gray-200">
               {flashDeal && (
                 <div className="mb-2 flex items-center gap-2 p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #3d1f00, #5a3010)' }}>
-                  <Flame className="w-4 h-4 text-[#d4af37] shrink-0" />
+                  <Flame className="w-4 h-4 text-[#ff7a00] shrink-0" />
                   <span className="text-xs font-bold text-white">{locale === 'fr' ? 'Vente flash' : 'Flash deal'} -{flashDeal.discount_percent}%</span>
-                  <span className="text-xs text-[#d4af37] font-mono ml-auto flex items-center gap-1">
+                  <span className="text-xs text-[#ff7a00] font-mono ml-auto flex items-center gap-1">
                     <Countdown endsAt={flashDeal.ends_at} />
                   </span>
                 </div>
@@ -264,7 +264,7 @@ export function ProductPage() {
                         <button
                           key={opt.id}
                           onClick={() => setSelectedVariants((prev) => ({ ...prev, [vtype]: opt.variant_value }))}
-                          className={`px-3.5 py-1.5 text-xs font-medium rounded-sm border transition-all ${isSelected ? 'border-[#b8932a] bg-[#fdf8f4] ring-1 ring-[#b8932a]' : 'border-gray-300 hover:border-gray-500'}`}
+                          className={`px-3.5 py-1.5 text-xs font-medium rounded-sm border transition-all ${isSelected ? 'border-[#e06c00] bg-[#fdf8f4] ring-1 ring-[#e06c00]' : 'border-gray-300 hover:border-gray-500'}`}
                         >
                           {opt.variant_value}
                         </button>
@@ -298,7 +298,7 @@ export function ProductPage() {
               {/* Product Price & Currency conversion reference */}
               <div>
                 <span className="text-2xl font-bold text-gray-900">${product.price}</span>
-                <p className="text-xs text-[#b8932a] font-bold mt-1 flex items-center gap-1">
+                <p className="text-xs text-[#e06c00] font-bold mt-1 flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>Free Shipping included</span>
                 </p>
@@ -319,7 +319,7 @@ export function ProductPage() {
               <div className="pt-2 border-t border-gray-100">
                 {product.stock > 0 ? (
                   <div>
-                    <span className="text-[17px] text-[#8a6d00] font-bold">In Stock</span>
+                    <span className="text-[17px] text-[#cc5f00] font-bold">In Stock</span>
                     {product.stock <= 5 && (
                       <p className="text-xs text-[#cc0c39] font-bold mt-0.5">
                         Only {product.stock} left in stock - order soon.
@@ -338,7 +338,7 @@ export function ProductPage() {
                   <select
                     value={qty}
                     onChange={(e) => setQty(parseInt(e.target.value))}
-                    className="border border-gray-300 rounded bg-[#f0f2f2] hover:bg-[#e3e6e6] p-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#b8932a]"
+                    className="border border-gray-300 rounded bg-[#f0f2f2] hover:bg-[#e3e6e6] p-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#e06c00]"
                   >
                     {Array.from({ length: Math.min(10, product.stock) }, (_, i) => i + 1).map((val) => (
                       <option key={val} value={val}>{val}</option>
@@ -479,7 +479,7 @@ export function ProductPage() {
             {/* Write a review form */}
             <div className="border border-gray-200 rounded p-4 bg-gray-50 space-y-3.5">
               <h4 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                <Megaphone className="w-4 h-4 text-[#b8932a]" />
+                <Megaphone className="w-4 h-4 text-[#e06c00]" />
                 <span>{locale === 'fr' ? 'Laisser une évaluation' : 'Review this product'}</span>
               </h4>
               <p className="text-[11px] text-gray-500 leading-snug">
@@ -508,7 +508,7 @@ export function ProductPage() {
                   value={newReviewComment}
                   onChange={(e) => setNewReviewComment(e.target.value)}
                   placeholder={locale === 'fr' ? 'Écrire votre commentaire...' : 'Write your comment here...'}
-                  className="w-full border border-gray-300 rounded p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#b8932a] bg-white text-black"
+                  className="w-full border border-gray-300 rounded p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#e06c00] bg-white text-black"
                 />
 
                 <button

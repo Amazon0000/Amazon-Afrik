@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart } from 'lucide-react';
+import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
 import { searchSuggestions } from '@/lib/db';
@@ -41,7 +41,7 @@ const MEGA_CATEGORIES = [
 ];
 
 export function Header() {
-  const { t, locale, setLocale, navigate, user, logout, cart, cartCount, updateCartQty, removeFromCart, geo, countries, products, categories } = useApp();
+  const { t, locale, setLocale, navigate, user, logout, cart, cartCount, updateCartQty, removeFromCart, geo, countries, products, categories, wishlist } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -66,7 +66,7 @@ export function Header() {
     if (search.trim()) { navigate('catalog', { q: search.trim() }); setShowSuggestions(false); setMobileOpen(false); }
   };
 
-  const go = (p: string) => { navigate(p); setMobileOpen(false); setMegaOpen(false); setCartDrawerOpen(false); };
+  const go = (p: string, params?: Record<string, string>) => { navigate(p, params); setMobileOpen(false); setMegaOpen(false); setCartDrawerOpen(false); };
 
   const handleMegaNav = (item: typeof MEGA_CATEGORIES[0]) => {
     if (item.key === 'sell') { navigate('sell'); setMegaOpen(false); return; }
@@ -102,142 +102,124 @@ export function Header() {
   }, [cartItemsResolved]);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#3d1f00] text-white font-sans">
-      {/* Top Navbar */}
-      <div className="max-w-[1500px] mx-auto px-4 py-1.5 flex items-center justify-between gap-3 text-sm">
-        {/* Left: Logo & Deliver To */}
-        <div className="flex items-center gap-4">
-          <button onClick={() => go('home')} className="flex items-center hover:outline hover:outline-1 hover:outline-white px-2 py-1 rounded-sm transition-all text-white">
-            <Logo size={28} variant="light" />
+    <header className="sticky top-0 z-50 font-sans">
+      {/* Tier 1: dark utility bar */}
+      <div className="bg-[#3d1f00] text-white text-xs">
+        <div className="max-w-[1500px] mx-auto px-4 py-2 flex items-center justify-between gap-3">
+          <button onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr')} className="flex items-center gap-1 font-bold hover:opacity-80 transition-opacity shrink-0">
+            <Globe className="w-3.5 h-3.5" /> {locale.toUpperCase()} <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
-
-          {/* Deliver to */}
-          <button onClick={() => go('account')} className="hidden lg:flex flex-col items-start hover:outline hover:outline-1 hover:outline-white px-2.5 py-1 rounded-sm transition-all text-left">
-            <span className="text-[11px] text-[#cccccc] font-normal leading-none flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-white shrink-0" />
-              {locale === 'fr' ? 'Livrer à' : 'Deliver to'}
-            </span>
-            <span className="text-[13px] font-bold text-white mt-0.5 ml-4 leading-none">
-              {currentCountry?.flag} {currentCountry?.name}
-            </span>
-          </button>
-        </div>
-
-        {/* Center: Search Bar */}
-        <div className="flex-1 max-w-4xl relative" ref={searchRef}>
-          <form onSubmit={handleSearch} className="flex w-full">
-            <div className="flex items-center w-full rounded-md bg-white overflow-hidden focus-within:ring-2 focus-within:ring-[#d4af37] transition-shadow">
-              <select className="hidden md:block px-3 py-2 text-xs text-[#555] border-r border-[#ddd] bg-[#f3f3f3] hover:bg-[#dadada] focus:outline-none cursor-pointer font-sans h-10 shrink-0">
-                <option>All</option>
-                {categories.filter((c) => !c.parent_id).slice(0, 8).map((c) => <option key={c.id}>{c.name}</option>)}
-              </select>
-              <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }} onFocus={() => setShowSuggestions(true)}
-                placeholder={t.common.searchPlaceholder} className="flex-1 px-3 py-2 text-[14px] bg-transparent focus:outline-none text-[#0f172a] h-10 font-sans" />
-              <button type="submit" className="px-5 bg-[#d4af37] hover:bg-[#b8932a] transition-colors h-10 flex items-center justify-center shrink-0">
-                <Search className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          </form>
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#dddddd] rounded shadow-lg animate-fade-up z-50 max-h-80 overflow-y-auto text-[#0f172a]">
-              <p className="px-3 py-1.5 text-[10px] font-bold uppercase text-[#565959] border-b border-[#eee] bg-[#f9f9f9]">
-                {locale === 'fr' ? 'SUGGESTIONS' : 'SUGGESTIONS'}
-              </p>
-              {suggestions.map((s) => (
-                <button key={s} onClick={() => { setSearch(s); navigate('catalog', { q: s }); setShowSuggestions(false); }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-[#0f172a] hover:bg-[#f3f3f3] transition-colors text-left font-medium">
-                  <Search className="w-3.5 h-3.5 text-[#888888]" /> {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right actions */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Language toggle */}
-          <button onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr')} className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white transition-all text-xs font-bold text-white">
-            <Globe className="w-4 h-4 text-white" />
-            <span>{locale.toUpperCase()}</span>
-            <ChevronDown className="w-3 h-3 text-[#cccccc]" />
-          </button>
-
-          {/* User Sign In Account & Lists */}
-          {user ? (
-            <div className="relative">
-              <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex flex-col items-start leading-none px-2.5 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white transition-all text-left text-white">
-                <span className="text-[11px] text-[#cccccc] font-normal leading-none flex items-center gap-1">
-                  Hello, {user.fullName.split(' ')[0]}
-                  <ChevronDown className="w-3 h-3 text-[#cccccc] inline" />
-                </span>
-                <span className="text-[13px] font-bold text-white mt-1 leading-none">Account & Lists</span>
-              </button>
-              {userMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-60 bg-white border border-[#dddddd] rounded shadow-xl z-50 p-2 text-[#0f172a] animate-fade-up">
-                    <div className="px-3 py-2.5 border-b border-[#eee] mb-1">
-                      <p className="text-xs text-[#565959]">{locale === 'fr' ? 'Votre compte :' : 'Your account:'}</p>
-                      <p className="text-sm font-bold text-[#0f172a] truncate">{user.fullName}</p>
-                      <p className="text-xs text-[#565959] truncate">{user.email}</p>
-                    </div>
-                    <MenuItem icon={UserIcon} label={t.nav.account} onClick={() => { go('account'); setUserMenuOpen(false); }} />
-                    <MenuItem icon={Package} label={t.nav.orders} onClick={() => { go('account'); setUserMenuOpen(false); }} />
-                    {user.role === 'seller' && <MenuItem icon={LayoutDashboard} label={t.nav.sellerCenter} onClick={() => { go('seller-center'); setUserMenuOpen(false); }} />}
-                    {(user.role === 'admin' || user.role === 'superadmin') && <MenuItem icon={Shield} label={t.nav.admin} onClick={() => { go('admin'); setUserMenuOpen(false); }} />}
-                    {user.role === 'customer' && <MenuItem icon={Store} label={t.nav.becomeSeller} onClick={() => { go('sell'); setUserMenuOpen(false); }} />}
-                    <MenuItem icon={Headphones} label={locale === 'fr' ? 'Service Client' : 'Customer Service'} onClick={() => { go('customer-service'); setUserMenuOpen(false); }} />
-                    <div className="border-t border-[#eee] mt-1.5 pt-1.5">
-                      <MenuItem icon={LogOut} label={t.nav.logout} onClick={() => { logout(); setUserMenuOpen(false); }} />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <button onClick={() => go('login')} className="flex flex-col items-start leading-none px-2.5 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white transition-all text-left text-white">
-              <span className="text-[11px] text-[#cccccc] font-normal leading-none">Hello, Sign in</span>
-              <span className="text-[13px] font-bold text-white mt-1 leading-none flex items-center gap-0.5">Account & Lists <ChevronDown className="w-3 h-3 text-[#cccccc]" /></span>
-            </button>
-          )}
-
-          {/* Returns & Orders */}
-          <button onClick={() => go('account')} className="hidden sm:flex flex-col items-start px-2.5 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white transition-all text-left text-white">
-            <span className="text-[11px] text-[#cccccc] font-normal leading-none">{locale === 'fr' ? 'Retours' : 'Returns'}</span>
-            <span className="text-[13px] font-bold text-white mt-1 leading-none">& Orders</span>
-          </button>
-
-          {/* Cart with slider drawer trigger */}
-          <button onClick={() => setCartDrawerOpen(true)} className="relative flex items-end gap-1 px-2.5 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white transition-all text-white">
-            <div className="relative flex items-center">
-              <ShoppingBag className="w-7 h-7 text-white" />
-              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-5 text-xs font-bold flex items-center justify-center rounded-full bg-[#d4af37] text-white">
-                {cartCount}
-              </span>
-            </div>
-            <span className="hidden md:inline text-[13px] font-bold leading-none mb-1">Cart</span>
+          <div className="hidden sm:block text-white/80 truncate text-center flex-1">
+            {locale === 'fr' ? 'Livraison directe par le vendeur, dans toute l\u2019Afrique — 0% commission Zando' : 'Direct seller delivery, all across Africa — 0% Zando commission'}
+          </div>
+          <button onClick={() => go('account')} className="hidden sm:flex items-center gap-1 font-bold hover:opacity-80 transition-opacity shrink-0">
+            <MapPin className="w-3.5 h-3.5" /> {currentCountry?.flag} {currentCountry?.name} <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
         </div>
       </div>
 
-      {/* Subheader Bar */}
-      <div className="bg-[#2a1400] text-white">
-        <div className="max-w-[1500px] mx-auto px-4 h-10 flex items-center justify-between text-xs sm:text-sm font-medium overflow-hidden">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-            <button onClick={() => setMegaOpen(!megaOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white font-bold shrink-0 text-white">
-              <Menu className="w-4 h-4" /> All
-            </button>
-            {MEGA_CATEGORIES.slice(0, 11).map((item) => (
-              <button key={item.label} onClick={() => handleMegaNav(item)} className="px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white whitespace-nowrap transition-all text-white font-normal">
-                {item.label}
-              </button>
-            ))}
-            <button onClick={() => go('sell')} className="px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white font-bold text-[#e0c158] whitespace-nowrap transition-all shrink-0">
-              {t.nav.becomeSeller}
-            </button>
+      {/* Tier 2: white bar — logo, search, actions */}
+      <div className="bg-white border-b border-[#e2e8f0] text-[#0f172a]">
+        <div className="max-w-[1500px] mx-auto px-4 py-3 flex items-center gap-3 sm:gap-5">
+          <button onClick={() => go('home')} className="shrink-0">
+            <Logo size={34} variant="dark" />
+          </button>
+
+          {/* Search Bar */}
+          <div className="flex-1 relative min-w-0" ref={searchRef}>
+            <form onSubmit={handleSearch} className="flex w-full">
+              <div className="flex items-center w-full rounded-lg bg-[#f2f2f2] overflow-hidden focus-within:ring-2 focus-within:ring-[#ff7a00] transition-shadow">
+                <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }} onFocus={() => setShowSuggestions(true)}
+                  placeholder={t.common.searchPlaceholder} className="flex-1 min-w-0 px-4 py-2.5 text-[14px] bg-transparent focus:outline-none text-[#0f172a] h-11" />
+                <button type="submit" className="w-11 h-11 bg-[#3d1f00] hover:bg-[#2a1400] transition-colors flex items-center justify-center shrink-0 rounded-lg m-0.5">
+                  <Search className="w-4.5 h-4.5 text-white" />
+                </button>
+              </div>
+            </form>
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#dddddd] rounded-lg shadow-lg animate-fade-up z-50 max-h-80 overflow-y-auto text-[#0f172a]">
+                <p className="px-3 py-1.5 text-[10px] font-bold uppercase text-[#565959] border-b border-[#eee] bg-[#f9f9f9]">
+                  {locale === 'fr' ? 'SUGGESTIONS' : 'SUGGESTIONS'}
+                </p>
+                {suggestions.map((s) => (
+                  <button key={s} onClick={() => { setSearch(s); navigate('catalog', { q: s }); setShowSuggestions(false); }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-[#0f172a] hover:bg-[#f3f3f3] transition-colors text-left font-medium">
+                    <Search className="w-3.5 h-3.5 text-[#888888]" /> {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="hidden lg:flex items-center gap-1.5 text-[#e0c158] font-bold px-3 shrink-0">
-            <span className="text-xs font-normal text-white/70">Verified Sellers Worldwide</span>
+
+          {/* Right actions */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <button onClick={() => go(user ? 'account' : 'login', user ? { tab: 'wishlist' } : undefined)} className="hidden sm:flex relative w-10 h-10 rounded-full border border-[#e2e8f0] items-center justify-center hover:border-[#3d1f00] transition-colors" title={t.account.wishlist}>
+              <Heart className="w-4.5 h-4.5 text-[#3d1f00]" />
+              {wishlist.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-[#ff7a00] text-white">{wishlist.length}</span>}
+            </button>
+
+            <button onClick={() => setCartDrawerOpen(true)} className="relative w-10 h-10 rounded-full border border-[#e2e8f0] flex items-center justify-center hover:border-[#3d1f00] transition-colors">
+              <ShoppingBag className="w-4.5 h-4.5 text-[#3d1f00]" />
+              {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-[#ff7a00] text-white">{cartCount}</span>}
+            </button>
+
+            {user ? (
+              <div className="relative">
+                <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="hidden sm:flex items-center gap-1.5 px-2 py-2 rounded-lg hover:bg-[#f3f3f3] transition-colors text-left">
+                  <span className="text-[13px] font-bold text-[#0f172a]">{locale === 'fr' ? 'Bonjour, ' : 'Hi, '}{user.fullName.split(' ')[0]}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#565959]" />
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-60 bg-white border border-[#dddddd] rounded-lg shadow-xl z-50 p-2 text-[#0f172a] animate-fade-up">
+                      <div className="px-3 py-2.5 border-b border-[#eee] mb-1">
+                        <p className="text-xs text-[#565959]">{locale === 'fr' ? 'Votre compte :' : 'Your account:'}</p>
+                        <p className="text-sm font-bold text-[#0f172a] truncate">{user.fullName}</p>
+                        <p className="text-xs text-[#565959] truncate">{user.email}</p>
+                      </div>
+                      <MenuItem icon={UserIcon} label={t.nav.account} onClick={() => { go('account'); setUserMenuOpen(false); }} />
+                      <MenuItem icon={Package} label={t.nav.orders} onClick={() => { navigate('account', { tab: 'orders' }); setUserMenuOpen(false); }} />
+                      <MenuItem icon={Heart} label={t.account.wishlist} onClick={() => { navigate('account', { tab: 'wishlist' }); setUserMenuOpen(false); }} />
+                      {user.role === 'seller' && <MenuItem icon={LayoutDashboard} label={t.nav.sellerCenter} onClick={() => { go('seller-center'); setUserMenuOpen(false); }} />}
+                      {(user.role === 'admin' || user.role === 'superadmin') && <MenuItem icon={Shield} label={t.nav.admin} onClick={() => { go('admin'); setUserMenuOpen(false); }} />}
+                      {user.role === 'customer' && <MenuItem icon={Store} label={t.nav.becomeSeller} onClick={() => { go('sell'); setUserMenuOpen(false); }} />}
+                      <MenuItem icon={Headphones} label={locale === 'fr' ? 'Service Client' : 'Customer Service'} onClick={() => { go('customer-service'); setUserMenuOpen(false); }} />
+                      <div className="border-t border-[#eee] mt-1.5 pt-1.5">
+                        <MenuItem icon={LogOut} label={t.nav.logout} onClick={() => { logout(); setUserMenuOpen(false); }} />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <button onClick={() => go('signup')} className="hidden md:block text-[13px] font-semibold text-[#0f172a] hover:text-[#ff7a00] transition-colors px-2">{t.nav.signup}</button>
+                <button onClick={() => go('login')} className="bg-[#3d1f00] hover:bg-[#2a1400] text-white text-[13px] font-bold px-5 py-2.5 rounded-full flex items-center gap-1.5 transition-colors">
+                  <UserIcon className="w-4 h-4" /> {t.nav.login}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Tier 3: dark category/nav bar */}
+      <div className="bg-[#3d1f00] text-white">
+        <div className="max-w-[1500px] mx-auto px-4 h-11 flex items-center justify-between text-sm overflow-hidden">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar h-full">
+            <button onClick={() => setMegaOpen(!megaOpen)} className="flex items-center gap-1.5 px-3 h-full font-bold shrink-0 hover:bg-white/10 transition-colors">
+              <Menu className="w-4 h-4" /> {locale === 'fr' ? 'Toutes catégories' : 'All Categories'}
+            </button>
+            <button onClick={() => go('catalog')} className="px-3 h-full whitespace-nowrap hover:bg-white/10 transition-colors shrink-0">{locale === 'fr' ? 'Tous les produits' : 'All Products'}</button>
+            <button onClick={() => navigate('catalog', { sort: 'popular' })} className="px-3 h-full whitespace-nowrap hover:bg-white/10 transition-colors shrink-0">{locale === 'fr' ? 'Toutes les offres' : 'All Deals'}</button>
+            <button onClick={() => navigate('catalog', { sort: 'newest' })} className="px-3 h-full whitespace-nowrap hover:bg-white/10 transition-colors shrink-0">{locale === 'fr' ? 'Nouveautés' : 'New Arrivals'}</button>
+            <button onClick={() => go(user ? 'account' : 'login', user ? { tab: 'orders' } : undefined)} className="px-3 h-full whitespace-nowrap hover:bg-white/10 transition-colors shrink-0">{locale === 'fr' ? 'Racheter' : 'Buy Again'}</button>
+          </div>
+          <div className="hidden lg:flex items-center gap-1 h-full shrink-0">
+            <button onClick={() => go('account')} className="flex items-center gap-1.5 px-3 h-full hover:bg-white/10 transition-colors"><MapPin className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Localisation' : 'Set Location'}</button>
+            <button onClick={() => go('ads')} className="px-3 h-full hover:bg-white/10 transition-colors">{t.nav.ads}</button>
+            <button onClick={() => go('sell')} className="px-3 h-full font-bold text-[#ff9633] hover:bg-white/10 transition-colors">{t.nav.becomeSeller}</button>
           </div>
         </div>
       </div>
@@ -249,15 +231,15 @@ export function Header() {
           <div className="absolute top-full left-0 right-0 bg-white border-t border-[#dddddd] shadow-2xl z-50 animate-fade-up max-h-[75vh] overflow-y-auto text-[#0f172a]">
             <div className="max-w-7xl mx-auto px-6 py-8">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#eee]">
-                <h3 className="text-base font-bold text-[#0f172a] flex items-center gap-2"><Store className="w-5 h-5 text-[#d4af37]" /> {t.home.categoriesTitle}</h3>
+                <h3 className="text-base font-bold text-[#0f172a] flex items-center gap-2"><Store className="w-5 h-5 text-[#ff7a00]" /> {t.home.categoriesTitle}</h3>
                 <button onClick={() => setMegaOpen(false)} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-2">
                 {MEGA_CATEGORIES.map((item) => (
                   <button key={item.label} onClick={() => handleMegaNav(item)}
-                    className="flex items-center justify-between px-2 py-1.5 rounded text-sm text-[#0f172a] hover:bg-[#f3f3f3] hover:text-[#d4af37] transition-colors text-left group">
+                    className="flex items-center justify-between px-2 py-1.5 rounded text-sm text-[#0f172a] hover:bg-[#f3f3f3] hover:text-[#ff7a00] transition-colors text-left group">
                     <span className="truncate">{item.label}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#bbb] group-hover:text-[#d4af37] transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-[#bbb] group-hover:text-[#ff7a00] transition-colors shrink-0" />
                   </button>
                 ))}
               </div>
@@ -292,9 +274,9 @@ export function Header() {
             {/* Drawer Header */}
             <div className="p-4 border-b border-[#dddddd] flex items-center justify-between bg-[#f3f3f3]">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-[#d4af37]" />
+                <ShoppingCart className="w-5 h-5 text-[#ff7a00]" />
                 <h2 className="text-base font-bold text-[#0f172a]">{locale === 'fr' ? 'Votre Panier Zando' : 'Your Zando Cart'}</h2>
-                <span className="text-xs bg-[#d4af37] text-white px-2 py-0.5 rounded-full font-bold">{cartCount}</span>
+                <span className="text-xs bg-[#ff7a00] text-white px-2 py-0.5 rounded-full font-bold">{cartCount}</span>
               </div>
               <button onClick={() => setCartDrawerOpen(false)} className="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-black transition-colors">
                 <X className="w-5 h-5" />
@@ -315,7 +297,7 @@ export function Header() {
                   <div key={item.productId} className="flex gap-3 border-b border-[#eee] pb-4 last:border-none">
                     <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} className="w-16 h-16 rounded object-cover border border-gray-200 shrink-0 cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }} />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-[#0f172a] line-clamp-2 leading-tight hover:text-[#d4af37] cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }}>
+                      <h4 className="text-xs font-bold text-[#0f172a] line-clamp-2 leading-tight hover:text-[#ff7a00] cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }}>
                         {item.product!.name}
                       </h4>
                       <p className="text-[10px] text-gray-500 mt-0.5">{item.product!.sellers?.business_name}</p>
@@ -350,12 +332,12 @@ export function Header() {
                   <span className="text-xs font-semibold text-gray-500 uppercase">{t.cart.subtotal} :</span>
                   <span className="text-lg font-black text-[#0f172a]">${cartSubtotal.toFixed(2)}</span>
                 </div>
-                <div className="text-[11px] text-[#b8932a] font-bold bg-[#d4af37]/10 p-2 rounded border border-[#d4af37]/30 flex items-center gap-1">
+                <div className="text-[11px] text-[#e06c00] font-bold bg-[#ff7a00]/10 p-2 rounded border border-[#ff7a00]/30 flex items-center gap-1">
                   <CheckCircleIcon className="w-4 h-4 shrink-0" />
                   <span>Your order qualifies for free Delivery by the seller!</span>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => go('checkout')} className="flex-1 btn-green font-bold text-xs py-3 rounded-lg shadow transition-transform active:scale-95 text-white">
+                  <button onClick={() => go('checkout')} className="flex-1 btn-gold font-bold text-xs py-3 rounded-lg shadow transition-transform active:scale-95">
                     {t.cart.checkout}
                   </button>
                   <button onClick={() => go('cart')} className="flex-1 btn-cocoa text-xs py-3 rounded-lg font-bold">

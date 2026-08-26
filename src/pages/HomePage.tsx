@@ -38,7 +38,7 @@ export function HomePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#eaeded]">
         <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" />
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" />
           <p className="text-sm text-gray-500">{t.common.loading}</p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export function HomePage() {
 
             {/* Minimal overlay text/badge */}
             <div className="absolute top-8 left-6 md:top-16 md:left-12 max-w-lg bg-black/35 backdrop-blur-sm p-4 md:p-6 rounded-lg text-white border border-white/10 hidden sm:block">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#d4af37] text-black text-xs font-black uppercase tracking-wide mb-2.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ff7a00] text-black text-xs font-black uppercase tracking-wide mb-2.5">
                 <Sparkles className="w-3 h-3" /> {locale === 'fr' ? 'Sponsorisé' : 'Sponsored'}
               </span>
               <h2 className="text-xl md:text-3xl font-extrabold leading-tight">{p.name}</h2>
@@ -100,7 +100,7 @@ export function HomePage() {
                   <div className="aspect-square bg-gray-100 rounded overflow-hidden border border-gray-200 group-hover:opacity-85 transition-opacity">
                     <img src={products.find(p => p.category_id === cat.id)?.product_images?.[0]?.image_url || 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=300'} alt="" className="w-full h-full object-cover" />
                   </div>
-                  <span className="text-xs font-bold text-gray-700 mt-1 block group-hover:text-[#b8932a] truncate">{cat.name}</span>
+                  <span className="text-xs font-bold text-gray-700 mt-1 block group-hover:text-[#e06c00] truncate">{cat.name}</span>
                 </button>
               ))}
             </div>
@@ -134,7 +134,7 @@ export function HomePage() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full">
-              <Zap className="w-12 h-12 text-[#d4af37]" />
+              <Zap className="w-12 h-12 text-[#ff7a00]" />
               <p className="text-sm font-bold text-gray-500 mt-2">No deals right now</p>
             </div>
           )}
@@ -151,7 +151,7 @@ export function HomePage() {
                   <div>
                     <h4 className="font-bold text-sm text-gray-900 flex items-center gap-1">
                       {sellers[0].business_name}
-                      {sellers[0].is_official && <Star className="w-3 h-3 fill-[#d4af37] text-[#d4af37]" />}
+                      {sellers[0].is_official && <Star className="w-3 h-3 fill-[#ff7a00] text-[#ff7a00]" />}
                     </h4>
                     <span className="text-xs text-gray-500 flex items-center gap-1"><MapPin className="w-3 h-3" /> {sellers[0].city}</span>
                   </div>
@@ -178,7 +178,7 @@ export function HomePage() {
             <h3 className="text-[19px] font-black text-gray-900 leading-tight mb-2">{locale === 'fr' ? 'Gagnez de l\'argent' : 'Make Money with Us'}</h3>
             <p className="text-xs text-gray-500 mb-4">{locale === 'fr' ? 'Rejoignez notre réseau de marchands vérifiés.' : 'Register as a professional merchant and expand your business.'}</p>
             <div className="p-3 bg-gray-50 rounded border border-gray-200 text-center mb-4">
-              <Store className="w-8 h-8 text-[#d4af37] mx-auto mb-1.5" />
+              <Store className="w-8 h-8 text-[#ff7a00] mx-auto mb-1.5" />
               <span className="text-xs font-black text-gray-800">{locale === 'fr' ? 'Zando Onboarding' : 'Zando Onboarding'}</span>
               <p className="text-[10px] text-gray-500 mt-1">{locale === 'fr' ? 'Zéro commission sur vos paiements mobiles !' : 'Zero commission on your localized pay!'}</p>
             </div>
@@ -200,10 +200,10 @@ export function HomePage() {
           <section className="rounded-sm p-5 text-white" style={{ background: 'linear-gradient(135deg, #3d1f00, #5a3010)' }}>
             <div className="flex items-center justify-between mb-3.5 border-b border-white/15 pb-2">
               <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-[#d4af37]" />
+                <Flame className="w-5 h-5 text-[#ff7a00]" />
                 <h2 className="text-[20px] font-black">{locale === 'fr' ? 'Ventes Flash' : 'Flash Deals'}</h2>
               </div>
-              <button onClick={() => navigate('catalog')} className="text-xs font-bold text-[#d4af37] hover:underline flex items-center gap-0.5">
+              <button onClick={() => navigate('catalog')} className="text-xs font-bold text-[#ff7a00] hover:underline flex items-center gap-0.5">
                 {t.home.shopNow} <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -213,7 +213,7 @@ export function HomePage() {
                   <div className="bg-white rounded-lg overflow-hidden">
                     <div className="relative">
                       <img src={deal.products?.product_images?.[0]?.image_url || ''} alt={deal.products?.name} className="w-full h-32 object-cover" />
-                      <span className="absolute top-1.5 left-1.5 bg-[#d4af37] text-[#2a1400] text-[10px] font-black px-1.5 py-0.5 rounded">-{deal.discount_percent}%</span>
+                      <span className="absolute top-1.5 left-1.5 bg-[#ff7a00] text-[#2a1400] text-[10px] font-black px-1.5 py-0.5 rounded">-{deal.discount_percent}%</span>
                     </div>
                     <div className="p-2.5">
                       <p className="text-xs text-[#0f172a] font-medium truncate">{deal.products?.name}</p>
@@ -221,12 +221,12 @@ export function HomePage() {
                         <span className="text-sm font-bold text-[#3d1f00]">${deal.deal_price.toFixed(2)}</span>
                         <span className="text-[10px] text-[#64748b] line-through">${deal.products?.price.toFixed(2)}</span>
                       </div>
-                      <div className="flex items-center gap-1 mt-1.5 text-[10px] font-bold text-[#b8932a]">
+                      <div className="flex items-center gap-1 mt-1.5 text-[10px] font-bold text-[#e06c00]">
                         <Zap className="w-3 h-3" /> <Countdown endsAt={deal.ends_at} />
                       </div>
                       {deal.stock_limit && (
                         <div className="mt-1.5 h-1.5 rounded-full bg-[#f0f4f8] overflow-hidden">
-                          <div className="h-full bg-[#d4af37]" style={{ width: `${Math.min(100, (deal.claimed_count / deal.stock_limit) * 100)}%` }} />
+                          <div className="h-full bg-[#ff7a00]" style={{ width: `${Math.min(100, (deal.claimed_count / deal.stock_limit) * 100)}%` }} />
                         </div>
                       )}
                     </div>
@@ -242,7 +242,7 @@ export function HomePage() {
           <section className="bg-white p-5 border border-gray-300 rounded-sm">
             <div className="flex items-center justify-between mb-3.5 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#d4af37]" />
+                <Zap className="w-5 h-5 text-[#ff7a00]" />
                 <h2 className="text-[20px] font-black text-gray-900">{t.home.dealsTitle}</h2>
               </div>
               <button onClick={() => navigate('catalog')} className="text-xs font-bold text-[#007185] hover:text-[#c45500] hover:underline flex items-center gap-0.5">
@@ -263,7 +263,7 @@ export function HomePage() {
         <section className="bg-white p-5 border border-gray-300 rounded-sm">
           <div className="flex items-center justify-between mb-3.5 border-b border-gray-200 pb-2">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-[#b8932a]" />
+              <TrendingUp className="w-5 h-5 text-[#e06c00]" />
               <h2 className="text-[20px] font-black text-gray-900">{t.home.trendingProducts}</h2>
             </div>
             <button onClick={() => navigate('catalog', { sort: 'popular' })} className="text-xs font-bold text-[#007185] hover:text-[#c45500] hover:underline">
@@ -279,7 +279,7 @@ export function HomePage() {
         {sponsored.length > 0 && (
           <section className="bg-white p-5 border border-gray-300 rounded-sm">
             <div className="flex items-center gap-2 mb-3">
-              <Megaphone className="w-4 h-4 text-[#d4af37]" />
+              <Megaphone className="w-4 h-4 text-[#ff7a00]" />
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Sponsorisé par Zando Ads' : 'Sponsored by Zando Ads'}</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -354,7 +354,7 @@ export function HomePage() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white p-6 border border-gray-300 rounded-sm flex flex-col justify-between">
             <div>
-              <Tag className="w-8 h-8 text-[#d4af37] mb-2.5" />
+              <Tag className="w-8 h-8 text-[#ff7a00] mb-2.5" />
               <h3 className="text-[18px] font-bold text-gray-900 mb-1">{locale === 'fr' ? 'Coupons & Codes Promo' : 'Coupons & Promo Codes'}</h3>
               <p className="text-xs text-gray-500 leading-relaxed mb-4">{locale === 'fr' ? 'Économisez sur vos achats avec nos coupons exclusifs.' : 'Save on your purchases with exclusive coupons.'}</p>
             </div>

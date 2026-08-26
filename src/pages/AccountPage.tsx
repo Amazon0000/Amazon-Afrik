@@ -7,8 +7,8 @@ import { ProductCard } from '@/components/Cards';
 import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck } from 'lucide-react';
 
 export function AccountPage() {
-  const { t, locale, user, navigate, wishlist, showToast, countries } = useApp();
-  const [tab, setTab] = useState('profile');
+  const { t, locale, user, navigate, wishlist, showToast, countries, params } = useApp();
+  const [tab, setTab] = useState((params.tab as string) || 'profile');
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -63,13 +63,13 @@ export function AccountPage() {
     { id: 'wishlist', label: t.account.wishlist, icon: Heart },
   ];
 
-  const statusColors: Record<string, string> = { pending: '#64748b', confirmed: '#0f172a', preparing: '#d4af37', inTransit: '#3b82f6', delivered: '#d4af37', cancelled: '#ef4444' };
+  const statusColors: Record<string, string> = { pending: '#64748b', confirmed: '#0f172a', preparing: '#ff7a00', inTransit: '#3b82f6', delivered: '#ff7a00', cancelled: '#ef4444' };
 
   return (
     <div className="motif-bg min-h-screen">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-[#0f172a] flex items-center justify-center text-[#d4af37] text-2xl font-bold">{user.fullName.charAt(0).toUpperCase()}</div>
+          <div className="w-16 h-16 rounded-2xl bg-[#0f172a] flex items-center justify-center text-[#ff7a00] text-2xl font-bold">{user.fullName.charAt(0).toUpperCase()}</div>
           <div><h1 className="font-display text-2xl font-bold text-[#0f172a]">{user.fullName}</h1><p className="text-sm text-[#64748b]">{user.email}</p></div>
         </div>
         <div className="flex flex-col lg:flex-row gap-6">
@@ -78,10 +78,10 @@ export function AccountPage() {
               <nav className="space-y-1">
                 {tabs.map((item) => (
                   <button key={item.id} onClick={() => setTab(item.id)}
-                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-lg transition-colors ${tab === item.id ? 'bg-[#0f172a] text-[#d4af37] font-semibold' : 'text-[#0f172a] hover:bg-[#0f172a]/5'}`}>
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-lg transition-colors ${tab === item.id ? 'bg-[#0f172a] text-[#ff7a00] font-semibold' : 'text-[#0f172a] hover:bg-[#0f172a]/5'}`}>
                     <item.icon className="w-4 h-4" /> {item.label}
-                    {item.id === 'wishlist' && wishlist.length > 0 && <span className="ml-auto text-xs bg-[#d4af37] text-[#0f172a] px-1.5 rounded-full font-bold">{wishlist.length}</span>}
-                    {item.id === 'orders' && orders.length > 0 && <span className="ml-auto text-xs bg-[#d4af37] text-[#0f172a] px-1.5 rounded-full font-bold">{orders.length}</span>}
+                    {item.id === 'wishlist' && wishlist.length > 0 && <span className="ml-auto text-xs bg-[#ff7a00] text-[#0f172a] px-1.5 rounded-full font-bold">{wishlist.length}</span>}
+                    {item.id === 'orders' && orders.length > 0 && <span className="ml-auto text-xs bg-[#ff7a00] text-[#0f172a] px-1.5 rounded-full font-bold">{orders.length}</span>}
                   </button>
                 ))}
               </nav>
@@ -106,12 +106,12 @@ export function AccountPage() {
               <div className="animate-fade-up">
                 <h2 className="font-display text-lg font-bold text-[#0f172a] mb-5">{t.account.orderHistory}</h2>
                 {orders.length === 0 ? (
-                  <div className="card p-8 text-center"><Package className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b] mb-4">{t.account.noOrders}</p><button onClick={() => navigate('catalog')} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-semibold">{t.home.ctaBrowse}</button></div>
+                  <div className="card p-8 text-center"><Package className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b] mb-4">{t.account.noOrders}</p><button onClick={() => navigate('catalog')} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-semibold">{t.home.ctaBrowse}</button></div>
                 ) : (
                   <div className="space-y-4">
                     {orders.map((order) => (
                       <div key={order.id} className="card p-5">
-                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#d4af37]/10">
+                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#ff7a00]/10">
                           <div><p className="font-semibold text-[#0f172a]">{order.tracking_id || order.id.slice(0, 8)}</p><p className="text-xs text-[#64748b]">{new Date(order.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}</p></div>
                           <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-full" style={{ background: `${statusColors[order.status]}20`, color: statusColors[order.status] }}>{t.delivery[order.status as 'pending' | 'confirmed' | 'preparing' | 'inTransit' | 'delivered' | 'cancelled']}</span>
                         </div>
@@ -122,9 +122,9 @@ export function AccountPage() {
                             <span className="text-sm font-bold text-[#0f172a]">${item.price * item.qty}</span>
                           </div>
                         ))}
-                        <div className="flex items-center justify-between pt-3 border-t border-[#d4af37]/10">
+                        <div className="flex items-center justify-between pt-3 border-t border-[#ff7a00]/10">
                           <span className="font-bold text-[#0f172a]">{t.cart.total}: ${order.total.toFixed(2)}</span>
-                          <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#d4af37] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
+                          <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#ff7a00] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
                         </div>
                       </div>
                     ))}
@@ -159,23 +159,23 @@ export function AccountPage() {
                   </div>
                 )}
                 {addresses.length === 0 && !showAddrForm ? (
-                  <div className="card p-8 text-center"><MapPin className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b]">{t.account.noAddresses}</p></div>
+                  <div className="card p-8 text-center"><MapPin className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b]">{t.account.noAddresses}</p></div>
                 ) : (
                   <div className="grid sm:grid-cols-2 gap-4">
                     {addresses.map((a) => (
                       <div key={a.id} className="card p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[#d4af37]" />
+                            <MapPin className="w-4 h-4 text-[#ff7a00]" />
                             <span className="font-semibold text-[#0f172a] text-sm">{a.label}</span>
-                            {a.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#64748b]">{t.account.defaultAddress}</span>}
+                            {a.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff7a00]/15 text-[#64748b]">{t.account.defaultAddress}</span>}
                           </div>
                           <button onClick={() => removeAddress(a.id)} className="p-1 rounded hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-400" /></button>
                         </div>
                         <p className="text-sm text-[#0f172a]">{a.full_name}</p>
                         <p className="text-xs text-[#64748b]">{a.phone}</p>
                         <p className="text-xs text-[#64748b] mt-1">{a.street}, {a.city}</p>
-                        {!a.is_default && <button onClick={() => setDefaultAddress(a.id)} className="mt-2 text-xs font-semibold text-[#d4af37] hover:underline">{t.account.setDefault}</button>}
+                        {!a.is_default && <button onClick={() => setDefaultAddress(a.id)} className="mt-2 text-xs font-semibold text-[#ff7a00] hover:underline">{t.account.setDefault}</button>}
                       </div>
                     ))}
                   </div>
@@ -186,7 +186,7 @@ export function AccountPage() {
               <div className="animate-fade-up">
                 <h2 className="font-display text-lg font-bold text-[#0f172a] mb-5">{t.account.wishlist}</h2>
                 {wishlistProducts.length === 0 ? (
-                  <div className="card p-8 text-center"><Heart className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b] mb-4">{t.account.noWishlist}</p><button onClick={() => navigate('catalog')} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-semibold">{t.home.ctaBrowse}</button></div>
+                  <div className="card p-8 text-center"><Heart className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b] mb-4">{t.account.noWishlist}</p><button onClick={() => navigate('catalog')} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-semibold">{t.home.ctaBrowse}</button></div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     {wishlistProducts.map((p) => <ProductCard key={p.id} product={p} />)}

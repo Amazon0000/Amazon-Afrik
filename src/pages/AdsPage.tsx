@@ -90,7 +90,7 @@ export function AdsPage() {
     <div className="motif-bg min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <nav className="flex items-center gap-2 text-xs text-[#64748b] mb-6">
-          <button onClick={() => navigate('home')} className="hover:text-[#d4af37]">Zando</button>
+          <button onClick={() => navigate('home')} className="hover:text-[#ff7a00]">Zando</button>
           <ChevronRight className="w-3 h-3" />
           <span className="text-[#0f172a] font-medium">{t.ads.title}</span>
         </nav>
@@ -106,8 +106,8 @@ export function AdsPage() {
         </div>
 
         {user?.sellerPlan === 'enterprise' && (
-          <div className="card p-4 mb-6 flex items-center gap-3 bg-[#d4af37]/5">
-            <Gift className="w-5 h-5 text-[#d4af37]" />
+          <div className="card p-4 mb-6 flex items-center gap-3 bg-[#ff7a00]/5">
+            <Gift className="w-5 h-5 text-[#ff7a00]" />
             <p className="text-sm text-[#0f172a]">
               {locale === 'fr' ? 'Plan Entreprise : publicité gratuite en avant pendant 7 jours à chaque renouvellement.' : 'Enterprise plan: free featured ad for 7 days on each renewal.'}
             </p>
@@ -124,7 +124,7 @@ export function AdsPage() {
         {showForm && (
           <div className="card p-6 mb-6 animate-fade-up">
             <h3 className="font-display text-lg font-bold text-[#0f172a] mb-4 flex items-center gap-2">
-              <Megaphone className="w-5 h-5 text-[#d4af37]" /> {t.ads.createCampaign}
+              <Megaphone className="w-5 h-5 text-[#ff7a00]" /> {t.ads.createCampaign}
             </h3>
             <div className="grid lg:grid-cols-2 gap-6">
               <div className="space-y-4">
@@ -157,7 +157,7 @@ export function AdsPage() {
                   <div className="grid grid-cols-2 gap-2">
                     {PLACEMENT_TYPES.map((p) => (
                       <button key={p.id} onClick={() => setForm({ ...form, placement: p.id })}
-                        className={'px-3 py-2 rounded-lg text-xs font-medium border transition-all ' + (form.placement === p.id ? 'border-[#d4af37] bg-[#d4af37]/10 text-[#d4af37]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#d4af37]/50')}>
+                        className={'px-3 py-2 rounded-lg text-xs font-medium border transition-all ' + (form.placement === p.id ? 'border-[#ff7a00] bg-[#ff7a00]/10 text-[#ff7a00]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#ff7a00]/50')}>
                         {p.label[locale]}
                       </button>
                     ))}
@@ -168,7 +168,7 @@ export function AdsPage() {
                   <div className="grid grid-cols-3 gap-2">
                     {REACH_LEVELS.map((r) => (
                       <button key={r.id} onClick={() => setForm({ ...form, reach: r.id })}
-                        className={'px-3 py-2 rounded-lg text-xs font-medium border transition-all ' + (form.reach === r.id ? 'border-[#d4af37] bg-[#d4af37]/10 text-[#d4af37]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#d4af37]/50')}>
+                        className={'px-3 py-2 rounded-lg text-xs font-medium border transition-all ' + (form.reach === r.id ? 'border-[#ff7a00] bg-[#ff7a00]/10 text-[#ff7a00]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#ff7a00]/50')}>
                         {r.label[locale]}
                       </button>
                     ))}
@@ -180,7 +180,7 @@ export function AdsPage() {
                     <input type="number" value={form.dailyBudget} onChange={(e) => setForm({ ...form, dailyBudget: Math.max(1, parseInt(e.target.value) || 5) })} className="input-field" min={1} max={500} />
                     <div className="flex gap-1 mt-2">
                       {[1, 5, 10, 25, 50].map((v) => (
-                        <button key={v} onClick={() => setForm({ ...form, dailyBudget: v })} className={'px-2 py-1 text-[10px] rounded font-medium ' + (form.dailyBudget === v ? 'bg-[#d4af37] text-white' : 'bg-[#f7f8fa] text-[#64748b]')}>{'$' + v}</button>
+                        <button key={v} onClick={() => setForm({ ...form, dailyBudget: v })} className={'px-2 py-1 text-[10px] rounded font-medium ' + (form.dailyBudget === v ? 'bg-[#ff7a00] text-white' : 'bg-[#f7f8fa] text-[#64748b]')}>{'$' + v}</button>
                       ))}
                     </div>
                   </div>
@@ -189,7 +189,7 @@ export function AdsPage() {
                     <input type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: Math.max(1, Math.min(90, parseInt(e.target.value) || 7)) })} className="input-field" min={1} max={90} />
                     <div className="flex gap-1 mt-2">
                       {[3, 7, 14, 30].map((v) => (
-                        <button key={v} onClick={() => setForm({ ...form, duration: v })} className={'px-2 py-1 text-[10px] rounded font-medium ' + (form.duration === v ? 'bg-[#d4af37] text-white' : 'bg-[#f7f8fa] text-[#64748b]')}>{v}d</button>
+                        <button key={v} onClick={() => setForm({ ...form, duration: v })} className={'px-2 py-1 text-[10px] rounded font-medium ' + (form.duration === v ? 'bg-[#ff7a00] text-white' : 'bg-[#f7f8fa] text-[#64748b]')}>{v}d</button>
                       ))}
                     </div>
                   </div>
@@ -198,12 +198,12 @@ export function AdsPage() {
 
               <div className="bg-[#0f172a] rounded-xl p-5 text-white">
                 <h4 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-[#d4af37]" /> {locale === 'fr' ? 'Simulateur de coût' : 'Cost Simulator'}
+                  <Calculator className="w-5 h-5 text-[#ff7a00]" /> {locale === 'fr' ? 'Simulateur de coût' : 'Cost Simulator'}
                 </h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between pb-3 border-b border-white/10">
                     <span className="text-xs text-white/60">{locale === 'fr' ? 'CPM effectif (coût pour 1000 vues)' : 'Effective CPM (cost per 1000 views)'}</span>
-                    <span className="text-sm font-bold text-[#d4af37]">${effectiveCPM.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-[#ff7a00]">${effectiveCPM.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between pb-3 border-b border-white/10">
                     <span className="text-xs text-white/60">{locale === 'fr' ? 'Budget quotidien' : 'Daily budget'}</span>
@@ -231,11 +231,11 @@ export function AdsPage() {
                   </div>
                   <div className="flex items-center justify-between pb-3 border-b border-white/10">
                     <span className="text-xs text-white/60">{locale === 'fr' ? 'Coût par clic (CPC)' : 'Cost per click (CPC)'}</span>
-                    <span className="text-sm font-bold text-[#d4af37]">${avgCpc.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-[#ff7a00]">${avgCpc.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between pt-2">
                     <span className="text-sm font-semibold text-white/80">{locale === 'fr' ? 'COÛT TOTAL' : 'TOTAL COST'}</span>
-                    <span className="text-2xl font-bold text-[#d4af37]">${totalCost.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-[#ff7a00]">${totalCost.toFixed(2)}</span>
                   </div>
                 </div>
                 <p className="text-[10px] text-white/40 mt-4 leading-relaxed">
@@ -246,8 +246,8 @@ export function AdsPage() {
               </div>
             </div>
 
-            <label className="flex items-start gap-2.5 mt-5 p-3 rounded-xl bg-[#d4af37]/5 cursor-pointer">
-              <input type="checkbox" checked={billingConfirmed} onChange={(e) => setBillingConfirmed(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#d4af37]" />
+            <label className="flex items-start gap-2.5 mt-5 p-3 rounded-xl bg-[#ff7a00]/5 cursor-pointer">
+              <input type="checkbox" checked={billingConfirmed} onChange={(e) => setBillingConfirmed(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#ff7a00]" />
               <span className="text-xs text-[#0f172a]">
                 {locale === 'fr'
                   ? `Je confirme vouloir lancer cette campagne pour un budget total de $${totalCost.toFixed(2)}. Ce montant sera facturé par Zando dès la validation de la campagne (revenu publicitaire Zando — distinct des paiements de vos ventes, qui vont directement à votre PSP).`
@@ -269,7 +269,7 @@ export function AdsPage() {
           <div className="card p-8 text-center text-sm text-[#64748b]">{t.common.loading}</div>
         ) : campaigns.length === 0 ? (
           <div className="card p-8 text-center">
-            <Megaphone className="w-12 h-12 text-[#d4af37]/30 mx-auto mb-3" />
+            <Megaphone className="w-12 h-12 text-[#ff7a00]/30 mx-auto mb-3" />
             <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucune campagne. Créez votre première campagne publicitaire !' : 'No campaigns yet. Create your first ad campaign!'}</p>
           </div>
         ) : (
@@ -278,8 +278,8 @@ export function AdsPage() {
               <div key={c.id} className="card p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#d4af37]/10 flex items-center justify-center">
-                      <Megaphone className="w-5 h-5 text-[#d4af37]" />
+                    <div className="w-10 h-10 rounded-xl bg-[#ff7a00]/10 flex items-center justify-center">
+                      <Megaphone className="w-5 h-5 text-[#ff7a00]" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-[#0f172a]">{c.name}</h3>
@@ -288,11 +288,11 @@ export function AdsPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={'px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ' + (c.status === 'active' ? 'bg-[#d4af37]/15 text-[#b8932a]' : c.status === 'pending' ? 'bg-[#d4af37]/15 text-[#b8932a]' : c.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500')}>
+                  <span className={'px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ' + (c.status === 'active' ? 'bg-[#ff7a00]/15 text-[#e06c00]' : c.status === 'pending' ? 'bg-[#ff7a00]/15 text-[#e06c00]' : c.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500')}>
                     {c.status === 'pending' ? (locale === 'fr' ? "en attente d'approbation" : 'pending approval') : c.status}
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-4 pt-3 border-t border-[#d4af37]/10">
+                <div className="grid grid-cols-4 gap-4 pt-3 border-t border-[#ff7a00]/10">
                   <div>
                     <p className="text-xs text-[#64748b]">{t.ads.impressions}</p>
                     <p className="font-bold text-[#0f172a]">{c.impressions.toLocaleString()}</p>

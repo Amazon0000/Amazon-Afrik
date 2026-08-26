@@ -9,7 +9,7 @@ export function ToastContainer() {
     <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 safe-bottom">
       {toasts.map((toast) => {
         const Icon = toast.type === 'success' ? CheckCircle : toast.type === 'error' ? XCircle : Info;
-        const color = toast.type === 'success' ? '#d4af37' : toast.type === 'error' ? '#ef4444' : '#d4af37';
+        const color = toast.type === 'success' ? '#ff7a00' : toast.type === 'error' ? '#ef4444' : '#ff7a00';
         return (
           <div key={toast.id} className="bg-white border border-[#e2e8f0] rounded-xl p-3.5 flex items-center gap-3 shadow-xl animate-fade-up min-w-[280px] max-w-sm">
             <Icon className="w-5 h-5 shrink-0" style={{ color }} />

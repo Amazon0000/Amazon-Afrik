@@ -35,7 +35,7 @@ export function CartPage() {
   const effectivePrice = (i: typeof items[number]) => i.deal ? i.deal.deal_price : i.product!.price;
   const total = items.reduce((sum, i) => sum + (effectivePrice(i) * i.qty), 0);
 
-  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" /></div>;
+  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" /></div>;
 
   return (
     <div className="motif-bg min-h-screen">
@@ -43,7 +43,7 @@ export function CartPage() {
         <h1 className="font-display text-3xl font-bold text-[#0f172a] mb-6">{t.cart.title} {items.length > 0 && <span className="text-lg text-[#64748b] font-normal">({items.length} {t.cart.items})</span>}</h1>
         {items.length === 0 ? (
           <div className="text-center py-16">
-            <ShoppingBag className="w-12 h-12 text-[#d4af37]/40 mx-auto mb-4" />
+            <ShoppingBag className="w-12 h-12 text-[#ff7a00]/40 mx-auto mb-4" />
             <p className="text-[#64748b] mb-1">{t.cart.empty}</p>
             <p className="text-sm text-[#64748b]/60 mb-4">{t.cart.emptyDesc}</p>
             <button onClick={() => navigate('catalog')} className="btn-gold px-6 py-3 rounded-lg font-semibold">{t.cart.continueShopping}</button>
@@ -55,11 +55,11 @@ export function CartPage() {
                 <div key={item.productId} className="card p-4 flex items-center gap-4">
                   <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} className="w-20 h-20 rounded-xl object-cover cursor-pointer" onClick={() => navigate('product', { id: item.productId })} />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[#0f172a] cursor-pointer hover:text-[#d4af37]" onClick={() => navigate('product', { id: item.productId })}>{item.product!.name}</h3>
+                    <h3 className="font-semibold text-[#0f172a] cursor-pointer hover:text-[#ff7a00]" onClick={() => navigate('product', { id: item.productId })}>{item.product!.name}</h3>
                     <p className="text-xs text-[#64748b]">{item.product!.sellers?.business_name}</p>
                     {item.variation && <p className="text-xs text-[#64748b] mt-0.5">{item.variation}</p>}
                     {item.deal && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#b8932a] bg-[#d4af37]/15 px-1.5 py-0.5 rounded mt-1">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#e06c00] bg-[#ff7a00]/15 px-1.5 py-0.5 rounded mt-1">
                         <Flame className="w-3 h-3" /> {locale === 'fr' ? 'Vente flash' : 'Flash deal'} -{item.deal.discount_percent}%
                       </span>
                     )}
@@ -87,9 +87,9 @@ export function CartPage() {
                 <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4">{t.cart.orderSummary}</h2>
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${total.toFixed(2)}</span></div>
-                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#b8932a] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
+                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#e06c00] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
                 </div>
-                <div className="flex items-center justify-between pt-3 border-t border-[#d4af37]/20 mb-5">
+                <div className="flex items-center justify-between pt-3 border-t border-[#ff7a00]/20 mb-5">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
                   <span className="text-2xl font-bold text-[#0f172a]">${total.toFixed(2)}</span>
                 </div>

@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  /* Zando Brand Colors — matched to vesoko.com's warm African-marketplace palette
-     (verified theme-color #3d1f00 from vesoko.com's own site metadata) */
+  /* Zando Brand Colors — pixel-sampled directly from vesoko.com screenshots:
+     dark brown chrome #3d1f00 (header/nav bars, buttons), vivid orange #ff7a00
+     (CTAs, badges, countdown pills), near-black footer #141414. */
   --white: #ffffff;
   --bg: #f7f3ee;
   --ink: #0f172a;
@@ -14,12 +15,16 @@
   --primary: #3d1f00;
   --primary-light: #5a3010;
   --primary-dark: #2a1400;
-  --gold: #d4af37;
-  --gold-light: #e0c158;
-  --gold-dark: #b8932a;
-  --accent: #d4af37;
-  --accent-light: #e0c158;
-  --accent-dark: #b8932a;
+  --orange: #ff7a00;
+  --orange-light: #ff9633;
+  --orange-dark: #e06c00;
+  --gold: #ff7a00;
+  --gold-light: #ff9633;
+  --gold-dark: #e06c00;
+  --accent: #ff7a00;
+  --accent-light: #ff9633;
+  --accent-dark: #e06c00;
+  --footer-bg: #141414;
   --border: #e2e8f0;
   --card: #ffffff;
 }
@@ -73,14 +78,14 @@ button, input, select, textarea { font: inherit; }
 }
 
 .gold-text {
-  color: #d4af37;
+  color: #ff7a00;
 }
 
-/* Primary CTA — Zando Gold Button (matches vesoko.com warm accent) */
+/* Primary CTA — Zando Orange Button (matches vesoko.com's exact accent #ff7a00) */
 .btn-gold {
-  background: linear-gradient(to bottom, #e0c158, #d4af37);
-  border: 1px solid #b8932a;
-  color: #2a1400;
+  background: linear-gradient(to bottom, #ff9633, #ff7a00);
+  border: 1px solid #e06c00;
+  color: #ffffff;
   border-radius: 8px;
   font-weight: 600;
   font-size: 13px;
@@ -90,15 +95,15 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 1px 2px rgba(255, 122, 0, 0.35);
 }
 .btn-gold:hover {
-  background: linear-gradient(to bottom, #d9b64a, #c9a230);
-  border-color: #a17f24;
-  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);
+  background: linear-gradient(to bottom, #ff8a1a, #e06c00);
+  border-color: #cc5f00;
+  box-shadow: 0 2px 6px rgba(255, 122, 0, 0.45);
 }
 .btn-gold:active {
-  background: #d4af37;
+  background: #ff7a00;
   box-shadow: 0 1px 3px rgba(0,0,0,.15) inset;
 }
 
@@ -129,8 +134,8 @@ button, input, select, textarea { font: inherit; }
 
 /* Accent — Verified/Success Green Button */
 .btn-green {
-  background: linear-gradient(to bottom, #e0c158, #d4af37);
-  border: 1px solid #b8932a;
+  background: linear-gradient(to bottom, #ff9633, #ff7a00);
+  border: 1px solid #e06c00;
   color: #ffffff;
   border-radius: 8px;
   font-weight: 600;
@@ -141,15 +146,15 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 1px 3px rgba(255, 122, 0, 0.25);
 }
 .btn-green:hover {
-  background: linear-gradient(to bottom, #e0c158, #c9a230);
-  border-color: #a17f24;
-  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
+  background: linear-gradient(to bottom, #ff9633, #e06c00);
+  border-color: #cc5f00;
+  box-shadow: 0 2px 8px rgba(255, 122, 0, 0.35);
 }
 .btn-green:active {
-  background: #d4af37;
+  background: #ff7a00;
 }
 
 /* Zando Cards */
@@ -194,8 +199,8 @@ button, input, select, textarea { font: inherit; }
 }
 .input-field:focus {
   outline: none;
-  border-color: #d4af37;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+  border-color: #ff7a00;
+  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.15);
 }
 .input-field::placeholder {
   color: #94a3b8;

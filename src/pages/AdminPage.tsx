@@ -49,7 +49,7 @@ function ProductApprovalCard({ product, categories, locale, onApprove, onReject 
       </div>
       {!showRejectForm && (
         <div className="flex gap-2 flex-shrink-0">
-          <button onClick={() => onApprove(categoryId)} className="px-3 py-2 rounded-lg bg-[#d4af37]/15 text-[#b8932a] text-xs font-semibold flex items-center gap-1 hover:bg-[#d4af37]/25"><CheckCircle className="w-4 h-4" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+          <button onClick={() => onApprove(categoryId)} className="px-3 py-2 rounded-lg bg-[#ff7a00]/15 text-[#e06c00] text-xs font-semibold flex items-center gap-1 hover:bg-[#ff7a00]/25"><CheckCircle className="w-4 h-4" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
           <button onClick={() => setShowRejectForm(true)} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
         </div>
       )}
@@ -144,7 +144,7 @@ export function AdminPage() {
     setTab(id);
   };
 
-  if (loading) return <div className="bg-[#f7f8fa] min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" /></div>;
+  if (loading) return <div className="bg-[#f7f8fa] min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" /></div>;
 
   const pendingAds = ads.filter((a) => a.status === 'pending');
   const activeAds = ads.filter((a) => a.status === 'active');
@@ -162,7 +162,7 @@ export function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="premium-card mb-6 rounded-2xl p-4 sm:p-5">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#0f172a] flex items-center justify-center soft-glow"><Crown className="w-5 h-5 text-[#d4af37]" /></div>
+            <div className="w-12 h-12 rounded-2xl bg-[#0f172a] flex items-center justify-center soft-glow"><Crown className="w-5 h-5 text-[#ff7a00]" /></div>
             <div><h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.admin.title}</h1><p className="text-xs text-[#64748b]">{isSuperAdmin ? (locale === 'fr' ? 'Super Admin — accès total' : 'Super Admin — full access') : (locale === 'fr' ? 'Admin — accès limité' : 'Admin — limited access')}</p></div>
           </div>
         </div>
@@ -173,9 +173,9 @@ export function AdminPage() {
               <nav className="space-y-0.5 max-h-[70vh] overflow-y-auto no-scrollbar">
                 {visibleNav.map((item) => (
                   <button key={item.id} onClick={() => handleNav(item.id)}
-                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-lg transition-colors ${tab === item.id ? 'bg-[#d4af37]/10 text-[#d4af37] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-lg transition-colors ${tab === item.id ? 'bg-[#ff7a00]/10 text-[#ff7a00] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>
                     <item.icon className="w-4 h-4" /> {item.label}
-                    {item.id === 'ads' && pendingAds.length > 0 && <span className="ml-auto text-xs bg-[#d4af37] text-white px-1.5 rounded-full font-bold">{pendingAds.length}</span>}
+                    {item.id === 'ads' && pendingAds.length > 0 && <span className="ml-auto text-xs bg-[#ff7a00] text-white px-1.5 rounded-full font-bold">{pendingAds.length}</span>}
                   </button>
                 ))}
               </nav>
@@ -186,7 +186,7 @@ export function AdminPage() {
             {/* Breadcrumb */}
             {tab !== 'overview' && (
               <div className="flex items-center gap-2 mb-4 animate-fade-up">
-                <button onClick={() => setTab('overview')} className="text-xs text-[#64748b] hover:text-[#d4af37] flex items-center gap-1 transition-colors">
+                <button onClick={() => setTab('overview')} className="text-xs text-[#64748b] hover:text-[#ff7a00] flex items-center gap-1 transition-colors">
                   <ArrowLeft className="w-3.5 h-3.5" /> {t.admin.overview}
                 </button>
                 <ChevronRight className="w-3 h-3 text-[#cbd5e1]" />
@@ -203,37 +203,37 @@ export function AdminPage() {
                 </div>
                 <div className="grid lg:grid-cols-3 gap-4">
                   <div className="premium-card p-5 bg-white/90 rounded-2xl">
-                    <h3 className="font-display text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? "File d'approbation" : 'Approval queue'}</h3>
+                    <h3 className="font-display text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? "File d'approbation" : 'Approval queue'}</h3>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-[#d4af37]/5"><span className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Vendeurs en attente' : 'Pending sellers'}</span><Badge color="#d4af37">{pendingSellers.length}</Badge></div>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-[#d4af37]/5"><span className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Produits en attente' : 'Pending products'}</span><Badge color="#d4af37">{pendingProducts.length}</Badge></div>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-[#d4af37]/5"><span className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Campagnes en attente' : 'Pending campaigns'}</span><Badge color="#d4af37">{pendingAds.length}</Badge></div>
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-[#ff7a00]/5"><span className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Vendeurs en attente' : 'Pending sellers'}</span><Badge color="#ff7a00">{pendingSellers.length}</Badge></div>
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-[#ff7a00]/5"><span className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Produits en attente' : 'Pending products'}</span><Badge color="#ff7a00">{pendingProducts.length}</Badge></div>
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-[#ff7a00]/5"><span className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Campagnes en attente' : 'Pending campaigns'}</span><Badge color="#ff7a00">{pendingAds.length}</Badge></div>
                       <div className="flex items-center justify-between p-2 rounded-lg bg-red-50"><span className="text-xs text-[#0f172a]">{locale === 'fr' ? 'Litiges ouverts' : 'Open disputes'}</span><Badge color="#ef4444">{openReports.length}</Badge></div>
                     </div>
                   </div>
                   <div className="premium-card p-5 bg-white/90 rounded-2xl">
-                    <h3 className="font-display text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Dernières commandes' : 'Latest orders'}</h3>
+                    <h3 className="font-display text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Dernières commandes' : 'Latest orders'}</h3>
                     <div className="space-y-2">
                       {orders.slice(0, 5).map((o) => (
                         <div key={o.id} className="flex items-center gap-2 py-1.5 border-b border-[#e2e8f0] last:border-0">
                           <span className="text-xs font-mono text-[#64748b]">{o.tracking_id || o.id.slice(0, 8)}</span>
                           <span className="text-xs text-[#0f172a] flex-1 truncate">{o.sellers?.business_name || '—'}</span>
                           <span className="text-xs font-semibold text-[#0f172a]">${Number(o.total).toFixed(0)}</span>
-                          <Badge color={o.status === 'delivered' ? '#d4af37' : o.status === 'pending' ? '#d4af37' : '#64748b'}>{o.status}</Badge>
+                          <Badge color={o.status === 'delivered' ? '#ff7a00' : o.status === 'pending' ? '#ff7a00' : '#64748b'}>{o.status}</Badge>
                         </div>
                       ))}
                       {orders.length === 0 && <p className="text-xs text-[#64748b] text-center py-4">{locale === 'fr' ? 'Aucune commande' : 'No orders yet'}</p>}
                     </div>
                   </div>
                   <div className="premium-card p-5 bg-white/90 rounded-2xl">
-                    <h3 className="font-display text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2"><Store className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Top vendeurs' : 'Top sellers'}</h3>
+                    <h3 className="font-display text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2"><Store className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Top vendeurs' : 'Top sellers'}</h3>
                     <div className="space-y-2">
                       {sellers.slice(0, 5).map((s) => (
                         <div key={s.id} className="flex items-center gap-2 py-1.5 border-b border-[#e2e8f0] last:border-0">
-                          <div className="w-6 h-6 rounded bg-[#d4af37]/10 flex items-center justify-center text-xs font-bold text-[#d4af37]">{s.business_name.charAt(0)}</div>
+                          <div className="w-6 h-6 rounded bg-[#ff7a00]/10 flex items-center justify-center text-xs font-bold text-[#ff7a00]">{s.business_name.charAt(0)}</div>
                           <span className="text-xs text-[#0f172a] flex-1 truncate">{s.business_name}</span>
                           <span className="text-xs text-[#64748b]">{s.total_products} {locale === 'fr' ? 'prod' : 'prod'}</span>
-                          <Badge color={s.plan === 'enterprise' ? '#d4af37' : s.plan === 'premium' ? '#d4af37' : '#64748b'}>{s.plan}</Badge>
+                          <Badge color={s.plan === 'enterprise' ? '#ff7a00' : s.plan === 'premium' ? '#ff7a00' : '#64748b'}>{s.plan}</Badge>
                         </div>
                       ))}
                     </div>
@@ -271,7 +271,7 @@ export function AdminPage() {
                             <td className="px-4 py-3 text-[#0f172a] truncate max-w-32">{o.sellers?.business_name || '—'}</td>
                             <td className="px-4 py-3 font-semibold text-[#0f172a]">${Number(o.total).toFixed(2)}</td>
                             <td className="px-4 py-3 text-xs text-[#64748b]">{o.payment_method || '—'}</td>
-                            <td className="px-4 py-3"><Badge color={o.status === 'delivered' ? '#d4af37' : o.status === 'pending' ? '#d4af37' : o.status === 'cancelled' ? '#ef4444' : '#64748b'}>{o.status}</Badge></td>
+                            <td className="px-4 py-3"><Badge color={o.status === 'delivered' ? '#ff7a00' : o.status === 'pending' ? '#ff7a00' : o.status === 'cancelled' ? '#ef4444' : '#64748b'}>{o.status}</Badge></td>
                             <td className="px-4 py-3 text-xs text-[#64748b]">{new Date(o.created_at).toLocaleDateString()}</td>
                           </tr>
                         ))}
@@ -298,11 +298,11 @@ export function AdminPage() {
                     <div key={s.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                       <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#f7f8fa] shrink-0"><img src={s.store_logo_url || ''} alt="" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{s.business_name}</p><p className="text-xs text-[#64748b]">{s.city} • {s.total_products} {t.seller.products.toLowerCase()} • {locale === 'fr' ? 'Note' : 'Rating'}: {s.rating.toFixed(1)}</p></div>
-                      <Badge color={s.plan === 'enterprise' ? '#d4af37' : s.plan === 'premium' ? '#d4af37' : '#64748b'}>{s.plan}</Badge>
-                      <Badge color={s.status === 'approved' ? '#d4af37' : s.status === 'pending' ? '#d4af37' : s.status === 'rejected' ? '#ef4444' : '#64748b'}>{s.status}</Badge>
+                      <Badge color={s.plan === 'enterprise' ? '#ff7a00' : s.plan === 'premium' ? '#ff7a00' : '#64748b'}>{s.plan}</Badge>
+                      <Badge color={s.status === 'approved' ? '#ff7a00' : s.status === 'pending' ? '#ff7a00' : s.status === 'rejected' ? '#ef4444' : '#64748b'}>{s.status}</Badge>
                       {s.status === 'pending' && (
                         <div className="flex gap-1">
-                          <button onClick={async () => { await updateSellerStatus(s.id, 'approved'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuv\u00e9' : 'Seller approved'); }} className="p-2 rounded-lg bg-[#d4af37]/15 hover:bg-[#d4af37]/25"><CheckCircle className="w-4 h-4 text-[#b8932a]" /></button>
+                          <button onClick={async () => { await updateSellerStatus(s.id, 'approved'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuv\u00e9' : 'Seller approved'); }} className="p-2 rounded-lg bg-[#ff7a00]/15 hover:bg-[#ff7a00]/25"><CheckCircle className="w-4 h-4 text-[#e06c00]" /></button>
                           <button onClick={async () => { await updateSellerStatus(s.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.reject', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'rejected' as const } : x)); showToast(locale === 'fr' ? 'Vendeur rejet\u00e9' : 'Seller rejected'); }} className="p-2 rounded-lg bg-red-100 hover:bg-red-200"><XCircle className="w-4 h-4 text-red-700" /></button>
                         </div>
                       )}
@@ -324,8 +324,8 @@ export function AdminPage() {
                     <div key={p.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                       <img src={p.product_images?.[0]?.image_url || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
                       <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p><p className="text-xs text-[#64748b]">{p.sellers?.business_name} • ${p.price}</p></div>
-                      {p.is_sponsored && <Badge color="#d4af37">Sponsored</Badge>}
-                      <Badge color={p.stock > 0 ? '#d4af37' : '#ef4444'}>{p.stock > 0 ? t.product.inStock : t.product.outOfStock}</Badge>
+                      {p.is_sponsored && <Badge color="#ff7a00">Sponsored</Badge>}
+                      <Badge color={p.stock > 0 ? '#ff7a00' : '#ef4444'}>{p.stock > 0 ? t.product.inStock : t.product.outOfStock}</Badge>
                     </div>
                   ))}
                 </div>
@@ -335,8 +335,8 @@ export function AdminPage() {
             {tab === 'product-approval' && isSuperAdmin && (
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Approbation des produits' : 'Product Approval'}</h2>
-                <div className="card p-4 mb-4 bg-[#d4af37]/5 flex items-center gap-3">
-                  <PackageCheck className="w-5 h-5 text-[#d4af37]" />
+                <div className="card p-4 mb-4 bg-[#ff7a00]/5 flex items-center gap-3">
+                  <PackageCheck className="w-5 h-5 text-[#ff7a00]" />
                   <p className="text-sm text-[#0f172a]">{locale === 'fr' ? 'Les produits doivent être approuvés avant d\u2019être mis en ligne. Vous pouvez corriger la catégorie, approuver ou rejeter avec motif.' : 'Products must be approved before going live. You can correct the category, approve, or reject with a reason.'}</p>
                 </div>
                 <div className="space-y-3">
@@ -356,7 +356,7 @@ export function AdminPage() {
                     }} />
                   ))}
                   {pendingProducts.length === 0 && (
-                    <div className="card p-8 text-center bg-white"><PackageCheck className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucun produit en attente d\u2019approbation.' : 'No products pending approval.'}</p></div>
+                    <div className="card p-8 text-center bg-white"><PackageCheck className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucun produit en attente d\u2019approbation.' : 'No products pending approval.'}</p></div>
                   )}
                 </div>
               </div>
@@ -366,7 +366,7 @@ export function AdminPage() {
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Gestion des Super Admins' : 'Super Admin Management'}</h2>
                 <div className="card p-5 mb-4 bg-white">
-                  <h3 className="font-semibold text-[#0f172a] mb-3 flex items-center gap-2"><UserPlus className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Ajouter un Super Admin' : 'Add Super Admin'}</h3>
+                  <h3 className="font-semibold text-[#0f172a] mb-3 flex items-center gap-2"><UserPlus className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Ajouter un Super Admin' : 'Add Super Admin'}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                     <input value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} placeholder={locale === 'fr' ? 'Nom complet' : 'Full name'} className="input-field" />
                     <input value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} placeholder="email@example.com" className="input-field" />
@@ -383,9 +383,9 @@ export function AdminPage() {
                 <div className="space-y-2">
                   {superAdmins.map((sa) => (
                     <div key={sa.id} className="card p-4 flex items-center gap-3 bg-white">
-                      <div className="w-10 h-10 rounded-xl bg-[#0f172a] flex items-center justify-center"><Crown className="w-5 h-5 text-[#d4af37]" /></div>
+                      <div className="w-10 h-10 rounded-xl bg-[#0f172a] flex items-center justify-center"><Crown className="w-5 h-5 text-[#ff7a00]" /></div>
                       <div className="flex-1"><p className="text-sm font-semibold text-[#0f172a]">{sa.full_name || sa.email}</p><p className="text-xs text-[#64748b]">{sa.email}</p></div>
-                      <Badge color="#d4af37">{locale === 'fr' ? 'Actif' : 'Active'}</Badge>
+                      <Badge color="#ff7a00">{locale === 'fr' ? 'Actif' : 'Active'}</Badge>
                       {sa.email !== 'vincentnogue2@gmail.com' && sa.email !== 'vincentnogue@yahoo.com' && (
                         <button onClick={async () => { await supabase.from('super_admins').update({ is_active: false }).eq('id', sa.id); setSuperAdmins(superAdmins.filter((x) => x.id !== sa.id)); showToast(locale === 'fr' ? 'Super Admin retiré' : 'Super Admin removed'); }} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
                       )}
@@ -404,7 +404,7 @@ export function AdminPage() {
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#f7f8fa]"><img src={s.store_logo_url || ''} alt="" className="w-full h-full object-cover" /></div>
                       <div className="flex-1"><p className="font-semibold text-[#0f172a]">{s.business_name}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Documents vérifiés' : 'Documents verified'}</p></div>
                       <div className="flex gap-2">
-                        <button onClick={async () => { await updateSellerStatus(s.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuvé' : 'Seller approved'); }} className="px-3 py-2 rounded-lg bg-[#d4af37]/15 text-[#b8932a] text-xs font-semibold flex items-center gap-1 hover:bg-[#d4af37]/25"><CheckCircle className="w-4 h-4" /> {t.onboarding.approved}</button>
+                        <button onClick={async () => { await updateSellerStatus(s.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuvé' : 'Seller approved'); }} className="px-3 py-2 rounded-lg bg-[#ff7a00]/15 text-[#e06c00] text-xs font-semibold flex items-center gap-1 hover:bg-[#ff7a00]/25"><CheckCircle className="w-4 h-4" /> {t.onboarding.approved}</button>
                         <button onClick={async () => { await updateSellerStatus(s.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.reject', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'rejected' as const } : x)); showToast(locale === 'fr' ? 'Vendeur rejeté' : 'Seller rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {t.onboarding.rejected}</button>
                       </div>
                     </div>
@@ -429,11 +429,11 @@ export function AdminPage() {
                   ) : (
                     <div className="space-y-2">
                       {pendingAds.map((ad) => (
-                        <div key={ad.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#d4af37]/5">
-                          <Megaphone className="w-4 h-4 text-[#d4af37]" />
+                        <div key={ad.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#ff7a00]/5">
+                          <Megaphone className="w-4 h-4 text-[#ff7a00]" />
                           <span className="text-sm text-[#0f172a] flex-1">{ad.name}</span>
                           <span className="text-xs text-[#64748b]">${ad.budget}</span>
-                          <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.approve', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'active' } : x)); showToast(locale === 'fr' ? 'Campagne approuvée' : 'Campaign approved'); }} className="px-2 py-1 rounded bg-[#d4af37]/15 text-[#b8932a] text-xs font-semibold flex items-center gap-1 hover:bg-[#d4af37]/25"><CheckCircle className="w-3 h-3" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+                          <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.approve', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'active' } : x)); showToast(locale === 'fr' ? 'Campagne approuvée' : 'Campaign approved'); }} className="px-2 py-1 rounded bg-[#ff7a00]/15 text-[#e06c00] text-xs font-semibold flex items-center gap-1 hover:bg-[#ff7a00]/25"><CheckCircle className="w-3 h-3" /> {locale === 'fr' ? 'Approuver' : 'Approve'}</button>
                           <button onClick={async () => { await updateAdCampaignStatus(ad.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'campaign.reject', targetType: 'ad_campaign', targetId: ad.id, targetName: ad.name }); setAds(ads.map(x => x.id === ad.id ? { ...x, status: 'rejected' } : x)); showToast(locale === 'fr' ? 'Campagne rejetée' : 'Campaign rejected'); }} className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-3 h-3" /> {locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
                         </div>
                       ))}
@@ -455,19 +455,19 @@ export function AdminPage() {
                 <div className="space-y-3">
                   {complianceReports.slice(0, 20).map((r) => (
                     <div key={r.id} className="card p-4 flex items-start gap-3 bg-white">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${r.status === 'open' ? 'bg-red-50' : 'bg-[#d4af37]/10'}`}><AlertTriangle className={`w-5 h-5 ${r.status === 'open' ? 'text-red-500' : 'text-[#d4af37]'}`} /></div>
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${r.status === 'open' ? 'bg-red-50' : 'bg-[#ff7a00]/10'}`}><AlertTriangle className={`w-5 h-5 ${r.status === 'open' ? 'text-red-500' : 'text-[#ff7a00]'}`} /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-[#0f172a]">{r.report_type} • {r.target_name || r.target_type}</p>
                         <p className="text-xs text-[#64748b] mt-0.5">{r.reason || r.description || '—'}</p>
                         <p className="text-xs text-[#64748b] mt-1">{new Date(r.created_at).toLocaleDateString()} • {r.reporter_name || 'Anonymous'}</p>
                       </div>
-                      <Badge color={r.status === 'open' ? '#ef4444' : r.status === 'investigating' ? '#d4af37' : '#d4af37'}>{r.status}</Badge>
+                      <Badge color={r.status === 'open' ? '#ef4444' : r.status === 'investigating' ? '#ff7a00' : '#ff7a00'}>{r.status}</Badge>
                       {r.status === 'open' && (
                         <button onClick={async () => { await supabase.from('compliance_reports').update({ status: 'investigating' }).eq('id', r.id); setComplianceReports(complianceReports.map(x => x.id === r.id ? { ...x, status: 'investigating' } : x)); showToast(locale === 'fr' ? 'Signalement en cours de traitement' : 'Report under investigation'); }} className="px-3 py-1.5 rounded-lg bg-[#0f172a] text-white text-xs font-semibold">{locale === 'fr' ? 'Traiter' : 'Handle'}</button>
                       )}
                     </div>
                   ))}
-                  {complianceReports.length === 0 && <div className="card p-8 text-center bg-white"><AlertTriangle className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucun litige en cours.' : 'No active disputes.'}</p></div>}
+                  {complianceReports.length === 0 && <div className="card p-8 text-center bg-white"><AlertTriangle className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucun litige en cours.' : 'No active disputes.'}</p></div>}
                 </div>
               </div>
             )}
@@ -475,8 +475,8 @@ export function AdminPage() {
             {tab === 'revenue' && isSuperAdmin && (
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Revenus Zando' : 'Zando Revenue'}</h2>
-                <div className="card p-5 mb-4 bg-[#d4af37]/5 flex items-center gap-3">
-                  <DollarSign className="w-5 h-5 text-[#d4af37]" />
+                <div className="card p-5 mb-4 bg-[#ff7a00]/5 flex items-center gap-3">
+                  <DollarSign className="w-5 h-5 text-[#ff7a00]" />
                   <p className="text-sm text-[#0f172a]">{locale === 'fr' ? 'Zando ne prélève aucune commission sur les ventes. Chaque vendeur connecte son propre PSP et est payé directement par ses clients. Les revenus de la plateforme proviennent uniquement des abonnements vendeurs et de la publicité interne.' : "Zando takes zero commission on sales. Each seller connects their own PSP and is paid directly by buyers. Platform revenue comes only from seller subscriptions and internal advertising."}</p>
                 </div>
                 <RevenueTab />
@@ -492,7 +492,7 @@ export function AdminPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-2xl">{c.flag}</span>
                         <div className="flex-1"><p className="font-semibold text-[#0f172a] text-sm">{c.name}</p><p className="text-xs text-[#64748b]">{c.currency_code} • {c.phone_code}</p></div>
-                        <Badge color={c.is_active ? '#d4af37' : '#64748b'}>{c.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</Badge>
+                        <Badge color={c.is_active ? '#ff7a00' : '#64748b'}>{c.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</Badge>
                       </div>
                     </div>
                   ))}
@@ -516,9 +516,9 @@ export function AdminPage() {
                         return (
                         <div key={m} className="flex items-center gap-4 p-2 rounded-lg bg-[#f7f8fa]">
                           <span className="text-sm font-medium text-[#0f172a] flex-1">{m}</span>
-                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.read} className="accent-[#d4af37]" /> {locale === 'fr' ? 'Lecture' : 'Read'}</label>
-                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.write} className="accent-[#d4af37]" /> {locale === 'fr' ? 'Écriture' : 'Write'}</label>
-                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.delete} className="accent-[#d4af37]" /> {locale === 'fr' ? 'Suppression' : 'Delete'}</label>
+                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.read} className="accent-[#ff7a00]" /> {locale === 'fr' ? 'Lecture' : 'Read'}</label>
+                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.write} className="accent-[#ff7a00]" /> {locale === 'fr' ? 'Écriture' : 'Write'}</label>
+                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.delete} className="accent-[#ff7a00]" /> {locale === 'fr' ? 'Suppression' : 'Delete'}</label>
                         </div>
                         );
                       })}
@@ -532,7 +532,7 @@ export function AdminPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div><h3 className="font-semibold text-[#0f172a]">{r.name}</h3><p className="text-xs text-[#64748b]">{r.description}</p></div>
                         <div className="flex items-center gap-2">
-                          <Badge color="#d4af37">{r.members} {locale === 'fr' ? 'membres' : 'members'}</Badge>
+                          <Badge color="#ff7a00">{r.members} {locale === 'fr' ? 'membres' : 'members'}</Badge>
                           <button onClick={() => { setEditingRole(r); setShowRoleForm(true); }} className="p-2 rounded-lg hover:bg-[#f7f8fa]"><Edit className="w-4 h-4 text-[#64748b]" /></button>
                           <button onClick={() => setRoles(roles.filter((x) => x.id !== r.id))} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
                         </div>
@@ -565,7 +565,7 @@ export function AdminPage() {
                         return (
                           <div key={plan}>
                             <div className="flex justify-between text-xs mb-1"><span className="font-semibold text-[#0f172a] capitalize">{plan}</span><span className="text-[#64748b]">{count}</span></div>
-                            <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: plan === 'enterprise' ? '#d4af37' : plan === 'premium' ? '#d4af37' : '#64748b' }} /></div>
+                            <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: plan === 'enterprise' ? '#ff7a00' : plan === 'premium' ? '#ff7a00' : '#64748b' }} /></div>
                           </div>
                         );
                       })}
@@ -580,7 +580,7 @@ export function AdminPage() {
                         return (
                           <div key={st}>
                             <div className="flex justify-between text-xs mb-1"><span className="font-semibold text-[#0f172a] capitalize">{st}</span><span className="text-[#64748b]">{count}</span></div>
-                            <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: st === 'delivered' ? '#d4af37' : st === 'pending' ? '#d4af37' : st === 'cancelled' ? '#ef4444' : '#64748b' }} /></div>
+                            <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: st === 'delivered' ? '#ff7a00' : st === 'pending' ? '#ff7a00' : st === 'cancelled' ? '#ef4444' : '#64748b' }} /></div>
                           </div>
                         );
                       })}
@@ -598,7 +598,7 @@ export function AdminPage() {
                         <div key={c.id} className="flex items-center gap-3">
                           <span className="text-lg">{c.flag}</span>
                           <span className="text-xs text-[#0f172a] w-24 truncate">{c.name}</span>
-                          <div className="flex-1 h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-[#d4af37]" style={{ width: `${pct}%` }} /></div>
+                          <div className="flex-1 h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-[#ff7a00]" style={{ width: `${pct}%` }} /></div>
                           <span className="text-xs text-[#64748b] w-8 text-right">{count}</span>
                         </div>
                       );
@@ -619,7 +619,7 @@ export function AdminPage() {
                   ].map((p) => (
                     <div key={p.name} className="card p-5 bg-white">
                       <h3 className="font-display text-lg font-bold text-[#0f172a]">{p.name}</h3>
-                      <p className="text-2xl font-bold text-[#d4af37] mt-2">{p.price}<span className="text-sm text-[#64748b]">/mo</span></p>
+                      <p className="text-2xl font-bold text-[#ff7a00] mt-2">{p.price}<span className="text-sm text-[#64748b]">/mo</span></p>
                       <p className="text-xs text-[#64748b] mt-3">{p.subs} {locale === 'fr' ? 'abonnés' : 'subscribers'}</p>
                     </div>
                   ))}
@@ -635,9 +635,9 @@ export function AdminPage() {
                   <div className="space-y-2">
                     {sellers.slice(0, 5).map((s) => (
                       <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#f7f8fa]">
-                        <FileText className="w-5 h-5 text-[#d4af37]" />
+                        <FileText className="w-5 h-5 text-[#ff7a00]" />
                         <span className="text-sm text-[#0f172a] flex-1">{s.business_name} — {locale === 'fr' ? 'Documents KYC' : 'KYC Documents'}</span>
-                        <Badge color="#d4af37">{t.onboarding.approved}</Badge>
+                        <Badge color="#ff7a00">{t.onboarding.approved}</Badge>
                       </div>
                     ))}
                   </div>
@@ -651,7 +651,7 @@ export function AdminPage() {
                 <div className="space-y-4">
                   {/* Reviews config */}
                   <div className="card p-5 bg-white">
-                    <h3 className="font-semibold text-[#0f172a] mb-4 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Gestion des avis (Reviews)' : 'Reviews Management'}</h3>
+                    <h3 className="font-semibold text-[#0f172a] mb-4 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Gestion des avis (Reviews)' : 'Reviews Management'}</h3>
                     <div className="space-y-3">
                       <ToggleRow label={locale === 'fr' ? 'Activer les avis produits' : 'Enable product reviews'} desc={locale === 'fr' ? 'Permettre aux clients de laisser des avis sur les produits' : 'Allow customers to leave reviews on products'} enabled={reviewsEnabled} onToggle={async () => { const v = !reviewsEnabled; setReviewsEnabled(v); await supabase.from('platform_settings').upsert({ key: 'reviews_enabled', value: { value: v } }); showToast(v ? (locale === 'fr' ? 'Avis activés' : 'Reviews enabled') : (locale === 'fr' ? 'Avis désactivés' : 'Reviews disabled')); }} />
                       <ToggleRow label={locale === 'fr' ? 'Acheteurs confirmés uniquement' : 'Confirmed buyers only'} desc={locale === 'fr' ? 'Seuls les acheteurs ayant commandé peuvent laisser un avis' : 'Only buyers who purchased can leave a review'} enabled={reviewsConfirmedOnly} onToggle={async () => { const v = !reviewsConfirmedOnly; setReviewsConfirmedOnly(v); await supabase.from('platform_settings').upsert({ key: 'reviews_confirmed_buyers_only', value: { value: v } }); showToast(locale === 'fr' ? 'Paramètre mis à jour' : 'Setting updated'); }} />
@@ -659,7 +659,7 @@ export function AdminPage() {
                   </div>
                   {/* Platform config */}
                   <div className="card p-5 bg-white">
-                    <h3 className="font-semibold text-[#0f172a] mb-4 flex items-center gap-2"><Settings className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Configuration plateforme' : 'Platform Configuration'}</h3>
+                    <h3 className="font-semibold text-[#0f172a] mb-4 flex items-center gap-2"><Settings className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Configuration plateforme' : 'Platform Configuration'}</h3>
                     <div className="space-y-3">
                       <ToggleRow label={locale === 'fr' ? 'Approbation produits requise' : 'Product approval required'} desc={locale === 'fr' ? 'Les produits doivent être approuvés avant mise en ligne' : 'Products must be approved before going live'} enabled={productApprovalRequired} onToggle={async () => { const v = !productApprovalRequired; setProductApprovalRequired(v); await supabase.from('platform_settings').upsert({ key: 'product_approval_required', value: { value: v } }); showToast(locale === 'fr' ? 'Paramètre mis à jour' : 'Setting updated'); }} />
                       <ToggleRow label={locale === 'fr' ? 'Achat sans compte (Guest checkout)' : 'Guest checkout'} desc={locale === 'fr' ? 'Permettre aux acheteurs de commander sans compte' : 'Allow buyers to checkout without an account'} enabled={guestCheckoutEnabled} onToggle={async () => { const v = !guestCheckoutEnabled; setGuestCheckoutEnabled(v); await supabase.from('platform_settings').upsert({ key: 'guest_checkout_enabled', value: { value: v } }); showToast(locale === 'fr' ? 'Paramètre mis à jour' : 'Setting updated'); }} />
@@ -667,9 +667,9 @@ export function AdminPage() {
                   </div>
                   {/* Plan staff limits */}
                   <div className="card p-5 bg-white">
-                    <h3 className="font-semibold text-[#0f172a] mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Limites de staff par plan' : 'Staff limits per plan'}</h3>
+                    <h3 className="font-semibold text-[#0f172a] mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Limites de staff par plan' : 'Staff limits per plan'}</h3>
                     <div className="grid grid-cols-3 gap-3">
-                      {[{ plan: 'Starter', limit: 1, color: '#64748b' }, { plan: 'Premium', limit: 5, color: '#d4af37' }, { plan: 'Enterprise', limit: 20, color: '#d4af37' }].map((p) => (
+                      {[{ plan: 'Starter', limit: 1, color: '#64748b' }, { plan: 'Premium', limit: 5, color: '#ff7a00' }, { plan: 'Enterprise', limit: 20, color: '#ff7a00' }].map((p) => (
                         <div key={p.plan} className="p-3 rounded-xl bg-[#f7f8fa] text-center">
                           <p className="text-sm font-semibold text-[#0f172a]">{p.plan}</p>
                           <p className="text-2xl font-bold" style={{ color: p.color }}>{p.limit}</p>
@@ -684,11 +684,11 @@ export function AdminPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.admin.languages}</label>
-                        <div className="flex gap-2"><Badge color="#d4af37">Français</Badge><Badge color="#d4af37">English</Badge></div>
+                        <div className="flex gap-2"><Badge color="#ff7a00">Français</Badge><Badge color="#ff7a00">English</Badge></div>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.admin.payments}</label>
-                        <div className="flex flex-wrap gap-2">{paymentProviders.map((p) => <Badge key={p.id} color={p.is_active ? '#d4af37' : '#64748b'}>{p.name}</Badge>)}</div>
+                        <div className="flex flex-wrap gap-2">{paymentProviders.map((p) => <Badge key={p.id} color={p.is_active ? '#ff7a00' : '#64748b'}>{p.name}</Badge>)}</div>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Pays actifs' : 'Active countries'}</label>
@@ -714,7 +714,7 @@ function ToggleRow({ label, desc, enabled, onToggle }: { label: string; desc: st
         <p className="text-xs text-[#64748b]">{desc}</p>
       </div>
       <button onClick={onToggle} className="shrink-0">
-        {enabled ? <ToggleRight className="w-8 h-8 text-[#d4af37]" /> : <ToggleLeft className="w-8 h-8 text-[#cbd5e1]" />}
+        {enabled ? <ToggleRight className="w-8 h-8 text-[#ff7a00]" /> : <ToggleLeft className="w-8 h-8 text-[#cbd5e1]" />}
       </button>
     </div>
   );
@@ -760,7 +760,7 @@ function RevenueTab() {
                   <span className="text-[#64748b]">{count} {locale === 'fr' ? 'vendeurs' : 'sellers'}</span>
                 </div>
                 <div className="h-2 rounded-full bg-[#f0f4f8] overflow-hidden">
-                  <div className="h-full bg-[#d4af37]" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-[#ff7a00]" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );

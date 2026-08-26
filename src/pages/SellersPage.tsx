@@ -24,7 +24,7 @@ export function SellersPage() {
 
   const filtered = showOther ? sellers : sellers.filter((s) => s.country_id === geo.countryId);
 
-  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" /></div>;
+  if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" /></div>;
 
   return (
     <div className="motif-bg min-h-screen">
