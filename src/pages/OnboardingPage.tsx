@@ -3,6 +3,7 @@ import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
 import { UploadCloud, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Wallet, Sparkles, CheckCircle } from 'lucide-react';
+import { uploadSellerAsset, uploadSellerKycDocument, createSellerDocument } from '@/lib/db';
 
 type PaymentMethod = {
   id: string;
@@ -29,15 +30,16 @@ export function OnboardingPage() {
     email: '', password: '', phone: '',
     countryId: '', businessType: 'company',
     businessName: '', registrationNumber: '', vatNumber: '', businessCategory: '', businessAddress: '',
-    idType: 'passport', idFront: null as string | null, idBack: null as string | null, selfie: null as string | null,
+    idType: 'passport', idFront: null as File | null, idBack: null as File | null, selfie: null as File | null,
     bankName: '', iban: '', swift: '', mobileMoney: '',
-    storeName: '', storeSlug: '', storeLogo: null as string | null, storeBanner: null as string | null, storeDesc: '', socialFacebook: '', socialInstagram: '',
+    storeName: '', storeSlug: '', storeLogo: null as File | null, storeBanner: null as File | null, storeDesc: '', socialFacebook: '', socialInstagram: '',
     warehouseAddress: '', shippingZone: '',
     shipNational: true, shipInternational: false, shipExpress: true, shipLocal: true, shipPickup: false,
     selectedPayments: ['mobile_money', 'paystack'] as string[],
     paymentDetails: {} as Record<string, string>,
     plan: (params.plan as string) || 'starter',
   });
+  const [uploadingDocs, setUploadingDocs] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const steps = [
@@ -129,6 +131,31 @@ export function OnboardingPage() {
       if (sellerError) { setError(sellerError.message); setSubmitting(false); return; }
 
       const sellerId = sellerData.id;
+
+      // Real uploads now that we have an authenticated user + sellerId to own the files.
+      setUploadingDocs(true);
+      const [idFrontPath, idBackPath, selfiePath, logoUrl, bannerUrl] = await Promise.all([
+        form.idFront ? uploadSellerKycDocument(form.idFront, sellerId, 'id_front') : Promise.resolve(null),
+        form.idBack ? uploadSellerKycDocument(form.idBack, sellerId, 'id_back') : Promise.resolve(null),
+        form.selfie ? uploadSellerKycDocument(form.selfie, sellerId, 'selfie') : Promise.resolve(null),
+        form.storeLogo ? uploadSellerAsset(form.storeLogo, sellerId, 'logo') : Promise.resolve(null),
+        form.storeBanner ? uploadSellerAsset(form.storeBanner, sellerId, 'banner') : Promise.resolve(null),
+      ]);
+      setUploadingDocs(false);
+
+      await Promise.all([
+        idFrontPath ? createSellerDocument({ sellerId, docType: 'id_front', fileUrl: idFrontPath, fileName: form.idFront?.name }) : Promise.resolve(),
+        idBackPath ? createSellerDocument({ sellerId, docType: 'id_back', fileUrl: idBackPath, fileName: form.idBack?.name }) : Promise.resolve(),
+        selfiePath ? createSellerDocument({ sellerId, docType: 'selfie', fileUrl: selfiePath, fileName: form.selfie?.name }) : Promise.resolve(),
+      ]);
+
+      if (logoUrl || bannerUrl || selfiePath) {
+        await supabase.from('sellers').update({
+          ...(logoUrl ? { store_logo_url: logoUrl } : {}),
+          ...(bannerUrl ? { store_banner_url: bannerUrl } : {}),
+          ...(selfiePath ? { identity_selfie_url: selfiePath } : {}),
+        }).eq('id', sellerId);
+      }
 
       await supabase.from('seller_payment_methods').insert(
         form.selectedPayments.map((pid) => ({
@@ -484,7 +511,7 @@ export function OnboardingPage() {
                 {locale === 'fr' ? 'Soumettez votre dossier. Notre équipe l\'examinera sous 48h.' : 'Submit your application. Our team will review it within 48h.'}
               </p>
               <button onClick={submit} disabled={submitting} className="btn-gold px-8 py-3.5 rounded-xl font-semibold flex items-center gap-2 mx-auto disabled:opacity-50">
-                <ShieldCheck className="w-5 h-5" /> {submitting ? (locale === 'fr' ? 'Soumission...' : 'Submitting...') : t.onboarding.submit}
+                <ShieldCheck className="w-5 h-5" /> {submitting ? (uploadingDocs ? (locale === 'fr' ? 'Envoi des documents...' : 'Uploading documents...') : (locale === 'fr' ? 'Soumission...' : 'Submitting...')) : t.onboarding.submit}
               </button>
               {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
             </div>
@@ -522,7 +549,7 @@ function Input({ icon: Icon, label, value, onChange, type = 'text', placeholder 
   );
 }
 
-function UploadField({ label, value, onChange }: { label: string; value: string | null; onChange: (v: string) => void }) {
+function UploadField({ label, value, onChange }: { label: string; value: File | null; onChange: (v: File) => void }) {
   return (
     <div>
       <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{label}</label>
@@ -530,11 +557,11 @@ function UploadField({ label, value, onChange }: { label: string; value: string 
         <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (value ? 'bg-[#0e9f6e]/15' : 'bg-[#0f172a]/5')}>
           {value ? <Check className="w-5 h-5 text-[#0e9f6e]" /> : <UploadCloud className="w-5 h-5 text-[#64748b]" />}
         </div>
-        <div className="text-left">
-          <p className="text-sm text-[#0f172a]">{value ? 'File uploaded' : label}</p>
-          <p className="text-xs text-[#64748b]/60">JPG, PNG, PDF</p>
+        <div className="text-left min-w-0">
+          <p className="text-sm text-[#0f172a] truncate">{value ? value.name : label}</p>
+          <p className="text-xs text-[#64748b]/60">JPG, PNG, PDF — 10MB max</p>
         </div>
-        <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={(e) => { if (e.target.files?.[0]) onChange(e.target.files[0].name); }} />
+        <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={(e) => { if (e.target.files?.[0]) onChange(e.target.files[0]); }} />
       </label>
     </div>
   );

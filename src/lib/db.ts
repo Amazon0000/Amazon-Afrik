@@ -643,6 +643,43 @@ export async function uploadSellerAsset(file: File, sellerId: string, type: 'log
   return data.publicUrl;
 }
 
+// Identity documents (passport/ID scans, selfies) go in a private bucket —
+// unlike product images or store assets, these are never public.
+export async function uploadSellerKycDocument(file: File, sellerId: string, docType: 'id_front' | 'id_back' | 'selfie'): Promise<string | null> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const fileName = `${sellerId}/${docType}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from('seller-kyc').upload(fileName, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type,
+  });
+  if (error) {
+    console.error('KYC upload error:', error.message);
+    return null;
+  }
+  // Private bucket: store the path, not a public URL. Resolve to a
+  // short-lived signed URL only when actually displaying it (e.g. admin review).
+  return fileName;
+}
+
+export async function getSellerKycDocumentUrl(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage.from('seller-kyc').createSignedUrl(path, 3600);
+  if (error || !data) { console.error('getSellerKycDocumentUrl:', error?.message); return null; }
+  return data.signedUrl;
+}
+
+export async function createSellerDocument(opts: { sellerId: string; docType: string; fileUrl: string; fileName?: string }): Promise<string | null> {
+  const { data, error } = await supabase.from('seller_documents').insert({
+    seller_id: opts.sellerId,
+    doc_type: opts.docType,
+    file_url: opts.fileUrl,
+    file_name: opts.fileName || null,
+    status: 'pending',
+  }).select('id').single();
+  if (error || !data) { console.error('createSellerDocument:', error?.message); return null; }
+  return data.id;
+}
+
 // ============ MUTATIONS ============
 
 export async function createProduct(opts: {

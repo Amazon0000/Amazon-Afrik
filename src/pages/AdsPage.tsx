@@ -26,6 +26,7 @@ export function AdsPage() {
     name: '', country: '', city: '', category: '',
     duration: 7, dailyBudget: 5, placement: 'search', reach: 'national',
   });
+  const [billingConfirmed, setBillingConfirmed] = useState(false);
 
   useEffect(() => {
     if (!user?.sellerId && !user?.id) return;
@@ -53,6 +54,7 @@ export function AdsPage() {
 
   const launch = async () => {
     if (!form.name) { showToast(locale === 'fr' ? 'Nom requis' : 'Name required', 'error'); return; }
+    if (!billingConfirmed) { showToast(locale === 'fr' ? 'Veuillez confirmer la facturation' : 'Please confirm billing', 'error'); return; }
     if (!user?.sellerId && !user?.id) return;
     const sellerId = user.sellerId || user.id;
     const id = await createAdCampaign({
@@ -74,6 +76,7 @@ export function AdsPage() {
       };
       setCampaigns([newCampaign, ...campaigns]);
       setForm({ name: '', country: '', city: '', category: '', duration: 7, dailyBudget: 5, placement: 'search', reach: 'national' });
+      setBillingConfirmed(false);
       setShowForm(false);
       showToast(locale === 'fr' ? "Campagne créée — en attente d'approbation" : 'Campaign created — pending approval');
     } else {
@@ -243,8 +246,17 @@ export function AdsPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 mt-5">
-              <button onClick={launch} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2">
+            <label className="flex items-start gap-2.5 mt-5 p-3 rounded-xl bg-[#0e9f6e]/5 cursor-pointer">
+              <input type="checkbox" checked={billingConfirmed} onChange={(e) => setBillingConfirmed(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#0e9f6e]" />
+              <span className="text-xs text-[#0f172a]">
+                {locale === 'fr'
+                  ? `Je confirme vouloir lancer cette campagne pour un budget total de $${totalCost.toFixed(2)}. Ce montant sera facturé par Zando dès la validation de la campagne (revenu publicitaire Zando — distinct des paiements de vos ventes, qui vont directement à votre PSP).`
+                  : `I confirm I want to launch this campaign for a total budget of $${totalCost.toFixed(2)}. This amount will be billed by Zando once the campaign is approved (Zando ad revenue — separate from your sales payments, which go directly to your PSP).`}
+              </span>
+            </label>
+
+            <div className="flex gap-3 mt-4">
+              <button onClick={launch} disabled={!billingConfirmed} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                 <Megaphone className="w-4 h-4" /> {t.ads.launch} — ${totalCost.toFixed(2)}
               </button>
               <button onClick={() => setShowForm(false)} className="px-6 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a]">{t.common.cancel}</button>
@@ -276,8 +288,8 @@ export function AdsPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={'px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ' + (c.status === 'active' ? 'bg-green-100 text-green-700' : c.status === 'pending' ? 'bg-[#0e9f6e]/15 text-[#0e9f6e]' : 'bg-gray-100 text-gray-500')}>
-                    {c.status}
+                  <span className={'px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ' + (c.status === 'active' ? 'bg-green-100 text-green-700' : c.status === 'pending' ? 'bg-[#d4af37]/15 text-[#b8932a]' : c.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500')}>
+                    {c.status === 'pending' ? (locale === 'fr' ? "en attente d'approbation" : 'pending approval') : c.status}
                   </span>
                 </div>
                 <div className="grid grid-cols-4 gap-4 pt-3 border-t border-[#0e9f6e]/10">
