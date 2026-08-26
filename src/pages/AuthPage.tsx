@@ -93,8 +93,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
             <button onClick={() => navigate('home')} className="inline-block"><Logo size={56} /></button>
           </div>
           <div className="card p-7 text-center animate-fade-up">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center">
-              <Mail className="w-6 h-6 text-[#0e9f6e]" />
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#d4af37]/15 flex items-center justify-center">
+              <Mail className="w-6 h-6 text-[#d4af37]" />
             </div>
             <h1 className="font-display text-xl font-bold text-[#0f172a] mb-2">
               {locale === 'fr' ? 'Vérifiez votre email' : 'Check your email'}
@@ -121,8 +121,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
             <button onClick={() => navigate('home')} className="inline-block"><Logo size={56} /></button>
           </div>
           <div className="card p-7 text-center animate-fade-up">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center">
-              <Mail className="w-6 h-6 text-[#0e9f6e]" />
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#d4af37]/15 flex items-center justify-center">
+              <Mail className="w-6 h-6 text-[#d4af37]" />
             </div>
             <h1 className="font-display text-xl font-bold text-[#0f172a] mb-2">
               {locale === 'fr' ? 'Email envoyé' : 'Email sent'}
@@ -168,7 +168,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
                 {submitting ? (locale === 'fr' ? 'Envoi...' : 'Sending...') : (locale === 'fr' ? 'Envoyer le lien' : 'Send reset link')}
               </button>
             </form>
-            <button onClick={() => setForgotMode(false)} className="w-full text-center text-sm text-[#64748b] hover:text-[#0e9f6e] mt-4">
+            <button onClick={() => setForgotMode(false)} className="w-full text-center text-sm text-[#64748b] hover:text-[#d4af37] mt-4">
               {locale === 'fr' ? 'Retour à la connexion' : 'Back to login'}
             </button>
           </div>
@@ -251,10 +251,10 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
             {mode === 'login' && (
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 accent-[#0e9f6e]" />
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 accent-[#d4af37]" />
                   <span className="text-sm text-[#0f172a]">{locale === 'fr' ? 'Se rappeler de moi' : 'Remember me'}</span>
                 </label>
-                <button type="button" onClick={() => setForgotMode(true)} className="text-sm text-[#0e9f6e] font-semibold hover:underline">
+                <button type="button" onClick={() => setForgotMode(true)} className="text-sm text-[#d4af37] font-semibold hover:underline">
                   {locale === 'fr' ? 'Mot de passe oublié ?' : 'Forgot password?'}
                 </button>
               </div>
@@ -272,7 +272,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 
           <p className="text-center text-sm text-[#64748b] mt-5">
             {mode === 'login' ? t.auth.noAccount : t.auth.haveAccount}{' '}
-            <button onClick={() => navigate(mode === 'login' ? 'signup' : 'login')} className="font-semibold text-[#0e9f6e] hover:underline">
+            <button onClick={() => navigate(mode === 'login' ? 'signup' : 'login')} className="font-semibold text-[#d4af37] hover:underline">
               {mode === 'login' ? t.auth.signupBtn : t.auth.loginBtn}
             </button>
           </p>

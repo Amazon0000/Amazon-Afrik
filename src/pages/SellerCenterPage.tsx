@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod } from '@/lib/db';
+import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame } from 'lucide-react';
 
 // Major payment service providers by category, with strong African coverage —
 // sellers pick their own PSP here; Zando never touches the funds or takes a cut.
@@ -43,6 +43,9 @@ export function SellerCenterPage() {
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newPayment, setNewPayment] = useState({ providerName: PSP_OPTIONS.card[0], providerType: 'card', accountIdentifier: '', displayName: '' });
   const [changingPlan, setChangingPlan] = useState(false);
+  const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
+  const [flashDealFor, setFlashDealFor] = useState<string | null>(null);
+  const [newDeal, setNewDeal] = useState({ discountPercent: '20', durationHours: '24', stockLimit: '' });
 
   useEffect(() => {
     (async () => {
@@ -59,6 +62,7 @@ export function SellerCenterPage() {
         setAds(adCamp);
         const pms = await fetchSellerPaymentMethods(sellerId);
         setPaymentMethods(pms);
+        setFlashDeals(await fetchSellerFlashDeals(sellerId));
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
@@ -81,7 +85,7 @@ export function SellerCenterPage() {
   ];
 
   const plan = user?.sellerPlan || 'starter';
-  const planColor = plan === 'enterprise' ? '#0e9f6e' : plan === 'premium' ? '#0e9f6e' : '#64748b';
+  const planColor = plan === 'enterprise' ? '#d4af37' : plan === 'premium' ? '#d4af37' : '#64748b';
 
   const totalRevenue = products.reduce((sum, p) => sum + p.price * (p.total_reviews || 1), 0);
   const avgRating = products.length > 0 ? products.reduce((sum, p) => sum + p.rating, 0) / products.length : 0;
@@ -152,9 +156,9 @@ export function SellerCenterPage() {
     }
   };
 
-  const statusColors: Record<string, string> = { pending: '#64748b', confirmed: '#0f172a', preparing: '#0e9f6e', inTransit: '#3b82f6', delivered: '#22c55e', cancelled: '#ef4444' };
+  const statusColors: Record<string, string> = { pending: '#64748b', confirmed: '#0f172a', preparing: '#d4af37', inTransit: '#3b82f6', delivered: '#d4af37', cancelled: '#ef4444' };
 
-  if (loading) return <div className="bg-[#f7f8fa] min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#0e9f6e]/20 border-t-[#0e9f6e] animate-spin" /></div>;
+  if (loading) return <div className="bg-[#f7f8fa] min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" /></div>;
 
   return (
     <div className="bg-[#f7f8fa] min-h-screen">
@@ -164,7 +168,7 @@ export function SellerCenterPage() {
           <aside className="lg:w-60 shrink-0">
             <div className="card p-4 sticky top-20 bg-white">
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#e2e8f0]">
-                <div className="w-10 h-10 rounded-xl bg-[#0e9f6e] flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 rounded-xl bg-[#d4af37] flex items-center justify-center text-white font-bold">
                   {(user?.fullName || 'S').charAt(0)}
                 </div>
                 <div>
@@ -175,10 +179,10 @@ export function SellerCenterPage() {
               <nav className="space-y-0.5 max-h-[60vh] overflow-y-auto no-scrollbar">
                 {navItems.map((item) => (
                   <button key={item.id} onClick={() => { setTab(item.id); if (item.id === 'ads') navigate('ads'); if (item.id === 'subscription') navigate('plans'); }}
-                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-lg transition-colors ${tab === item.id ? 'bg-[#0e9f6e]/10 text-[#0e9f6e] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-lg transition-colors ${tab === item.id ? 'bg-[#d4af37]/10 text-[#d4af37] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>
                     <item.icon className="w-4 h-4" /> {item.label}
-                    {item.id === 'orders' && orders.length > 0 && <span className="ml-auto text-xs bg-[#0e9f6e] text-white px-1.5 rounded-full font-bold">{orders.length}</span>}
-                    {item.id === 'messages' && <span className="ml-auto w-2 h-2 rounded-full bg-[#0e9f6e]" />}
+                    {item.id === 'orders' && orders.length > 0 && <span className="ml-auto text-xs bg-[#d4af37] text-white px-1.5 rounded-full font-bold">{orders.length}</span>}
+                    {item.id === 'messages' && <span className="ml-auto w-2 h-2 rounded-full bg-[#d4af37]" />}
                   </button>
                 ))}
               </nav>
@@ -201,12 +205,12 @@ export function SellerCenterPage() {
                 <div className="card p-5 flex items-center gap-4 bg-white">
                   {user?.sellerStatus === 'pending' ? (
                     <>
-                      <div className="w-12 h-12 rounded-xl bg-[#0e9f6e]/15 flex items-center justify-center"><Clock className="w-6 h-6 text-[#0e9f6e]" /></div>
+                      <div className="w-12 h-12 rounded-xl bg-[#d4af37]/15 flex items-center justify-center"><Clock className="w-6 h-6 text-[#d4af37]" /></div>
                       <div className="flex-1"><p className="font-semibold text-[#0f172a]">{t.onboarding.pending}</p><p className="text-xs text-[#64748b]">{t.onboarding.submitSuccess}</p></div>
                     </>
                   ) : (
                     <>
-                      <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center"><CheckCircle className="w-6 h-6 text-green-600" /></div>
+                      <div className="w-12 h-12 rounded-xl bg-[#d4af37]/15 flex items-center justify-center"><CheckCircle className="w-6 h-6 text-[#b8932a]" /></div>
                       <div className="flex-1"><p className="font-semibold text-[#0f172a]">{t.onboarding.approved}</p><p className="text-xs text-[#64748b]">{t.home.trust1}</p></div>
                     </>
                   )}
@@ -215,13 +219,13 @@ export function SellerCenterPage() {
                 {/* Low stock alerts */}
                 {(lowStock.length > 0 || outOfStock.length > 0) && (
                   <div className="card p-5 bg-white">
-                    <h3 className="font-semibold text-[#0f172a] mb-3 flex items-center gap-2"><Bell className="w-4 h-4 text-[#0e9f6e]" /> {locale === 'fr' ? 'Alertes de stock' : 'Stock alerts'}</h3>
+                    <h3 className="font-semibold text-[#0f172a] mb-3 flex items-center gap-2"><Bell className="w-4 h-4 text-[#d4af37]" /> {locale === 'fr' ? 'Alertes de stock' : 'Stock alerts'}</h3>
                     <div className="space-y-2">
                       {lowStock.map((p) => (
-                        <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#0e9f6e]/5">
-                          <Package className="w-4 h-4 text-[#0e9f6e]" />
+                        <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#d4af37]/5">
+                          <Package className="w-4 h-4 text-[#d4af37]" />
                           <span className="text-sm text-[#0f172a] flex-1">{p.name}</span>
-                          <Badge color="#0e9f6e">{p.stock} {locale === 'fr' ? 'restants' : 'left'}</Badge>
+                          <Badge color="#d4af37">{p.stock} {locale === 'fr' ? 'restants' : 'left'}</Badge>
                         </div>
                       ))}
                       {outOfStock.map((p) => (
@@ -240,7 +244,7 @@ export function SellerCenterPage() {
                   <h2 className="font-display text-lg font-bold text-[#0f172a] mb-3">{t.seller.recentOrders}</h2>
                   <div className="card overflow-hidden bg-white">
                     {orders.length === 0 ? (
-                      <div className="p-6 text-center text-sm text-[#64748b]"><ShoppingCart className="w-8 h-8 text-[#0e9f6e]/30 mx-auto mb-2" />{locale === 'fr' ? 'Aucune commande pour le moment' : 'No orders yet'}</div>
+                      <div className="p-6 text-center text-sm text-[#64748b]"><ShoppingCart className="w-8 h-8 text-[#d4af37]/30 mx-auto mb-2" />{locale === 'fr' ? 'Aucune commande pour le moment' : 'No orders yet'}</div>
                     ) : orders.map((o, i) => (
                       <div key={o.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                         <div className="flex-1">
@@ -280,9 +284,9 @@ export function SellerCenterPage() {
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.description}</label><textarea value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Description du produit...' : 'Product description...'} /></div>
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.uploadImages} *</label>
                         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
-                        <div onClick={() => fileInputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); handleFileSelect(e.dataTransfer.files); }} className="border-2 border-dashed border-[#e2e8f0] rounded-xl p-6 text-center hover:border-[#0e9f6e] transition-colors cursor-pointer">
+                        <div onClick={() => fileInputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); handleFileSelect(e.dataTransfer.files); }} className="border-2 border-dashed border-[#e2e8f0] rounded-xl p-6 text-center hover:border-[#d4af37] transition-colors cursor-pointer">
                           {uploading ? (
-                            <div className="flex flex-col items-center gap-2"><Loader2 className="w-8 h-8 text-[#0e9f6e] animate-spin" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Envoi en cours...' : 'Uploading...'}</p></div>
+                            <div className="flex flex-col items-center gap-2"><Loader2 className="w-8 h-8 text-[#d4af37] animate-spin" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Envoi en cours...' : 'Uploading...'}</p></div>
                           ) : (
                             <><ImagePlus className="w-8 h-8 text-[#64748b]/40 mx-auto mb-2" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Cliquez ou glissez vos images ici' : 'Click or drag your images here'}</p><p className="text-xs text-[#64748b]/60 mt-1">JPEG, PNG, WEBP — max 10MB</p></>
                           )}
@@ -293,7 +297,7 @@ export function SellerCenterPage() {
                               <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border border-[#e2e8f0]">
                                 <img src={url} alt="" className="w-full h-full object-cover" />
                                 <button onClick={(e) => { e.stopPropagation(); setUploadedImages(uploadedImages.filter((_, idx) => idx !== i)); }} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3 h-3" /></button>
-                                {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-[9px] text-white bg-[#0e9f6e] text-center py-0.5 font-semibold">Main</span>}
+                                {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-[9px] text-white bg-[#d4af37] text-center py-0.5 font-semibold">Main</span>}
                               </div>
                             ))}
                           </div>
@@ -309,24 +313,71 @@ export function SellerCenterPage() {
 
                 <div className="card overflow-hidden bg-white">
                   {products.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-[#64748b]"><Package className="w-8 h-8 text-[#0e9f6e]/30 mx-auto mb-2" />{locale === 'fr' ? 'Aucun produit. Ajoutez votre premier produit!' : 'No products. Add your first product!'}</div>
-                  ) : products.map((p, i) => (
-                    <div key={p.id} className={`flex items-center gap-4 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
-                      <img src={p.product_images?.[0]?.image_url || ''} alt={p.name} className="w-14 h-14 rounded-xl object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <Star className="w-3 h-3 fill-[#0e9f6e] text-[#0e9f6e]" />
-                          <span className="text-xs text-[#64748b]">{p.rating} ({p.total_reviews})</span>
-                          {p.is_sponsored && <Badge color="#0e9f6e">Sponsored</Badge>}
+                    <div className="p-6 text-center text-sm text-[#64748b]"><Package className="w-8 h-8 text-[#d4af37]/30 mx-auto mb-2" />{locale === 'fr' ? 'Aucun produit. Ajoutez votre premier produit!' : 'No products. Add your first product!'}</div>
+                  ) : products.map((p, i) => {
+                    const activeDeal = flashDeals.find((d) => d.product_id === p.id && d.is_active && new Date(d.ends_at) > new Date());
+                    return (
+                    <div key={p.id} className={`p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
+                      <div className="flex items-center gap-4">
+                        <img src={p.product_images?.[0]?.image_url || ''} alt={p.name} className="w-14 h-14 rounded-xl object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Star className="w-3 h-3 fill-[#d4af37] text-[#d4af37]" />
+                            <span className="text-xs text-[#64748b]">{p.rating} ({p.total_reviews})</span>
+                            {p.is_sponsored && <Badge color="#d4af37">Sponsored</Badge>}
+                            {activeDeal && <Badge color="#d4af37">-{activeDeal.discount_percent}% • {locale === 'fr' ? 'flash active' : 'flash active'}</Badge>}
+                          </div>
                         </div>
+                        <div className="text-right">
+                          <p className="font-bold text-[#0f172a]">${p.price}</p>
+                          <p className={`text-xs ${p.stock === 0 ? 'text-red-500' : p.stock < 5 ? 'text-[#d4af37]' : 'text-[#64748b]'}`}>{t.seller.stock}: {p.stock}</p>
+                        </div>
+                        {activeDeal ? (
+                          <button onClick={async () => { const ok = await endFlashDeal(activeDeal.id); if (ok) { setFlashDeals(flashDeals.map(d => d.id === activeDeal.id ? { ...d, is_active: false } : d)); showToast(locale === 'fr' ? 'Vente flash arrêtée' : 'Flash deal ended'); } }} className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-semibold shrink-0">{locale === 'fr' ? 'Arrêter' : 'End'}</button>
+                        ) : (
+                          <button onClick={() => setFlashDealFor(flashDealFor === p.id ? null : p.id)} className="px-3 py-1.5 rounded-lg bg-[#d4af37]/15 text-[#b8932a] text-xs font-semibold shrink-0 flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Vente flash' : 'Flash deal'}</button>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-[#0f172a]">${p.price}</p>
-                        <p className={`text-xs ${p.stock === 0 ? 'text-red-500' : p.stock < 5 ? 'text-[#0e9f6e]' : 'text-[#64748b]'}`}>{t.seller.stock}: {p.stock}</p>
-                      </div>
+                      {flashDealFor === p.id && (
+                        <div className="mt-3 p-3 rounded-xl bg-[#f7f8fa] grid sm:grid-cols-4 gap-3 items-end">
+                          <div>
+                            <label className="block text-[10px] font-semibold text-[#0f172a] uppercase mb-1">{locale === 'fr' ? 'Remise %' : 'Discount %'}</label>
+                            <input type="number" min={1} max={90} value={newDeal.discountPercent} onChange={(e) => setNewDeal({ ...newDeal, discountPercent: e.target.value })} className="input-field text-xs py-1.5" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-[#0f172a] uppercase mb-1">{locale === 'fr' ? 'Durée (heures)' : 'Duration (hours)'}</label>
+                            <input type="number" min={1} max={168} value={newDeal.durationHours} onChange={(e) => setNewDeal({ ...newDeal, durationHours: e.target.value })} className="input-field text-xs py-1.5" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-[#0f172a] uppercase mb-1">{locale === 'fr' ? 'Stock limité (optionnel)' : 'Stock limit (optional)'}</label>
+                            <input type="number" min={1} value={newDeal.stockLimit} onChange={(e) => setNewDeal({ ...newDeal, stockLimit: e.target.value })} className="input-field text-xs py-1.5" placeholder={locale === 'fr' ? 'Illimité' : 'Unlimited'} />
+                          </div>
+                          <button onClick={async () => {
+                            const sellerId = user?.sellerId || user?.id;
+                            if (!sellerId) return;
+                            const discount = Math.max(1, Math.min(90, parseInt(newDeal.discountPercent) || 20));
+                            const hours = Math.max(1, Math.min(168, parseInt(newDeal.durationHours) || 24));
+                            const dealPrice = Math.round(p.price * (1 - discount / 100) * 100) / 100;
+                            const id = await createFlashDeal({
+                              productId: p.id, sellerId, discountPercent: discount, dealPrice,
+                              stockLimit: newDeal.stockLimit ? parseInt(newDeal.stockLimit) : null,
+                              startsAt: new Date().toISOString(),
+                              endsAt: new Date(Date.now() + hours * 3600000).toISOString(),
+                            });
+                            if (id) {
+                              setFlashDeals([{ id, product_id: p.id, seller_id: sellerId, discount_percent: discount, deal_price: dealPrice, stock_limit: newDeal.stockLimit ? parseInt(newDeal.stockLimit) : null, claimed_count: 0, starts_at: new Date().toISOString(), ends_at: new Date(Date.now() + hours * 3600000).toISOString(), is_active: true, created_at: new Date().toISOString() }, ...flashDeals]);
+                              setFlashDealFor(null);
+                              setNewDeal({ discountPercent: '20', durationHours: '24', stockLimit: '' });
+                              showToast(locale === 'fr' ? 'Vente flash lancée' : 'Flash deal launched');
+                            } else {
+                              showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+                            }
+                          }} className="btn-gold px-3 py-1.5 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Lancer' : 'Launch'}</button>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  );})}
                 </div>
               </div>
             )}
@@ -335,7 +386,7 @@ export function SellerCenterPage() {
               <div className="animate-fade-up">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-6">{t.seller.orders}</h1>
                 {orders.length === 0 ? (
-                  <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><ShoppingCart className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune commande pour le moment.' : 'No orders yet.'}</div>
+                  <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><ShoppingCart className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune commande pour le moment.' : 'No orders yet.'}</div>
                 ) : (
                   <div className="card overflow-hidden bg-white">
                     {orders.map((o, i) => (
@@ -371,7 +422,7 @@ export function SellerCenterPage() {
                       return (
                         <div key={p.id}>
                           <div className="flex items-center justify-between mb-1"><span className="text-sm text-[#0f172a]">{p.name}</span><span className="text-xs text-[#64748b]">{p.total_reviews}</span></div>
-                          <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#0e9f6e] to-[#0c8a5f]" style={{ width: `${pct}%` }} /></div>
+                          <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#d4af37] to-[#c9a230]" style={{ width: `${pct}%` }} /></div>
                         </div>
                       );
                     })}
@@ -387,14 +438,14 @@ export function SellerCenterPage() {
                   <button onClick={() => navigate('ads')} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4" /> {t.ads.createCampaign}</button>
                 </div>
                 {ads.length === 0 ? (
-                  <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><Megaphone className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune campagne publicitaire.' : 'No ad campaigns yet.'}</div>
+                  <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><Megaphone className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune campagne publicitaire.' : 'No ad campaigns yet.'}</div>
                 ) : (
                   <div className="space-y-3">
                     {ads.map((ad) => (
                       <div key={ad.id} className="card p-5 bg-white">
                         <div className="flex items-center justify-between mb-3">
                           <p className="font-semibold text-[#0f172a]">{ad.name}</p>
-                          <Badge color={ad.status === 'active' ? '#22c55e' : ad.status === 'pending' ? '#0e9f6e' : '#64748b'}>{ad.status}</Badge>
+                          <Badge color={ad.status === 'active' ? '#d4af37' : ad.status === 'pending' ? '#d4af37' : '#64748b'}>{ad.status}</Badge>
                         </div>
                         <div className="grid grid-cols-3 gap-3 text-center">
                           <div><p className="text-lg font-bold text-[#0f172a]">{ad.impressions.toLocaleString()}</p><p className="text-xs text-[#64748b]">{t.ads.impressions}</p></div>
@@ -422,8 +473,8 @@ export function SellerCenterPage() {
             {tab === 'payments' && (
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Moyens de paiement' : 'Payment methods'}</h1>
-                <div className="card p-4 bg-[#0e9f6e]/5 flex items-start gap-3">
-                  <ShieldCheck className="w-5 h-5 text-[#0e9f6e] mt-0.5 shrink-0" />
+                <div className="card p-4 bg-[#d4af37]/5 flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-[#d4af37] mt-0.5 shrink-0" />
                   <p className="text-sm text-[#0f172a]">
                     {locale === 'fr'
                       ? 'Zando ne prélève aucune commission sur vos ventes. Connectez votre propre PSP (Stripe, Flutterwave, Paystack, Mobile Money, virement bancaire...) : vos clients vous paient directement, sans intermédiaire.'
@@ -507,23 +558,23 @@ export function SellerCenterPage() {
 
                   {paymentMethods.length === 0 ? (
                     <div className="text-center py-10">
-                      <Wallet className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />
+                      <Wallet className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" />
                       <p className="text-sm text-[#64748b]">{locale === 'fr' ? "Aucun PSP connecté. Vos acheteurs ne peuvent pas encore vous payer — connectez-en un." : "No PSP connected yet. Buyers can't pay you until you connect one."}</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {paymentMethods.map((pm) => (
                         <div key={pm.id} className="flex items-center gap-3 p-3 rounded-lg border border-[#e2e8f0]">
-                          <div className="w-9 h-9 rounded-lg bg-[#0e9f6e]/10 flex items-center justify-center shrink-0"><CreditCard className="w-4 h-4 text-[#0e9f6e]" /></div>
+                          <div className="w-9 h-9 rounded-lg bg-[#d4af37]/10 flex items-center justify-center shrink-0"><CreditCard className="w-4 h-4 text-[#d4af37]" /></div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-[#0f172a]">{pm.display_name || pm.provider_name}</p>
                             <p className="text-xs text-[#64748b]">{pm.provider_name} • {pm.provider_type}{pm.account_identifier ? ` • ${pm.account_identifier}` : ''}</p>
                           </div>
-                          <Badge color={pm.is_verified ? '#22c55e' : '#0e9f6e'}>{pm.is_verified ? (locale === 'fr' ? 'Vérifié' : 'Verified') : (locale === 'fr' ? 'En attente' : 'Pending')}</Badge>
+                          <Badge color={pm.is_verified ? '#d4af37' : '#d4af37'}>{pm.is_verified ? (locale === 'fr' ? 'Vérifié' : 'Verified') : (locale === 'fr' ? 'En attente' : 'Pending')}</Badge>
                           <button onClick={async () => {
                             const ok = await toggleSellerPaymentMethod(pm.id, !pm.is_active);
                             if (ok) setPaymentMethods(paymentMethods.map(x => x.id === pm.id ? { ...x, is_active: !x.is_active } : x));
-                          }} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold ${pm.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{pm.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</button>
+                          }} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold ${pm.is_active ? 'bg-[#d4af37]/15 text-[#b8932a]' : 'bg-gray-100 text-gray-500'}`}>{pm.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</button>
                           <button onClick={async () => {
                             const ok = await removeSellerPaymentMethod(pm.id);
                             if (ok) { setPaymentMethods(paymentMethods.filter(x => x.id !== pm.id)); showToast(locale === 'fr' ? 'PSP retiré' : 'PSP removed'); }
@@ -539,7 +590,7 @@ export function SellerCenterPage() {
             {tab === 'subscription' && (
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.subscription}</h1>
-                <div className="card p-6 bg-gradient-to-br from-[#0e9f6e]/10 to-transparent border-[#0e9f6e]/20">
+                <div className="card p-6 bg-gradient-to-br from-[#d4af37]/10 to-transparent border-[#d4af37]/20">
                   <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Plan actuel' : 'Current plan'}</p>
                   <p className="text-3xl font-bold text-[#0f172a] mt-1 capitalize" style={{ color: planColor }}>{plan}</p>
                   <p className="text-xs text-[#64748b] mt-2">
@@ -550,7 +601,7 @@ export function SellerCenterPage() {
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   {(['starter', 'premium', 'enterprise'] as const).map((p) => (
-                    <div key={p} className={`card p-5 ${plan === p ? 'ring-2 ring-[#0e9f6e]' : ''}`}>
+                    <div key={p} className={`card p-5 ${plan === p ? 'ring-2 ring-[#d4af37]' : ''}`}>
                       <h3 className="font-display text-lg font-bold text-[#0f172a] capitalize mb-2">{p}</h3>
                       <button
                         disabled={plan === p || changingPlan}
@@ -580,21 +631,21 @@ export function SellerCenterPage() {
             {tab === 'messages' && (
               <div className="animate-fade-up">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-6">{locale === 'fr' ? 'Messages' : 'Messages'}</h1>
-                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><MessageSquare className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun message.' : 'No messages.'}</div>
+                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><MessageSquare className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun message.' : 'No messages.'}</div>
               </div>
             )}
 
             {tab === 'invoices' && (
               <div className="animate-fade-up">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-6">{locale === 'fr' ? 'Factures' : 'Invoices'}</h1>
-                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><FileText className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune facture.' : 'No invoices.'}</div>
+                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><FileText className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune facture.' : 'No invoices.'}</div>
               </div>
             )}
 
             {tab === 'returns' && (
               <div className="animate-fade-up">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-6">{t.seller.returns}</h1>
-                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><RotateCcw className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun retour en cours.' : 'No returns in progress.'}</div>
+                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><RotateCcw className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun retour en cours.' : 'No returns in progress.'}</div>
               </div>
             )}
 
@@ -613,7 +664,7 @@ export function SellerCenterPage() {
                     </div>
                   ))}
                   {orders.filter((o) => o.status === 'inTransit' || o.status === 'preparing' || o.status === 'confirmed').length === 0 && (
-                    <div className="card p-6 text-center text-sm text-[#64748b] bg-white sm:col-span-2"><Truck className="w-10 h-10 text-[#0e9f6e]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune livraison en cours.' : 'No deliveries in progress.'}</div>
+                    <div className="card p-6 text-center text-sm text-[#64748b] bg-white sm:col-span-2"><Truck className="w-10 h-10 text-[#d4af37]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune livraison en cours.' : 'No deliveries in progress.'}</div>
                   )}
                 </div>
               </div>

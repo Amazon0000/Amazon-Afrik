@@ -189,8 +189,8 @@ export function OnboardingPage() {
     return (
       <div className="motif-bg min-h-screen flex items-center justify-center px-4">
         <div className="card p-8 max-w-md text-center animate-fade-up">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center pulse-gold">
-            <CheckCircle className="w-8 h-8 text-[#0e9f6e]" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#d4af37]/15 flex items-center justify-center pulse-gold">
+            <CheckCircle className="w-8 h-8 text-[#d4af37]" />
           </div>
           <h2 className="font-display text-2xl font-bold text-[#0f172a] mb-2">
             {locale === 'fr' ? 'Bienvenue sur Zando !' : 'Welcome to Zando!'}
@@ -200,8 +200,8 @@ export function OnboardingPage() {
               ? 'Votre compte vendeur a été créé. Vous bénéficiez de 14 jours gratuits pour essayer la plateforme.'
               : 'Your seller account has been created. You get 14 days free to try the platform.'}
           </p>
-          <div className="p-4 rounded-xl bg-[#0e9f6e]/10 mb-4 flex items-center gap-3">
-            <Sparkles className="w-5 h-5 text-[#0e9f6e] shrink-0" />
+          <div className="p-4 rounded-xl bg-[#d4af37]/10 mb-4 flex items-center gap-3">
+            <Sparkles className="w-5 h-5 text-[#d4af37] shrink-0" />
             <p className="text-xs text-[#0f172a] text-left">
               {locale === 'fr'
                 ? 'Pendant 14 jours, accédez à toutes les fonctionnalités. Après cette période, un abonnement est requis pour continuer à vendre.'
@@ -224,7 +224,7 @@ export function OnboardingPage() {
       <header className="sticky top-0 z-50 bg-[#0f172a] safe-top">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate('sell')}><Logo size={40} variant="light" /></button>
-          <button onClick={() => navigate('home')} className="text-sm text-[#f7f8fa]/60 hover:text-[#0e9f6e]">
+          <button onClick={() => navigate('home')} className="text-sm text-[#f7f8fa]/60 hover:text-[#d4af37]">
             {locale === 'fr' ? 'Retour à la boutique' : 'Back to store'}
           </button>
         </div>
@@ -237,8 +237,8 @@ export function OnboardingPage() {
         </div>
 
         {/* 14-day trial banner */}
-        <div className="card p-4 mb-6 flex items-center gap-3 bg-gradient-to-r from-[#0e9f6e]/10 to-[#0e9f6e]/10 border-[#0e9f6e]/20">
-          <Sparkles className="w-5 h-5 text-[#0e9f6e] shrink-0" />
+        <div className="card p-4 mb-6 flex items-center gap-3 bg-gradient-to-r from-[#d4af37]/10 to-[#d4af37]/10 border-[#d4af37]/20">
+          <Sparkles className="w-5 h-5 text-[#d4af37] shrink-0" />
           <div>
             <p className="text-sm font-semibold text-[#0f172a]">
               {locale === 'fr' ? '14 jours gratuits — aucune carte requise' : '14 days free — no card required'}
@@ -254,11 +254,11 @@ export function OnboardingPage() {
           {steps.map((s, i) => (
             <div key={s.num} className="flex items-center flex-1 last:flex-none min-w-[40px]">
               <div className="flex flex-col items-center">
-                <div className={'w-8 h-8 rounded-full flex items-center justify-center transition-all ' + (step >= s.num ? 'bg-[#0e9f6e] text-[#0f172a]' : 'bg-white border border-[#0f172a]/15 text-[#64748b]/40')}>
+                <div className={'w-8 h-8 rounded-full flex items-center justify-center transition-all ' + (step >= s.num ? 'bg-[#d4af37] text-[#0f172a]' : 'bg-white border border-[#0f172a]/15 text-[#64748b]/40')}>
                   {step > s.num ? <Check className="w-4 h-4" /> : <s.icon className="w-3.5 h-3.5" />}
                 </div>
               </div>
-              {i < steps.length - 1 && <div className={'h-0.5 flex-1 mx-1 rounded ' + (step > s.num ? 'bg-[#0e9f6e]' : 'bg-[#0f172a]/10')} />}
+              {i < steps.length - 1 && <div className={'h-0.5 flex-1 mx-1 rounded ' + (step > s.num ? 'bg-[#d4af37]' : 'bg-[#0f172a]/10')} />}
             </div>
           ))}
         </div>
@@ -277,8 +277,8 @@ export function OnboardingPage() {
                   <Input icon={Phone} label={t.account.phone} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="+225 07 00 00 00" />
                 </div>
                 <Input icon={Lock} label={t.auth.password} value={form.password} onChange={(v) => setForm({ ...form, password: v })} type="password" placeholder="••••••••" />
-                <div className="p-3 rounded-xl bg-[#0e9f6e]/10 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#0e9f6e]" />
+                <div className="p-3 rounded-xl bg-[#d4af37]/10 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
                   <span className="text-xs text-[#64748b]">{locale === 'fr' ? 'Vos données sont chiffrées et sécurisées' : 'Your data is encrypted and secure'}</span>
                 </div>
               </div>
@@ -295,7 +295,7 @@ export function OnboardingPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
                   {countries.map((c) => (
                     <button key={c.id} onClick={() => setForm({ ...form, countryId: c.id })}
-                      className={'p-3 rounded-xl border-2 text-left transition-all ' + (form.countryId === c.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50')}>
+                      className={'p-3 rounded-xl border-2 text-left transition-all ' + (form.countryId === c.id ? 'border-[#d4af37] bg-[#d4af37]/5' : 'border-[#0f172a]/10 hover:border-[#d4af37]/50')}>
                       <span className="text-2xl mr-1">{c.flag}</span>
                       <span className="text-sm font-medium text-[#0f172a]">{c.name}</span>
                     </button>
@@ -320,7 +320,7 @@ export function OnboardingPage() {
                       { id: 'ngo', label: 'NGO' },
                     ].map((b) => (
                       <button key={b.id} onClick={() => setForm({ ...form, businessType: b.id })}
-                        className={'px-3 py-2 text-xs rounded-lg border-2 transition-all ' + (form.businessType === b.id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5 text-[#0f172a] font-semibold' : 'border-[#0f172a]/15 text-[#0f172a]')}>
+                        className={'px-3 py-2 text-xs rounded-lg border-2 transition-all ' + (form.businessType === b.id ? 'border-[#d4af37] bg-[#d4af37]/5 text-[#0f172a] font-semibold' : 'border-[#0f172a]/15 text-[#0f172a]')}>
                         {b.label}
                       </button>
                     ))}
@@ -348,7 +348,7 @@ export function OnboardingPage() {
                 <div className="flex gap-2">
                   {['passport', 'national_id', 'driving_license'].map((id) => (
                     <button key={id} onClick={() => setForm({ ...form, idType: id })}
-                      className={'px-3 py-2 text-xs rounded-lg border-2 transition-all ' + (form.idType === id ? 'border-[#0e9f6e] bg-[#0e9f6e]/5 text-[#0f172a] font-semibold' : 'border-[#0f172a]/15 text-[#0f172a]')}>
+                      className={'px-3 py-2 text-xs rounded-lg border-2 transition-all ' + (form.idType === id ? 'border-[#d4af37] bg-[#d4af37]/5 text-[#0f172a] font-semibold' : 'border-[#0f172a]/15 text-[#0f172a]')}>
                       {id === 'passport' ? (locale === 'fr' ? 'Passeport' : 'Passport') : id === 'national_id' ? (locale === 'fr' ? 'CNI' : 'National ID') : (locale === 'fr' ? 'Permis' : 'License')}
                     </button>
                   ))}
@@ -405,15 +405,15 @@ export function OnboardingPage() {
                   return (
                     <div key={pm.id}>
                       <button onClick={() => togglePayment(pm.id)}
-                        className={'w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ' + (selected ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/10 hover:border-[#0e9f6e]/50')}>
-                        <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (selected ? 'bg-[#0e9f6e]/15' : 'bg-[#0f172a]/5')}>
-                          <pm.icon className={'w-5 h-5 ' + (selected ? 'text-[#0e9f6e]' : 'text-[#64748b]')} />
+                        className={'w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ' + (selected ? 'border-[#d4af37] bg-[#d4af37]/5' : 'border-[#0f172a]/10 hover:border-[#d4af37]/50')}>
+                        <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (selected ? 'bg-[#d4af37]/15' : 'bg-[#0f172a]/5')}>
+                          <pm.icon className={'w-5 h-5 ' + (selected ? 'text-[#d4af37]' : 'text-[#64748b]')} />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-[#0f172a]">{pm.label}</p>
                           <p className="text-xs text-[#64748b]">{pm.desc}</p>
                         </div>
-                        <div className={'w-5 h-5 rounded-full border-2 flex items-center justify-center ' + (selected ? 'border-[#0e9f6e] bg-[#0e9f6e]' : 'border-[#0f172a]/20')}>
+                        <div className={'w-5 h-5 rounded-full border-2 flex items-center justify-center ' + (selected ? 'border-[#d4af37] bg-[#d4af37]' : 'border-[#0f172a]/20')}>
                           {selected && <Check className="w-3 h-3 text-[#0f172a]" />}
                         </div>
                       </button>
@@ -422,9 +422,9 @@ export function OnboardingPage() {
                 })}
               </div>
               <div className="mt-5 space-y-4">
-                <div className="p-4 rounded-xl bg-[#0e9f6e]/5 border border-[#0e9f6e]/20">
+                <div className="p-4 rounded-xl bg-[#d4af37]/5 border border-[#d4af37]/20">
                   <p className="text-xs font-semibold text-[#0f172a] mb-3 flex items-center gap-2">
-                    <Banknote className="w-4 h-4 text-[#0e9f6e]" />
+                    <Banknote className="w-4 h-4 text-[#d4af37]" />
                     {locale === 'fr' ? 'Coordonnées bancaires (pour recevoir vos paiements)' : 'Bank details (to receive your payments)'}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -459,7 +459,7 @@ export function OnboardingPage() {
                       { key: 'shipPickup', label: locale === 'fr' ? 'Point de retrait' : 'Pickup point' },
                     ].map((s) => (
                       <label key={s.key} className="flex items-center gap-3 p-3 rounded-xl border border-[#0f172a]/10 cursor-pointer hover:bg-[#0f172a]/5">
-                        <input type="checkbox" checked={(form as Record<string, unknown>)[s.key] as boolean} onChange={(e) => setForm({ ...form, [s.key]: e.target.checked })} className="w-5 h-5 accent-[#0e9f6e]" />
+                        <input type="checkbox" checked={(form as Record<string, unknown>)[s.key] as boolean} onChange={(e) => setForm({ ...form, [s.key]: e.target.checked })} className="w-5 h-5 accent-[#d4af37]" />
                         <span className="text-sm text-[#0f172a]">{s.label}</span>
                       </label>
                     ))}
@@ -483,8 +483,8 @@ export function OnboardingPage() {
                 <SummaryRow label={locale === 'fr' ? 'Paiements' : 'Payments'} value={form.selectedPayments.join(', ')} />
                 <SummaryRow label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName || form.mobileMoney || '—'} />
               </div>
-              <div className="mt-5 p-4 rounded-xl bg-[#0e9f6e]/10 flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-[#0e9f6e] shrink-0 mt-0.5" />
+              <div className="mt-5 p-4 rounded-xl bg-[#d4af37]/10 flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-[#d4af37] shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-[#0f172a]">
                     {locale === 'fr' ? 'Plan choisi : ' + form.plan + ' — 14 jours gratuits' : 'Selected plan: ' + form.plan + ' — 14 days free'}
@@ -501,8 +501,8 @@ export function OnboardingPage() {
           {/* Step 9: Done */}
           {step === 9 && (
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center">
-                <ShieldCheck className="w-8 h-8 text-[#0e9f6e]" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#d4af37]/15 flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-[#d4af37]" />
               </div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-2">
                 {locale === 'fr' ? 'Prêt pour soumission' : 'Ready to submit'}
@@ -519,7 +519,7 @@ export function OnboardingPage() {
 
           {/* Navigation */}
           {step < 9 && (
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#0e9f6e]/20">
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#d4af37]/20">
               <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}
                 className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#0f172a] disabled:opacity-30 hover:bg-[#0f172a]/5 rounded-lg transition-colors">
                 <ChevronLeft className="w-4 h-4" /> {t.onboarding.back}
@@ -553,9 +553,9 @@ function UploadField({ label, value, onChange }: { label: string; value: File | 
   return (
     <div>
       <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{label}</label>
-      <label className={'w-full p-4 rounded-xl border-2 border-dashed transition-all flex items-center gap-3 cursor-pointer ' + (value ? 'border-[#0e9f6e] bg-[#0e9f6e]/5' : 'border-[#0f172a]/15 hover:border-[#0e9f6e]/50')}>
-        <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (value ? 'bg-[#0e9f6e]/15' : 'bg-[#0f172a]/5')}>
-          {value ? <Check className="w-5 h-5 text-[#0e9f6e]" /> : <UploadCloud className="w-5 h-5 text-[#64748b]" />}
+      <label className={'w-full p-4 rounded-xl border-2 border-dashed transition-all flex items-center gap-3 cursor-pointer ' + (value ? 'border-[#d4af37] bg-[#d4af37]/5' : 'border-[#0f172a]/15 hover:border-[#d4af37]/50')}>
+        <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (value ? 'bg-[#d4af37]/15' : 'bg-[#0f172a]/5')}>
+          {value ? <Check className="w-5 h-5 text-[#d4af37]" /> : <UploadCloud className="w-5 h-5 text-[#64748b]" />}
         </div>
         <div className="text-left min-w-0">
           <p className="text-sm text-[#0f172a] truncate">{value ? value.name : label}</p>
@@ -569,7 +569,7 @@ function UploadField({ label, value, onChange }: { label: string; value: File | 
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-[#0e9f6e]/10">
+    <div className="flex items-center justify-between py-2 border-b border-[#d4af37]/10">
       <span className="text-[#64748b]">{label}</span>
       <span className="font-semibold text-[#0f172a]">{value || '—'}</span>
     </div>

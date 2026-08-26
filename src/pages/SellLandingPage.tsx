@@ -46,7 +46,7 @@ export function SellLandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <button onClick={() => navigate('home')}><Logo size={40} variant="light" /></button>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('login')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#0e9f6e]">{t.nav.login}</button>
+            <button onClick={() => navigate('login')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#d4af37]">{t.nav.login}</button>
             <button onClick={() => navigate('onboarding')} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-semibold">{t.home.ctaSell}</button>
           </div>
         </div>
@@ -55,11 +55,11 @@ export function SellLandingPage() {
       {/* Hero */}
       <section className="motif-dark py-20 px-4 text-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-72 h-72 rounded-full bg-[#0e9f6e] blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-72 h-72 rounded-full bg-[#0e9f6e] blur-3xl" />
+          <div className="absolute top-10 left-10 w-72 h-72 rounded-full bg-[#d4af37] blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-72 h-72 rounded-full bg-[#d4af37] blur-3xl" />
         </div>
         <div className="max-w-3xl mx-auto relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0e9f6e]/15 text-[#0e9f6e] text-xs font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d4af37]/15 text-[#d4af37] text-xs font-semibold mb-4">
             <Sparkles className="w-3.5 h-3.5" /> {locale === 'fr' ? '14 jours gratuits — sans carte' : '14 days free — no card required'}
           </div>
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -93,8 +93,8 @@ export function SellLandingPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {benefits.map((b, i) => (
             <div key={i} className="card p-6 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-[#0e9f6e]/10 flex items-center justify-center mb-4">
-                <b.icon className="w-6 h-6 text-[#0e9f6e]" />
+              <div className="w-12 h-12 rounded-xl bg-[#d4af37]/10 flex items-center justify-center mb-4">
+                <b.icon className="w-6 h-6 text-[#d4af37]" />
               </div>
               <h3 className="font-display text-lg font-bold text-[#0f172a] mb-2">{b.title}</h3>
               <p className="text-sm text-[#64748b]">{b.desc}</p>
@@ -104,7 +104,7 @@ export function SellLandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="bg-white/50 border-y border-[#0e9f6e]/20 py-16">
+      <section className="bg-white/50 border-y border-[#d4af37]/20 py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <h2 className="font-display text-3xl font-bold text-[#0f172a] text-center mb-10">
             {locale === 'fr' ? 'Comment ça marche' : 'How it works'}
@@ -112,8 +112,8 @@ export function SellLandingPage() {
           <div className="space-y-4">
             {steps.map((s) => (
               <div key={s.num} className="flex items-start gap-4 card p-5 hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 rounded-xl bg-[#0e9f6e]/10 flex items-center justify-center shrink-0">
-                  <s.icon className="w-5 h-5 text-[#0e9f6e]" />
+                <div className="w-12 h-12 rounded-xl bg-[#d4af37]/10 flex items-center justify-center shrink-0">
+                  <s.icon className="w-5 h-5 text-[#d4af37]" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -136,13 +136,13 @@ export function SellLandingPage() {
         <div className="grid sm:grid-cols-3 gap-6">
           {testimonials.map((tm, i) => (
             <div key={i} className="card p-6">
-              <Quote className="w-8 h-8 text-[#0e9f6e]/30 mb-3" />
+              <Quote className="w-8 h-8 text-[#d4af37]/30 mb-3" />
               <div className="flex gap-0.5 mb-3">
-                {Array.from({ length: tm.rating }).map((_, j) => <Star key={j} className="w-4 h-4 fill-[#0e9f6e] text-[#0e9f6e]" />)}
+                {Array.from({ length: tm.rating }).map((_, j) => <Star key={j} className="w-4 h-4 fill-[#d4af37] text-[#d4af37]" />)}
               </div>
               <p className="text-sm text-[#0f172a] mb-4 leading-relaxed">"{tm.text}"</p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#0e9f6e]/15 flex items-center justify-center text-sm font-bold text-[#0e9f6e]">{tm.name.charAt(0)}</div>
+                <div className="w-10 h-10 rounded-full bg-[#d4af37]/15 flex items-center justify-center text-sm font-bold text-[#d4af37]">{tm.name.charAt(0)}</div>
                 <div>
                   <p className="text-sm font-semibold text-[#0f172a]">{tm.name}</p>
                   <p className="text-xs text-[#64748b]">{tm.business} • {tm.city}</p>
@@ -169,13 +169,13 @@ export function SellLandingPage() {
             { name: 'Premium', price: '$29', features: ['100 products', 'Marketing tools', 'Zando Ads access', 'Advanced analytics', locale === 'fr' ? '5 membres staff' : '5 staff members'], highlight: true },
             { name: 'Enterprise', price: '$79', features: ['Unlimited products', 'Free 7-day featured ad', 'Priority support', 'Premium placement', locale === 'fr' ? '20 membres staff' : '20 staff members'], highlight: false },
           ].map((p) => (
-            <div key={p.name} className={'card p-6 relative ' + (p.highlight ? 'ring-2 ring-[#0e9f6e] shadow-xl' : '')}>
-              {p.highlight && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold rounded-full bg-[#0e9f6e] text-white">{locale === 'fr' ? 'POPULAIRE' : 'POPULAR'}</span>}
+            <div key={p.name} className={'card p-6 relative ' + (p.highlight ? 'ring-2 ring-[#d4af37] shadow-xl' : '')}>
+              {p.highlight && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold rounded-full bg-[#d4af37] text-white">{locale === 'fr' ? 'POPULAIRE' : 'POPULAR'}</span>}
               <h3 className="font-display text-xl font-bold text-[#0f172a]">{p.name}</h3>
-              <p className="text-3xl font-bold text-[#0e9f6e] mt-2">{p.price}<span className="text-sm text-[#64748b]">/mo</span></p>
-              <p className="text-xs text-[#0e9f6e] font-semibold mt-1">{locale === 'fr' ? '14 jours gratuits' : '14 days free'}</p>
+              <p className="text-3xl font-bold text-[#d4af37] mt-2">{p.price}<span className="text-sm text-[#64748b]">/mo</span></p>
+              <p className="text-xs text-[#d4af37] font-semibold mt-1">{locale === 'fr' ? '14 jours gratuits' : '14 days free'}</p>
               <ul className="mt-4 space-y-2">
-                {p.features.map((f, i) => <li key={i} className="flex items-center gap-2 text-sm text-[#0f172a]"><CheckCircle className="w-4 h-4 text-[#0e9f6e] shrink-0" /> {f}</li>)}
+                {p.features.map((f, i) => <li key={i} className="flex items-center gap-2 text-sm text-[#0f172a]"><CheckCircle className="w-4 h-4 text-[#d4af37] shrink-0" /> {f}</li>)}
               </ul>
               <button onClick={() => navigate('onboarding', { plan: p.name.toLowerCase() })} className={'w-full mt-5 py-2.5 rounded-lg text-sm font-semibold ' + (p.highlight ? 'btn-gold' : 'btn-cocoa')}>{t.plans.choose}</button>
             </div>
@@ -202,10 +202,10 @@ export function SellLandingPage() {
       {/* CTA */}
       <section className="motif-dark py-16 text-center px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 left-1/4 w-64 h-64 rounded-full bg-[#0e9f6e] blur-3xl" />
+          <div className="absolute top-0 left-1/4 w-64 h-64 rounded-full bg-[#d4af37] blur-3xl" />
         </div>
         <div className="max-w-2xl mx-auto relative">
-          <Award className="w-12 h-12 text-[#0e9f6e] mx-auto mb-4" />
+          <Award className="w-12 h-12 text-[#d4af37] mx-auto mb-4" />
           <h2 className="font-display text-3xl font-bold text-white mb-4">
             {locale === 'fr' ? 'Prêt à commencer ?' : 'Ready to start?'}
           </h2>

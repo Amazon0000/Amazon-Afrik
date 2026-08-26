@@ -78,8 +78,8 @@ export function CustomerServicePage() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate('home')}><Logo size={40} variant="light" /></button>
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('login')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#0e9f6e]">{t.nav.login}</button>
-            <button onClick={() => navigate('cart')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#0e9f6e]">{locale === 'fr' ? 'Panier' : 'Cart'}</button>
+            <button onClick={() => navigate('login')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#d4af37]">{t.nav.login}</button>
+            <button onClick={() => navigate('cart')} className="text-sm font-medium text-[#f7f8fa] hover:text-[#d4af37]">{locale === 'fr' ? 'Panier' : 'Cart'}</button>
           </div>
         </div>
       </header>
@@ -95,7 +95,7 @@ export function CustomerServicePage() {
           </p>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748b]" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={locale === 'fr' ? "Recherchez une question..." : 'Search a question...'} className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white text-[#0f172a] text-sm focus:outline-none focus:ring-2 focus:ring-[#0e9f6e]" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={locale === 'fr' ? "Recherchez une question..." : 'Search a question...'} className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white text-[#0f172a] text-sm focus:outline-none focus:ring-2 focus:ring-[#d4af37]" />
           </div>
         </div>
       </section>
@@ -110,8 +110,8 @@ export function CustomerServicePage() {
             { icon: Store, label: locale === 'fr' ? 'Vendre sur Zando' : 'Sell on Zando', action: () => navigate('sell') },
           ].map((q, i) => (
             <button key={i} onClick={q.action} className="card p-4 flex flex-col items-center gap-2 hover:shadow-lg transition-shadow bg-white">
-              <div className="w-10 h-10 rounded-xl bg-[#0e9f6e]/10 flex items-center justify-center">
-                <q.icon className="w-5 h-5 text-[#0e9f6e]" />
+              <div className="w-10 h-10 rounded-xl bg-[#d4af37]/10 flex items-center justify-center">
+                <q.icon className="w-5 h-5 text-[#d4af37]" />
               </div>
               <span className="text-xs font-semibold text-[#0f172a]">{q.label}</span>
             </button>
@@ -125,15 +125,15 @@ export function CustomerServicePage() {
           {filtered.map((cat) => (
             <div key={cat.title}>
               <h2 className="font-display text-lg font-bold text-[#0f172a] mb-3 flex items-center gap-2">
-                <ChevronRight className="w-4 h-4 text-[#0e9f6e]" /> {cat.title}
+                <ChevronRight className="w-4 h-4 text-[#d4af37]" /> {cat.title}
               </h2>
               <div className="grid sm:grid-cols-2 gap-3">
                 {cat.items.map((item) => (
                   <div key={item.id}>
                     <button onClick={() => setOpenArticle(openArticle === item.id ? null : item.id)} className="card p-4 w-full text-left hover:shadow-md transition-shadow bg-white">
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[#0e9f6e]/10 flex items-center justify-center shrink-0">
-                          <item.icon className="w-4 h-4 text-[#0e9f6e]" />
+                        <div className="w-9 h-9 rounded-lg bg-[#d4af37]/10 flex items-center justify-center shrink-0">
+                          <item.icon className="w-4 h-4 text-[#d4af37]" />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-[#0f172a]">{item.title}</p>
@@ -145,7 +145,7 @@ export function CustomerServicePage() {
                     {openArticle === item.id && (
                       <div className="card p-4 mt-1 animate-fade-up bg-[#f7f8fa]">
                         <p className="text-sm text-[#0f172a] leading-relaxed">{articleContent[item.id] || (locale === 'fr' ? 'Contenu détaillé disponible. Contactez notre équipe support pour plus d\'informations.' : 'Detailed content available. Contact our support team for more information.')}</p>
-                        <button onClick={() => navigate('info', { k: 'contact' })} className="text-xs font-semibold text-[#0e9f6e] hover:underline flex items-center gap-1 mt-2">
+                        <button onClick={() => navigate('info', { k: 'contact' })} className="text-xs font-semibold text-[#d4af37] hover:underline flex items-center gap-1 mt-2">
                           {locale === 'fr' ? 'Contacter le support' : 'Contact support'} <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -163,19 +163,19 @@ export function CustomerServicePage() {
         <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Contactez-nous' : 'Contact us'}</h2>
         <div className="grid sm:grid-cols-3 gap-4">
           <div className="card p-5 bg-white">
-            <Mail className="w-8 h-8 text-[#0e9f6e] mb-3" />
+            <Mail className="w-8 h-8 text-[#d4af37] mb-3" />
             <h3 className="font-semibold text-sm text-[#0f172a] mb-1">{locale === 'fr' ? 'Email' : 'Email'}</h3>
-            <a href="mailto:cs@liafrik.com" className="text-xs text-[#0e9f6e] hover:underline">cs@liafrik.com</a>
+            <a href="mailto:cs@liafrik.com" className="text-xs text-[#d4af37] hover:underline">cs@liafrik.com</a>
             <p className="text-xs text-[#64748b] mt-1">{locale === 'fr' ? 'Réponse sous 24h' : 'Reply within 24h'}</p>
           </div>
           <div className="card p-5 bg-white">
-            <Headphones className="w-8 h-8 text-[#0e9f6e] mb-3" />
+            <Headphones className="w-8 h-8 text-[#d4af37] mb-3" />
             <h3 className="font-semibold text-sm text-[#0f172a] mb-1">{locale === 'fr' ? 'Support technique' : 'Technical support'}</h3>
-            <a href="mailto:support@liafrik.com" className="text-xs text-[#0e9f6e] hover:underline">support@liafrik.com</a>
+            <a href="mailto:support@liafrik.com" className="text-xs text-[#d4af37] hover:underline">support@liafrik.com</a>
             <p className="text-xs text-[#64748b] mt-1">{locale === 'fr' ? '24/7' : '24/7'}</p>
           </div>
           <div className="card p-5 bg-white">
-            <Clock className="w-8 h-8 text-[#0e9f6e] mb-3" />
+            <Clock className="w-8 h-8 text-[#d4af37] mb-3" />
             <h3 className="font-semibold text-sm text-[#0f172a] mb-1">{locale === 'fr' ? 'Disponibilité' : 'Availability'}</h3>
             <p className="text-xs text-[#64748b]">{locale === 'fr' ? '24h/24, 7j/7, 365 jours' : '24/7, 365 days'}</p>
           </div>

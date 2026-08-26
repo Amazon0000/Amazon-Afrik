@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchProducts, createReview } from '@/lib/db';
-import type { Product } from '@/lib/db';
+import { fetchProductById, fetchProducts, createReview, fetchProductFlashDeal } from '@/lib/db';
+import type { Product, FlashDeal } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
-import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone } from 'lucide-react';
+import { Countdown } from '@/components/ui';
+import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame } from 'lucide-react';
 
 export function ProductPage() {
   const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user } = useApp();
@@ -15,6 +16,7 @@ export function ProductPage() {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [zoom, setZoom] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [flashDeal, setFlashDeal] = useState<FlashDeal | null>(null);
 
   // Custom review submission states to ensure it's fully real & functional
   const [newReviewRating, setNewReviewRating] = useState(5);
@@ -27,6 +29,7 @@ export function ProductPage() {
       try {
         const p = await fetchProductById(params.id);
         setProduct(p);
+        setFlashDeal(p ? await fetchProductFlashDeal(p.id) : null);
         if (p) {
           const rel = await fetchProducts({ sellerId: p.seller_id, limit: 5 });
           setRelated(rel.filter((r) => r.id !== p.id).slice(0, 4));
@@ -39,7 +42,7 @@ export function ProductPage() {
   if (loading) {
     return (
       <div className="bg-[#eaeded] min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-4 border-[#0e9f6e]/20 border-t-[#0e9f6e] animate-spin" />
+        <div className="w-10 h-10 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" />
       </div>
     );
   }
@@ -109,9 +112,9 @@ export function ProductPage() {
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 py-4">
         {/* Amazon style Breadcrumbs */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-5 flex-wrap font-sans">
-          <button onClick={() => navigate('home')} className="hover:text-[#0a7d54] hover:underline font-normal">{t.nav.home}</button>
+          <button onClick={() => navigate('home')} className="hover:text-[#b8932a] hover:underline font-normal">{t.nav.home}</button>
           <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
-          <button onClick={() => navigate('catalog')} className="hover:text-[#0a7d54] hover:underline font-normal">{t.nav.catalog}</button>
+          <button onClick={() => navigate('catalog')} className="hover:text-[#b8932a] hover:underline font-normal">{t.nav.catalog}</button>
           {category && (
             <>
               <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
@@ -135,7 +138,7 @@ export function ProductPage() {
                     key={img.id}
                     onMouseEnter={() => setActiveImage(i)}
                     onClick={() => setActiveImage(i)}
-                    className={`w-11 h-11 rounded border transition-all shrink-0 bg-gray-50 p-0.5 ${activeImage === i ? 'border-[#0a7d54] ring-1 ring-[#0a7d54]' : 'border-gray-300 hover:border-[#0a7d54]'}`}
+                    className={`w-11 h-11 rounded border transition-all shrink-0 bg-gray-50 p-0.5 ${activeImage === i ? 'border-[#b8932a] ring-1 ring-[#b8932a]' : 'border-gray-300 hover:border-[#b8932a]'}`}
                   >
                     <img src={img.image_url} alt="" className="w-full h-full object-contain" />
                   </button>
@@ -213,18 +216,33 @@ export function ProductPage() {
 
             {/* Dynamic Price Box */}
             <div className="pb-4 border-b border-gray-200">
+              {flashDeal && (
+                <div className="mb-2 flex items-center gap-2 p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #3d1f00, #5a3010)' }}>
+                  <Flame className="w-4 h-4 text-[#d4af37] shrink-0" />
+                  <span className="text-xs font-bold text-white">{locale === 'fr' ? 'Vente flash' : 'Flash deal'} -{flashDeal.discount_percent}%</span>
+                  <span className="text-xs text-[#d4af37] font-mono ml-auto flex items-center gap-1">
+                    <Countdown endsAt={flashDeal.ends_at} />
+                  </span>
+                </div>
+              )}
               <div className="text-sm text-gray-500 flex items-center gap-1.5">
-                {locale === 'fr' ? 'Prix conseillé :' : 'List Price:'}
-                {product.old_price && <span className="line-through">${product.old_price}</span>}
+                {(flashDeal || product.old_price) && (
+                  <>
+                    {locale === 'fr' ? 'Prix conseillé :' : 'List Price:'}
+                    <span className="line-through">${flashDeal ? product.price.toFixed(2) : product.old_price}</span>
+                  </>
+                )}
               </div>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-[28px] font-light text-gray-900 leading-none">$</span>
-                <span className="text-[28px] font-black text-gray-900 leading-none">{Math.floor(product.price)}</span>
+                <span className="text-[28px] font-black text-gray-900 leading-none">{Math.floor(flashDeal ? flashDeal.deal_price : product.price)}</span>
                 <span className="text-[14px] font-bold text-gray-900 align-super">.00</span>
 
-                {product.old_price && (
+                {(flashDeal || product.old_price) && (
                   <span className="text-xs text-[#cc0c39] font-bold ml-2 bg-[#cc0c39]/10 px-2 py-0.5 rounded-sm">
-                    {locale === 'fr' ? `Économisez ${Math.round(((product.old_price - product.price) / product.old_price) * 100)}%` : `Save ${Math.round(((product.old_price - product.price) / product.old_price) * 100)}%`}
+                    {flashDeal
+                      ? (locale === 'fr' ? `Économisez ${flashDeal.discount_percent}%` : `Save ${flashDeal.discount_percent}%`)
+                      : (locale === 'fr' ? `Économisez ${Math.round(((product.old_price! - product.price) / product.old_price!) * 100)}%` : `Save ${Math.round(((product.old_price! - product.price) / product.old_price!) * 100)}%`)}
                   </span>
                 )}
               </div>
@@ -246,7 +264,7 @@ export function ProductPage() {
                         <button
                           key={opt.id}
                           onClick={() => setSelectedVariants((prev) => ({ ...prev, [vtype]: opt.variant_value }))}
-                          className={`px-3.5 py-1.5 text-xs font-medium rounded-sm border transition-all ${isSelected ? 'border-[#0a7d54] bg-[#fdf8f4] ring-1 ring-[#0a7d54]' : 'border-gray-300 hover:border-gray-500'}`}
+                          className={`px-3.5 py-1.5 text-xs font-medium rounded-sm border transition-all ${isSelected ? 'border-[#b8932a] bg-[#fdf8f4] ring-1 ring-[#b8932a]' : 'border-gray-300 hover:border-gray-500'}`}
                         >
                           {opt.variant_value}
                         </button>
@@ -280,7 +298,7 @@ export function ProductPage() {
               {/* Product Price & Currency conversion reference */}
               <div>
                 <span className="text-2xl font-bold text-gray-900">${product.price}</span>
-                <p className="text-xs text-green-700 font-bold mt-1 flex items-center gap-1">
+                <p className="text-xs text-[#b8932a] font-bold mt-1 flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>Free Shipping included</span>
                 </p>
@@ -301,7 +319,7 @@ export function ProductPage() {
               <div className="pt-2 border-t border-gray-100">
                 {product.stock > 0 ? (
                   <div>
-                    <span className="text-[17px] text-[#007600] font-bold">In Stock</span>
+                    <span className="text-[17px] text-[#8a6d00] font-bold">In Stock</span>
                     {product.stock <= 5 && (
                       <p className="text-xs text-[#cc0c39] font-bold mt-0.5">
                         Only {product.stock} left in stock - order soon.
@@ -320,7 +338,7 @@ export function ProductPage() {
                   <select
                     value={qty}
                     onChange={(e) => setQty(parseInt(e.target.value))}
-                    className="border border-gray-300 rounded bg-[#f0f2f2] hover:bg-[#e3e6e6] p-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0a7d54]"
+                    className="border border-gray-300 rounded bg-[#f0f2f2] hover:bg-[#e3e6e6] p-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#b8932a]"
                   >
                     {Array.from({ length: Math.min(10, product.stock) }, (_, i) => i + 1).map((val) => (
                       <option key={val} value={val}>{val}</option>
@@ -461,7 +479,7 @@ export function ProductPage() {
             {/* Write a review form */}
             <div className="border border-gray-200 rounded p-4 bg-gray-50 space-y-3.5">
               <h4 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                <Megaphone className="w-4 h-4 text-[#0a7d54]" />
+                <Megaphone className="w-4 h-4 text-[#b8932a]" />
                 <span>{locale === 'fr' ? 'Laisser une évaluation' : 'Review this product'}</span>
               </h4>
               <p className="text-[11px] text-gray-500 leading-snug">
@@ -490,7 +508,7 @@ export function ProductPage() {
                   value={newReviewComment}
                   onChange={(e) => setNewReviewComment(e.target.value)}
                   placeholder={locale === 'fr' ? 'Écrire votre commentaire...' : 'Write your comment here...'}
-                  className="w-full border border-gray-300 rounded p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#0a7d54] bg-white text-black"
+                  className="w-full border border-gray-300 rounded p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#b8932a] bg-white text-black"
                 />
 
                 <button

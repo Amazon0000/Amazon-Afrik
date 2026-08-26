@@ -54,6 +54,13 @@ export type Product = {
   countries?: Country;
 };
 
+export type FlashDeal = {
+  id: string; product_id: string; seller_id: string; discount_percent: number;
+  deal_price: number; stock_limit: number | null; claimed_count: number;
+  starts_at: string; ends_at: string; is_active: boolean; created_at: string;
+  products?: Product;
+};
+
 export type AdCampaign = {
   id: string; seller_id: string; name: string; target_country: string | null;
   target_city: string | null; target_category: string | null; budget: number;
@@ -582,6 +589,68 @@ export async function fetchAdCampaigns(sellerId?: string): Promise<AdCampaign[]>
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+export async function fetchActiveFlashDeals(limit = 12): Promise<FlashDeal[]> {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('flash_deals')
+    .select(`*, products(*, product_images(*), sellers(*))`)
+    .eq('is_active', true)
+    .lte('starts_at', nowIso)
+    .gte('ends_at', nowIso)
+    .order('ends_at', { ascending: true })
+    .limit(limit);
+  if (error) { console.error('fetchActiveFlashDeals:', error.message); return []; }
+  return (data || []) as FlashDeal[];
+}
+
+export async function fetchProductFlashDeal(productId: string): Promise<FlashDeal | null> {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('flash_deals')
+    .select('*')
+    .eq('product_id', productId)
+    .eq('is_active', true)
+    .lte('starts_at', nowIso)
+    .gte('ends_at', nowIso)
+    .maybeSingle();
+  if (error) { console.error('fetchProductFlashDeal:', error.message); return null; }
+  return data as FlashDeal | null;
+}
+
+export async function fetchSellerFlashDeals(sellerId: string): Promise<FlashDeal[]> {
+  const { data, error } = await supabase
+    .from('flash_deals')
+    .select(`*, products(*, product_images(*))`)
+    .eq('seller_id', sellerId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchSellerFlashDeals:', error.message); return []; }
+  return (data || []) as FlashDeal[];
+}
+
+export async function createFlashDeal(opts: {
+  productId: string; sellerId: string; discountPercent: number; dealPrice: number;
+  stockLimit?: number | null; startsAt: string; endsAt: string;
+}): Promise<string | null> {
+  const { data, error } = await supabase.from('flash_deals').insert({
+    product_id: opts.productId,
+    seller_id: opts.sellerId,
+    discount_percent: opts.discountPercent,
+    deal_price: opts.dealPrice,
+    stock_limit: opts.stockLimit ?? null,
+    starts_at: opts.startsAt,
+    ends_at: opts.endsAt,
+    is_active: true,
+  }).select('id').single();
+  if (error || !data) { console.error('createFlashDeal:', error?.message); return null; }
+  return data.id;
+}
+
+export async function endFlashDeal(dealId: string): Promise<boolean> {
+  const { error } = await supabase.from('flash_deals').update({ is_active: false }).eq('id', dealId);
+  if (error) { console.error('endFlashDeal:', error.message); return false; }
+  return true;
 }
 
 export async function fetchOrders(userId?: string): Promise<Order[]> {

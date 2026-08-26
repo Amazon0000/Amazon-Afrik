@@ -126,14 +126,14 @@ export function Header() {
         {/* Center: Search Bar */}
         <div className="flex-1 max-w-4xl relative" ref={searchRef}>
           <form onSubmit={handleSearch} className="flex w-full">
-            <div className="flex items-center w-full rounded-md bg-white overflow-hidden focus-within:ring-2 focus-within:ring-[#0e9f6e] transition-shadow">
+            <div className="flex items-center w-full rounded-md bg-white overflow-hidden focus-within:ring-2 focus-within:ring-[#d4af37] transition-shadow">
               <select className="hidden md:block px-3 py-2 text-xs text-[#555] border-r border-[#ddd] bg-[#f3f3f3] hover:bg-[#dadada] focus:outline-none cursor-pointer font-sans h-10 shrink-0">
                 <option>All</option>
                 {categories.filter((c) => !c.parent_id).slice(0, 8).map((c) => <option key={c.id}>{c.name}</option>)}
               </select>
               <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }} onFocus={() => setShowSuggestions(true)}
                 placeholder={t.common.searchPlaceholder} className="flex-1 px-3 py-2 text-[14px] bg-transparent focus:outline-none text-[#0f172a] h-10 font-sans" />
-              <button type="submit" className="px-5 bg-[#0e9f6e] hover:bg-[#0a7d54] transition-colors h-10 flex items-center justify-center shrink-0">
+              <button type="submit" className="px-5 bg-[#d4af37] hover:bg-[#b8932a] transition-colors h-10 flex items-center justify-center shrink-0">
                 <Search className="w-5 h-5 text-white" />
               </button>
             </div>
@@ -211,7 +211,7 @@ export function Header() {
           <button onClick={() => setCartDrawerOpen(true)} className="relative flex items-end gap-1 px-2.5 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white transition-all text-white">
             <div className="relative flex items-center">
               <ShoppingBag className="w-7 h-7 text-white" />
-              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-5 text-xs font-bold flex items-center justify-center rounded-full bg-[#0e9f6e] text-white">
+              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-5 text-xs font-bold flex items-center justify-center rounded-full bg-[#d4af37] text-white">
                 {cartCount}
               </span>
             </div>
@@ -232,11 +232,11 @@ export function Header() {
                 {item.label}
               </button>
             ))}
-            <button onClick={() => go('sell')} className="px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white font-bold text-[#12b77e] whitespace-nowrap transition-all shrink-0">
+            <button onClick={() => go('sell')} className="px-3 py-1.5 rounded-sm hover:outline hover:outline-1 hover:outline-white font-bold text-[#e0c158] whitespace-nowrap transition-all shrink-0">
               {t.nav.becomeSeller}
             </button>
           </div>
-          <div className="hidden lg:flex items-center gap-1.5 text-[#12b77e] font-bold px-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-1.5 text-[#e0c158] font-bold px-3 shrink-0">
             <span className="text-xs font-normal text-white/70">Verified Sellers Worldwide</span>
           </div>
         </div>
@@ -249,15 +249,15 @@ export function Header() {
           <div className="absolute top-full left-0 right-0 bg-white border-t border-[#dddddd] shadow-2xl z-50 animate-fade-up max-h-[75vh] overflow-y-auto text-[#0f172a]">
             <div className="max-w-7xl mx-auto px-6 py-8">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#eee]">
-                <h3 className="text-base font-bold text-[#0f172a] flex items-center gap-2"><Store className="w-5 h-5 text-[#0e9f6e]" /> {t.home.categoriesTitle}</h3>
+                <h3 className="text-base font-bold text-[#0f172a] flex items-center gap-2"><Store className="w-5 h-5 text-[#d4af37]" /> {t.home.categoriesTitle}</h3>
                 <button onClick={() => setMegaOpen(false)} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-2">
                 {MEGA_CATEGORIES.map((item) => (
                   <button key={item.label} onClick={() => handleMegaNav(item)}
-                    className="flex items-center justify-between px-2 py-1.5 rounded text-sm text-[#0f172a] hover:bg-[#f3f3f3] hover:text-[#0e9f6e] transition-colors text-left group">
+                    className="flex items-center justify-between px-2 py-1.5 rounded text-sm text-[#0f172a] hover:bg-[#f3f3f3] hover:text-[#d4af37] transition-colors text-left group">
                     <span className="truncate">{item.label}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#bbb] group-hover:text-[#0e9f6e] transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-[#bbb] group-hover:text-[#d4af37] transition-colors shrink-0" />
                   </button>
                 ))}
               </div>
@@ -292,9 +292,9 @@ export function Header() {
             {/* Drawer Header */}
             <div className="p-4 border-b border-[#dddddd] flex items-center justify-between bg-[#f3f3f3]">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-[#0e9f6e]" />
+                <ShoppingCart className="w-5 h-5 text-[#d4af37]" />
                 <h2 className="text-base font-bold text-[#0f172a]">{locale === 'fr' ? 'Votre Panier Zando' : 'Your Zando Cart'}</h2>
-                <span className="text-xs bg-[#0e9f6e] text-white px-2 py-0.5 rounded-full font-bold">{cartCount}</span>
+                <span className="text-xs bg-[#d4af37] text-white px-2 py-0.5 rounded-full font-bold">{cartCount}</span>
               </div>
               <button onClick={() => setCartDrawerOpen(false)} className="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-black transition-colors">
                 <X className="w-5 h-5" />
@@ -315,7 +315,7 @@ export function Header() {
                   <div key={item.productId} className="flex gap-3 border-b border-[#eee] pb-4 last:border-none">
                     <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} className="w-16 h-16 rounded object-cover border border-gray-200 shrink-0 cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }} />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-[#0f172a] line-clamp-2 leading-tight hover:text-[#0e9f6e] cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }}>
+                      <h4 className="text-xs font-bold text-[#0f172a] line-clamp-2 leading-tight hover:text-[#d4af37] cursor-pointer" onClick={() => { setCartDrawerOpen(false); navigate('product', { id: item.productId }); }}>
                         {item.product!.name}
                       </h4>
                       <p className="text-[10px] text-gray-500 mt-0.5">{item.product!.sellers?.business_name}</p>
@@ -350,7 +350,7 @@ export function Header() {
                   <span className="text-xs font-semibold text-gray-500 uppercase">{t.cart.subtotal} :</span>
                   <span className="text-lg font-black text-[#0f172a]">${cartSubtotal.toFixed(2)}</span>
                 </div>
-                <div className="text-[11px] text-green-700 font-bold bg-green-50 p-2 rounded border border-green-200 flex items-center gap-1">
+                <div className="text-[11px] text-[#b8932a] font-bold bg-[#d4af37]/10 p-2 rounded border border-[#d4af37]/30 flex items-center gap-1">
                   <CheckCircleIcon className="w-4 h-4 shrink-0" />
                   <span>Your order qualifies for free Delivery by the seller!</span>
                 </div>

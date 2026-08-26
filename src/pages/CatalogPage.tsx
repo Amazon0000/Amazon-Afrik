@@ -84,18 +84,18 @@ export function CatalogPage() {
         <div className="flex flex-wrap gap-2">
           {rootCategories.map((c) => (
             <button key={c.id} onClick={() => setCategoryFilter(categoryFilter === c.id ? '' : c.id)}
-              className={`px-3 py-1.5 text-xs rounded-full border transition-all ${categoryFilter === c.id ? 'bg-[#0f172a] text-[#0e9f6e] border-[#0f172a]' : 'border-[#0f172a]/15 text-[#0f172a] hover:border-[#0e9f6e]'}`}>
+              className={`px-3 py-1.5 text-xs rounded-full border transition-all ${categoryFilter === c.id ? 'bg-[#0f172a] text-[#d4af37] border-[#0f172a]' : 'border-[#0f172a]/15 text-[#0f172a] hover:border-[#d4af37]'}`}>
               {c.name}
             </button>
           ))}
         </div>
         {subCategories.length > 0 && (
-          <div className="mt-2 pl-2 border-l-2 border-[#0e9f6e]/20">
+          <div className="mt-2 pl-2 border-l-2 border-[#d4af37]/20">
             <label className="block text-[10px] font-semibold text-[#64748b] uppercase mb-1.5 mt-2">{t.catalog.subcategory}</label>
             <div className="flex flex-wrap gap-1.5">
               {subCategories.map((sc) => (
                 <button key={sc.id} onClick={() => setCategoryFilter(categoryFilter === sc.id ? (subCategories.length > 0 ? sc.parent_id || '' : '') : sc.id)}
-                  className={`px-2.5 py-1 text-[11px] rounded-full border transition-all ${categoryFilter === sc.id ? 'bg-[#0e9f6e] text-white border-[#0e9f6e]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#0e9f6e]'}`}>
+                  className={`px-2.5 py-1 text-[11px] rounded-full border transition-all ${categoryFilter === sc.id ? 'bg-[#d4af37] text-white border-[#d4af37]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#d4af37]'}`}>
                   {sc.name}
                 </button>
               ))}
@@ -116,14 +116,14 @@ export function CatalogPage() {
         <div className="flex gap-1">
           {[0, 1, 2, 3, 4].map((r) => (
             <button key={r} onClick={() => setMinRating(r)} 
-              className={`px-3 py-1.5 text-xs rounded-full border transition-all ${minRating === r ? 'bg-[#0f172a] text-[#0e9f6e] border-[#0f172a]' : 'border-[#e2e8f0] text-[#0f172a] hover:border-[#0e9f6e]'}`}>
+              className={`px-3 py-1.5 text-xs rounded-full border transition-all ${minRating === r ? 'bg-[#0f172a] text-[#d4af37] border-[#0f172a]' : 'border-[#e2e8f0] text-[#0f172a] hover:border-[#d4af37]'}`}>
               {r === 0 ? (locale === 'fr' ? 'Tous' : 'All') : `${r}+`}
             </button>
           ))}
         </div>
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="w-4 h-4 accent-[#0e9f6e]" />
+        <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="w-4 h-4 accent-[#d4af37]" />
         <span className="text-sm text-[#0f172a]">{t.catalog.inStock}</span>
       </label>
       <div>
@@ -138,7 +138,7 @@ export function CatalogPage() {
         <div className="flex flex-wrap gap-2">
           {availableCurrencies.map((c) => (
             <button key={c} onClick={() => setCurrencyFilter(currencyFilter === c ? '' : c)}
-              className={`px-3 py-1.5 text-xs rounded-full border transition-all ${currencyFilter === c ? 'bg-[#0f172a] text-[#0e9f6e] border-[#0f172a]' : 'border-[#0f172a]/15 text-[#0f172a] hover:border-[#0e9f6e]'}`}>
+              className={`px-3 py-1.5 text-xs rounded-full border transition-all ${currencyFilter === c ? 'bg-[#0f172a] text-[#d4af37] border-[#0f172a]' : 'border-[#0f172a]/15 text-[#0f172a] hover:border-[#d4af37]'}`}>
               {c}
             </button>
           ))}
@@ -151,7 +151,7 @@ export function CatalogPage() {
             { id: 'fast', label: locale === 'fr' ? 'Rapide (ma ville)' : 'Fast (my city)' },
             ].map((d) => (
               <button key={d.id} onClick={() => setDeliveryFilter(deliveryFilter === d.id ? '' : d.id)}
-                className={`px-3 py-1.5 text-xs rounded-full border transition-all ${deliveryFilter === d.id ? 'bg-[#0f172a] text-[#0e9f6e] border-[#0f172a]' : 'border-[#0f172a]/15 text-[#0f172a] hover:border-[#0e9f6e]'}`}>
+                className={`px-3 py-1.5 text-xs rounded-full border transition-all ${deliveryFilter === d.id ? 'bg-[#0f172a] text-[#d4af37] border-[#0f172a]' : 'border-[#0f172a]/15 text-[#0f172a] hover:border-[#d4af37]'}`}>
                 {d.label}
               </button>
             ))}
@@ -177,7 +177,7 @@ export function CatalogPage() {
               <SlidersHorizontal className="w-4 h-4" /> {t.catalog.filters}
             </button>
             <div className="relative">
-              <select value={showOtherCountries ? 'all' : geo.countryId} onChange={(e) => { if (e.target.value === 'all') setShowOtherCountries(true); else { setShowOtherCountries(false); setGeo({ countryId: e.target.value }); } }} className="appearance-none pl-7 pr-7 py-1.5 text-xs rounded-lg border border-[#0f172a]/10 bg-[#f7f8fa] text-[#64748b] focus:outline-none focus:border-[#0e9f6e] cursor-pointer">
+              <select value={showOtherCountries ? 'all' : geo.countryId} onChange={(e) => { if (e.target.value === 'all') setShowOtherCountries(true); else { setShowOtherCountries(false); setGeo({ countryId: e.target.value }); } }} className="appearance-none pl-7 pr-7 py-1.5 text-xs rounded-lg border border-[#0f172a]/10 bg-[#f7f8fa] text-[#64748b] focus:outline-none focus:border-[#d4af37] cursor-pointer">
                 <option value="all">{locale === 'fr' ? 'Tous les pays' : 'All countries'}</option>
                 {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
               </select>
@@ -185,7 +185,7 @@ export function CatalogPage() {
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#64748b] pointer-events-none" />
             </div>
             <div className="relative">
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="appearance-none pl-3 pr-8 py-2 text-sm rounded-lg border border-[#0f172a]/15 bg-white text-[#0f172a] focus:outline-none focus:border-[#0e9f6e] cursor-pointer">
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="appearance-none pl-3 pr-8 py-2 text-sm rounded-lg border border-[#0f172a]/15 bg-white text-[#0f172a] focus:outline-none focus:border-[#d4af37] cursor-pointer">
                 <option value="popular">{t.catalog.sortPopular}</option>
                 <option value="newest">{t.catalog.sortNewest}</option>
                 <option value="rating">{t.catalog.sortRating}</option>
@@ -210,7 +210,7 @@ export function CatalogPage() {
 
           <div className="flex-1">
             {loading ? (
-              <div className="text-center py-16"><div className="w-10 h-10 mx-auto mb-4 rounded-full border-4 border-[#0e9f6e]/20 border-t-[#0e9f6e] animate-spin" /><p className="text-sm text-[#64748b]">{t.common.loading}</p></div>
+              <div className="text-center py-16"><div className="w-10 h-10 mx-auto mb-4 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" /><p className="text-sm text-[#64748b]">{t.common.loading}</p></div>
             ) : filtered.length === 0 ? (
               <EmptyState message={t.catalog.noResults} />
             ) : (

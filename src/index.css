@@ -17,9 +17,9 @@
   --gold: #d4af37;
   --gold-light: #e0c158;
   --gold-dark: #b8932a;
-  --accent: #0e9f6e;
-  --accent-light: #12b77e;
-  --accent-dark: #0a7d54;
+  --accent: #d4af37;
+  --accent-light: #e0c158;
+  --accent-dark: #b8932a;
   --border: #e2e8f0;
   --card: #ffffff;
 }
@@ -129,8 +129,8 @@ button, input, select, textarea { font: inherit; }
 
 /* Accent — Verified/Success Green Button */
 .btn-green {
-  background: linear-gradient(to bottom, #12b77e, #0e9f6e);
-  border: 1px solid #0a7d54;
+  background: linear-gradient(to bottom, #e0c158, #d4af37);
+  border: 1px solid #b8932a;
   color: #ffffff;
   border-radius: 8px;
   font-weight: 600;
@@ -141,15 +141,15 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(14, 159, 110, 0.25);
+  box-shadow: 0 1px 3px rgba(212, 175, 55, 0.25);
 }
 .btn-green:hover {
-  background: linear-gradient(to bottom, #11ad74, #0c9266);
-  border-color: #086b48;
-  box-shadow: 0 2px 8px rgba(14, 159, 110, 0.35);
+  background: linear-gradient(to bottom, #e0c158, #c9a230);
+  border-color: #a17f24;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
 }
 .btn-green:active {
-  background: #0e9f6e;
+  background: #d4af37;
 }
 
 /* Zando Cards */
@@ -194,8 +194,8 @@ button, input, select, textarea { font: inherit; }
 }
 .input-field:focus {
   outline: none;
-  border-color: #0e9f6e;
-  box-shadow: 0 0 0 3px rgba(14, 159, 110, 0.15);
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
 }
 .input-field::placeholder {
   color: #94a3b8;

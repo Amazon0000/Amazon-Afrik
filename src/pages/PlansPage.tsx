@@ -10,7 +10,7 @@ export function PlansPage() {
       features: t.plans.starterFeatures, highlight: false,
     },
     {
-      id: 'premium', name: t.plans.premium, price: t.plans.premiumPrice, icon: Award, color: '#0e9f6e',
+      id: 'premium', name: t.plans.premium, price: t.plans.premiumPrice, icon: Award, color: '#d4af37',
       features: t.plans.premiumFeatures, highlight: true,
     },
     {
@@ -40,10 +40,10 @@ export function PlansPage() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`card p-7 relative ${plan.highlight ? 'ring-2 ring-[#0e9f6e] shadow-2xl scale-[1.02]' : ''}`}
+              className={`card p-7 relative ${plan.highlight ? 'ring-2 ring-[#d4af37] shadow-2xl scale-[1.02]' : ''}`}
             >
               {plan.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-[#0e9f6e] text-[#0f172a]">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-[#d4af37] text-[#0f172a]">
                   {locale === 'fr' ? 'Populaire' : 'Popular'}
                 </span>
               )}
@@ -60,7 +60,7 @@ export function PlansPage() {
               <ul className="space-y-3 mb-8">
                 {plan.features.map((f, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-[#0f172a]">
-                    <Check className="w-4 h-4 text-[#0e9f6e] mt-0.5 shrink-0" />
+                    <Check className="w-4 h-4 text-[#d4af37] mt-0.5 shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -77,8 +77,8 @@ export function PlansPage() {
         </div>
 
         <div className="mt-10 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-[#0e9f6e]/20">
-            <Zap className="w-4 h-4 text-[#0e9f6e]" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-[#d4af37]/20">
+            <Zap className="w-4 h-4 text-[#d4af37]" />
             <span className="text-xs text-[#64748b]">{locale === 'fr' ? 'La plateforme gagne via les abonnements et la publicité interne — pas de commission sur les ventes.' : 'The platform earns through subscriptions and internal ads — no commission on sales.'}</span>
           </div>
         </div>

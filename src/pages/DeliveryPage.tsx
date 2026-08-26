@@ -24,8 +24,8 @@ export function DeliveryPage() {
             <span className="text-xs font-semibold text-[#64748b] uppercase">{t.delivery.trackingId}</span>
             <span className="font-mono font-bold text-[#0f172a]">{trackingId}</span>
           </div>
-          <div className="flex items-center gap-2 pt-2 border-t border-[#0e9f6e]/10">
-            <MapPin className="w-4 h-4 text-[#0e9f6e]" />
+          <div className="flex items-center gap-2 pt-2 border-t border-[#d4af37]/10">
+            <MapPin className="w-4 h-4 text-[#d4af37]" />
             <span className="text-sm text-[#0f172a]">Abidjan, Cocody, Riviera</span>
           </div>
         </div>
@@ -37,12 +37,12 @@ export function DeliveryPage() {
               <div key={i} className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${s.done ? 'bg-[#0e9f6e] text-[#0f172a]' : 'bg-[#0f172a]/5 text-[#64748b]/40'} ${s.active ? 'pulse-gold' : ''}`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${s.done ? 'bg-[#d4af37] text-[#0f172a]' : 'bg-[#0f172a]/5 text-[#64748b]/40'} ${s.active ? 'pulse-gold' : ''}`}
                   >
                     <s.icon className="w-5 h-5" />
                   </div>
                   {i < steps.length - 1 && (
-                    <div className={`w-0.5 h-12 ${s.done ? 'bg-[#0e9f6e]' : 'bg-[#0f172a]/10'}`} />
+                    <div className={`w-0.5 h-12 ${s.done ? 'bg-[#d4af37]' : 'bg-[#0f172a]/10'}`} />
                   )}
                 </div>
                 <div className="pt-2 pb-8">
@@ -67,8 +67,8 @@ export function DeliveryPage() {
               <p className="text-xs text-[#64748b]/60">{locale === 'fr' ? 'Signature client' : 'Customer signature'}</p>
             </div>
           </div>
-          <div className="mt-4 p-3 rounded-lg bg-[#0e9f6e]/10 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#0e9f6e]" />
+          <div className="mt-4 p-3 rounded-lg bg-[#d4af37]/10 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[#d4af37]" />
             <span className="text-sm text-[#64748b]">{t.delivery.estimatedArrival}: 2h30</span>
           </div>
         </div>
