@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
@@ -886,6 +886,13 @@ function AdvertisingCampaignsTab() {
     else showToast(locale === 'fr' ? 'Action impossible' : 'Action failed', 'error');
   };
 
+  const handleRefund = async (id: string, name: string) => {
+    if (!window.confirm(locale === 'fr' ? `Rembourser et annuler "${name}" ? Cette action appelle réellement le provider de paiement.` : `Refund and cancel "${name}"? This actually calls the payment provider.`)) return;
+    const result = await refundAdvertisingCampaign(id);
+    if (result.ok) { showToast(locale === 'fr' ? 'Remboursement effectué' : 'Refund processed'); load(); }
+    else showToast(result.error || (locale === 'fr' ? 'Remboursement impossible' : 'Refund failed'), 'error');
+  };
+
   return (
     <div className="animate-fade-up space-y-4">
       <h2 className="font-display text-xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Publicité — Campagnes' : 'Advertising — Campaigns'}</h2>
@@ -922,6 +929,9 @@ function AdvertisingCampaignsTab() {
               <Badge color={c.payment_status === 'paid' ? '#22c55e' : c.payment_status === 'failed' ? '#ef4444' : '#64748b'}>{c.payment_status}</Badge>
               {c.status === 'active' && (
                 <button onClick={() => handleSuspend(c.id)} className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Suspendre' : 'Suspend'}</button>
+              )}
+              {c.payment_status === 'paid' && (
+                <button onClick={() => handleRefund(c.id, c.name)} className="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-semibold">{locale === 'fr' ? 'Rembourser' : 'Refund'}</button>
               )}
             </div>
           ))}

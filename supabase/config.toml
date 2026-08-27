@@ -17,6 +17,9 @@ verify_jwt = true
 [functions.ads-cancel-campaign]
 verify_jwt = true
 
+[functions.ads-refund-campaign]
+verify_jwt = true
+
 [functions.ads-webhook-stripe]
 verify_jwt = false
 

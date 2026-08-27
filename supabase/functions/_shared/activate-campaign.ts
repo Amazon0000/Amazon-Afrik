@@ -2,6 +2,7 @@
 // Flutterwave, PayUnit) après vérification serveur réelle du paiement.
 // Aucun webhook n'active directement une campagne "à la main" : tout passe ici.
 import { getAdminClient } from './supabase-admin.ts';
+import { notifyUser, notifyAllSuperAdmins } from './notify.ts';
 import type { SupportedProvider, VerifyPaymentResult } from './payment-provider.ts';
 
 interface ActivateArgs {
@@ -39,6 +40,13 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
     return { ok: false, message: 'Campagne associée introuvable.' };
   }
 
+  // Résout le user_id du vendeur (table sellers) pour les notifications —
+  // ne bloque jamais le flux de paiement si l'appel échoue.
+  const getSellerUserId = async (): Promise<string | null> => {
+    const { data } = await supabase.from('sellers').select('user_id').eq('id', campaign.seller_id).maybeSingle();
+    return data?.user_id ?? null;
+  };
+
   // 3. Validation stricte : montant + devise + provider doivent correspondre
   //    à ce qui était attendu — jamais confiance aveugle au provider.
   const expectedAmount = Number(campaign.price);
@@ -52,6 +60,14 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
       raw_webhook_payload: rawWebhookPayload ?? null,
       updated_at: new Date().toISOString(),
     }).eq('id', payment.id);
+    await notifyAllSuperAdmins(
+      supabase,
+      'admin_suspicious_webhook',
+      'Paiement publicitaire suspect',
+      `Montant/devise reçus (${verified.amount} ${verified.currency}) ne correspondent pas à ce qui était attendu (${expectedAmount} ${expectedCurrency}) pour la campagne ${campaign.id}. Paiement rejeté automatiquement.`,
+      'adv-payments',
+      { campaignId: campaign.id, provider }
+    );
     return { ok: false, message: `Montant/devise ne correspondent pas (attendu ${expectedAmount} ${expectedCurrency}, reçu ${verified.amount} ${verified.currency}) — paiement rejeté.` };
   }
 
@@ -76,6 +92,15 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
       updated_at: new Date().toISOString(),
     }).eq('id', campaign.id).eq('payment_status', 'pending'); // ne touche pas si déjà traité ailleurs
     await logAudit(supabase, 'payment_failed', campaign.id, payment.id, { provider, verified });
+    const sellerUserId = await getSellerUserId();
+    if (sellerUserId) {
+      await notifyUser(
+        supabase, sellerUserId, 'ad_payment_failed',
+        'Paiement publicitaire échoué',
+        `Le paiement de votre campagne "${campaign.name}" a échoué (${newPaymentStatus}). Vous pouvez réessayer avec un autre moyen de paiement.`,
+        'ads', { campaignId: campaign.id }
+      );
+    }
     return { ok: true, message: `Paiement en statut ${newPaymentStatus}, campagne non activée.` };
   }
 
@@ -104,7 +129,7 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
 
   // 7. Activation atomique : condition WHERE payment_status='pending' AND status='pending'
   //    empêche toute double activation même en cas de webhooks concurrents.
-  const { data: updated, error: updateErr } = await supabase
+  const { data: updated } = await supabase
     .from('ad_campaigns')
     .update({
       payment_status: 'paid',
@@ -129,6 +154,22 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
     starts_at: startsAt.toISOString(),
     expires_at: expiresAt.toISOString(),
   });
+
+  const sellerUserId = await getSellerUserId();
+  if (sellerUserId) {
+    await notifyUser(
+      supabase, sellerUserId, 'ad_campaign_activated',
+      'Campagne publicitaire activée 🎉',
+      `Votre campagne "${campaign.name}" est maintenant active jusqu'au ${expiresAt.toLocaleDateString('fr-FR')}.`,
+      'ads', { campaignId: campaign.id, expiresAt: expiresAt.toISOString() }
+    );
+  }
+  await notifyAllSuperAdmins(
+    supabase, 'admin_new_paid_campaign',
+    'Nouvelle campagne publicitaire payée',
+    `Campagne "${campaign.name}" activée via ${provider} — ${campaign.price} ${campaign.currency_code}.`,
+    'adv-campaigns', { campaignId: campaign.id, provider }
+  );
 
   return { ok: true, message: 'Campagne activée avec succès.' };
 }

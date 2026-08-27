@@ -1364,6 +1364,44 @@ export async function cancelAdvertisingCampaign(campaignId: string): Promise<boo
   return true;
 }
 
+export async function refundAdvertisingCampaign(campaignId: string, amount?: number): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.functions.invoke('ads-refund-campaign', { body: { campaignId, amount } });
+  if (error) return { ok: false, error: error.message };
+  if (data?.error) return { ok: false, error: data.error };
+  return { ok: true };
+}
+
+// ============ NOTIFICATIONS ============
+export type AppNotification = {
+  id: string; user_id: string; type: string; title: string; message: string;
+  link: string | null; metadata: Record<string, unknown> | null;
+  is_read: boolean; created_at: string;
+};
+
+export async function fetchNotifications(limit = 30): Promise<AppNotification[]> {
+  const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(limit);
+  if (error) { console.error('fetchNotifications:', error.message); return []; }
+  return data || [];
+}
+
+export async function fetchUnreadNotificationCount(): Promise<number> {
+  const { count, error } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('is_read', false);
+  if (error) { console.error('fetchUnreadNotificationCount:', error.message); return 0; }
+  return count || 0;
+}
+
+export async function markNotificationRead(id: string): Promise<boolean> {
+  const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+  if (error) { console.error('markNotificationRead:', error.message); return false; }
+  return true;
+}
+
+export async function markAllNotificationsRead(): Promise<boolean> {
+  const { error } = await supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
+  if (error) { console.error('markAllNotificationsRead:', error.message); return false; }
+  return true;
+}
+
 export async function fetchSellerCampaignsDetailed(sellerId: string): Promise<AdCampaign[]> {
   const { data, error } = await supabase
     .from('ad_campaigns')

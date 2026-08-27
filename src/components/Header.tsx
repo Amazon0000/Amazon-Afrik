@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart } from 'lucide-react';
+import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart, Bell } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
-import { searchSuggestions } from '@/lib/db';
+import { searchSuggestions, fetchNotifications, fetchUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, type AppNotification } from '@/lib/db';
 
 const MEGA_CATEGORIES = [
   { label: "Today's Deals", key: 'deals' },
@@ -153,6 +153,8 @@ export function Header() {
 
           {/* Right actions */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {user && <NotificationBell locale={locale} navigate={navigate} />}
+
             <button onClick={() => go(user ? 'account' : 'login', user ? { tab: 'wishlist' } : undefined)} className="hidden sm:flex relative w-10 h-10 rounded-full border border-[#e2e8f0] items-center justify-center hover:border-[#3d1f00] transition-colors" title={t.account.wishlist}>
               <Heart className="w-4.5 h-4.5 text-[#3d1f00]" />
               {wishlist.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-[#ff7a00] text-white">{wishlist.length}</span>}
@@ -366,5 +368,75 @@ function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
+  );
+}
+
+function NotificationBell({ locale, navigate }: { locale: 'fr' | 'en'; navigate: (page: string, params?: Record<string, string>) => void }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<AppNotification[]>([]);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadNotificationCount().then(setUnread);
+    // Rafraîchissement léger périodique — pas de realtime nécessaire ici.
+    const interval = setInterval(() => fetchUnreadNotificationCount().then(setUnread), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const toggleOpen = async () => {
+    const willOpen = !open;
+    setOpen(willOpen);
+    if (willOpen) {
+      const data = await fetchNotifications();
+      setItems(data);
+    }
+  };
+
+  const handleClick = async (n: AppNotification) => {
+    if (!n.is_read) { await markNotificationRead(n.id); setUnread((u) => Math.max(0, u - 1)); }
+    setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+    if (n.link) { navigate(n.link); setOpen(false); }
+  };
+
+  const handleMarkAll = async () => {
+    await markAllNotificationsRead();
+    setItems((prev) => prev.map((x) => ({ ...x, is_read: true })));
+    setUnread(0);
+  };
+
+  return (
+    <div className="relative">
+      <button onClick={toggleOpen} className="relative w-10 h-10 rounded-full border border-[#e2e8f0] flex items-center justify-center hover:border-[#3d1f00] transition-colors" title={locale === 'fr' ? 'Notifications' : 'Notifications'}>
+        <Bell className="w-4.5 h-4.5 text-[#3d1f00]" />
+        {unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-[#ff7a00] text-white">{unread > 9 ? '9+' : unread}</span>}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-[#dddddd] rounded-lg shadow-xl z-50 animate-fade-up">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#eee]">
+              <p className="text-sm font-bold text-[#0f172a]">{locale === 'fr' ? 'Notifications' : 'Notifications'}</p>
+              {unread > 0 && <button onClick={handleMarkAll} className="text-xs font-semibold text-[#ff7a00] hover:underline">{locale === 'fr' ? 'Tout marquer comme lu' : 'Mark all read'}</button>}
+            </div>
+            {items.length === 0 ? (
+              <p className="text-sm text-[#64748b] text-center py-8">{locale === 'fr' ? 'Aucune notification.' : 'No notifications.'}</p>
+            ) : (
+              items.map((n) => (
+                <button key={n.id} onClick={() => handleClick(n)} className={'w-full text-left px-4 py-3 border-b border-[#f3f3f3] hover:bg-[#f7f8fa] transition-colors ' + (!n.is_read ? 'bg-[#ff7a00]/5' : '')}>
+                  <div className="flex items-start gap-2">
+                    {!n.is_read && <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00] mt-1.5 shrink-0" />}
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-[#0f172a]">{n.title}</p>
+                      <p className="text-xs text-[#64748b] mt-0.5">{n.message}</p>
+                      <p className="text-[10px] text-[#94a3b8] mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
