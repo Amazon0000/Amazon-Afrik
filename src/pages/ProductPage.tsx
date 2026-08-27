@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchProducts, createReview, fetchProductFlashDeal } from '@/lib/db';
+import { fetchProductById, fetchProducts, createReview, fetchProductFlashDeal, fetchSponsoredProducts } from '@/lib/db';
 import type { Product, FlashDeal } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
@@ -10,6 +10,7 @@ export function ProductPage() {
   const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user } = useApp();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
+  const [isReallySponsored, setIsReallySponsored] = useState(false);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -33,6 +34,10 @@ export function ProductPage() {
         if (p) {
           const rel = await fetchProducts({ sellerId: p.seller_id, limit: 5 });
           setRelated(rel.filter((r) => r.id !== p.id).slice(0, 4));
+          // Vérifie une vraie campagne active/payée pour CE produit
+          // (placement 'product_recommendations'), plutôt que le flag brut.
+          const sponsoredHere = await fetchSponsoredProducts('product_recommendations', 100);
+          setIsReallySponsored(sponsoredHere.some((sp) => sp.id === p.id));
         }
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
@@ -178,7 +183,7 @@ export function ProductPage() {
           {/* COLUMN 2: Product Central Details & Bullets (Span 4) */}
           <div className="lg:col-span-4 space-y-4">
             <div>
-              {product.is_sponsored && (
+              {(isReallySponsored || product.is_sponsored) && (
                 <span className="inline-block px-1.5 py-0.5 text-[9px] font-black uppercase rounded bg-gray-100 text-gray-500 border border-gray-200 mb-2">
                   Sponsored
                 </span>

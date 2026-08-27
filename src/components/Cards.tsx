@@ -2,13 +2,17 @@ import { Star, MapPin, Heart } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import type { Product, Seller } from '@/lib/db';
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product, sponsored }: { product: Product; sponsored?: boolean }) {
   const { t, navigate, wishlist, toggleWishlist, showToast } = useApp();
   const inWishlist = wishlist.includes(product.id);
   const country = product.countries;
   const seller = product.sellers;
   const img = product.product_images?.[0]?.image_url || '';
   const discount = product.old_price ? Math.round((1 - product.price / product.old_price) * 100) : 0;
+  // `sponsored` (calculé depuis une vraie campagne active/payée) prime sur
+  // le flag brut is_sponsored, qui ne sert plus que de repli pour les
+  // données de démonstration sans campagne réelle associée.
+  const isSponsored = sponsored !== undefined ? sponsored : product.is_sponsored;
 
   return (
     <div
@@ -22,7 +26,7 @@ export function ProductCard({ product }: { product: Product }) {
           loading="lazy"
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
-        {product.is_sponsored && (
+        {isSponsored && (
           <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-sm bg-black/60 text-white">
             {t.catalog.sponsored}
           </span>

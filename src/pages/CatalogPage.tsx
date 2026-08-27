@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';import { useApp } from '@/lib/store';
-import { fetchProducts } from '@/lib/db';
+import { fetchProducts, fetchSponsoredProducts } from '@/lib/db';
 import type { Product } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { EmptyState } from '@/components/ui';
@@ -19,22 +19,29 @@ export function CatalogPage() {
   const [currencyFilter, setCurrencyFilter] = useState('');
   const [deliveryFilter, setDeliveryFilter] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
+  const [sponsoredIds, setSponsoredIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const prods = await fetchProducts({
-          countryId: showOtherCountries ? undefined : geo.countryId,
-          categoryId: categoryFilter || undefined,
-          search: params.q || undefined,
-          sort: sortBy,
-          minPrice: priceMin ? parseFloat(priceMin) : undefined,
-          maxPrice: priceMax ? parseFloat(priceMax) : undefined,
-          limit: 50,
-        });
+        const [prods, sponsored] = await Promise.all([
+          fetchProducts({
+            countryId: showOtherCountries ? undefined : geo.countryId,
+            categoryId: categoryFilter || undefined,
+            search: params.q || undefined,
+            sort: sortBy,
+            minPrice: priceMin ? parseFloat(priceMin) : undefined,
+            maxPrice: priceMax ? parseFloat(priceMax) : undefined,
+            limit: 50,
+          }),
+          // Placement 'search_results' — source de vérité = campagne active
+          // et payée (migration 016), pas le flag brut is_sponsored.
+          fetchSponsoredProducts('search_results', 10),
+        ]);
         setProducts(prods);
+        setSponsoredIds(new Set(sponsored.map((p) => p.id)));
       } catch (e) {
         console.error(e);
       } finally {
@@ -50,8 +57,18 @@ export function CatalogPage() {
     if (cityFilter) result = result.filter((p) => p.sellers?.city === cityFilter);
     if (currencyFilter) result = result.filter((p) => p.currency_code === currencyFilter);
     if (deliveryFilter === 'fast') result = result.filter((p) => p.sellers?.city === geo.cityId);
+    // Produits sponsorisés (campagne réelle active) affichés en premier,
+    // sans les afficher indéfiniment ni masquer les organiques (section 13).
+    if (sponsoredIds.size > 0) {
+      const sponsoredFirst = [...result].sort((a, b) => {
+        const aSponsored = sponsoredIds.has(a.id) ? 1 : 0;
+        const bSponsored = sponsoredIds.has(b.id) ? 1 : 0;
+        return bSponsored - aSponsored;
+      });
+      return sponsoredFirst;
+    }
     return result;
-  }, [products, minRating, inStockOnly, cityFilter, currencyFilter, deliveryFilter, geo.cityId]);
+  }, [products, minRating, inStockOnly, cityFilter, currencyFilter, deliveryFilter, geo.cityId, sponsoredIds]);
 
   const rootCategories = categories.filter((c) => !c.parent_id).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
   const subCategories = categories.filter((c) => c.parent_id === categoryFilter).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -215,7 +232,7 @@ export function CatalogPage() {
               <EmptyState message={t.catalog.noResults} />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
+                {filtered.map((p) => <ProductCard key={p.id} product={p} sponsored={sponsoredIds.has(p.id)} />)}
               </div>
             )}
           </div>
