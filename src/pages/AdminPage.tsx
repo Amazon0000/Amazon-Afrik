@@ -751,7 +751,7 @@ function RevenueTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={locale === 'fr' ? 'Revenu marketplace total' : 'Total marketplace revenue'} value={`$${totalMonthly.toFixed(0)}`} icon={DollarSign} color="#16a34a" />
+        <StatCard label={locale === 'fr' ? 'Revenu marketplace total' : 'Total marketplace revenue'} value={`$${totalMonthly.toFixed(0)}`} icon={DollarSign} color="#3d1f00" />
         <StatCard label={locale === 'fr' ? 'Abonnements / mois' : 'Subscriptions / mo'} value={`$${revenue.subscriptionMonthlyRevenue.toFixed(0)}`} icon={CreditCard} color="#0284c7" />
         <StatCard label={locale === 'fr' ? 'Publicité (paiements confirmés)' : 'Advertising (confirmed payments)'} value={`$${adRevenue.total.toFixed(0)}`} icon={Megaphone} color="#ff7a00" />
         <StatCard label={locale === 'fr' ? 'Ancien système pub (legacy budget)' : 'Legacy ads system (budget)'} value={`$${revenue.adSpendTotal.toFixed(0)}`} icon={TrendingUp} color="#94a3b8" />
@@ -831,7 +831,7 @@ function AdvertisingDashboardTab() {
     <div className="animate-fade-up space-y-4">
       <h2 className="font-display text-xl font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Publicité — Vue d\'ensemble' : 'Advertising — Overview'}</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={locale === 'fr' ? 'Revenus publicitaires' : 'Advertising revenue'} value={`$${revenue.total.toFixed(0)}`} icon={DollarSign} color="#16a34a" />
+        <StatCard label={locale === 'fr' ? 'Revenus publicitaires' : 'Advertising revenue'} value={`$${revenue.total.toFixed(0)}`} icon={DollarSign} color="#3d1f00" />
         <StatCard label={locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'} value={active.length.toString()} icon={Megaphone} color="#ff7a00" />
         <StatCard label={locale === 'fr' ? 'En attente de paiement' : 'Awaiting payment'} value={pending.length.toString()} icon={Clock} color="#d97706" />
         <StatCard label={locale === 'fr' ? 'Expirées' : 'Expired'} value={expired.length.toString()} icon={XCircle} color="#64748b" />
@@ -926,7 +926,7 @@ function AdvertisingCampaignsTab() {
                 </p>
               </div>
               <Badge color={c.status === 'active' ? '#ff7a00' : c.status === 'pending' ? '#64748b' : c.status === 'cancelled' ? '#ef4444' : '#94a3b8'}>{c.status}</Badge>
-              <Badge color={c.payment_status === 'paid' ? '#22c55e' : c.payment_status === 'failed' ? '#ef4444' : '#64748b'}>{c.payment_status}</Badge>
+              <Badge color={c.payment_status === 'paid' ? '#ff7a00' : c.payment_status === 'failed' ? '#ef4444' : '#64748b'}>{c.payment_status}</Badge>
               {c.status === 'active' && (
                 <button onClick={() => handleSuspend(c.id)} className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Suspendre' : 'Suspend'}</button>
               )}
@@ -1025,7 +1025,7 @@ function AdvertisingPlansTab() {
           <div key={p.id} className="card p-5 bg-white">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-display text-lg font-bold text-[#0f172a]">{p.name}</h3>
-              <Badge color={p.is_active ? '#22c55e' : '#94a3b8'}>{p.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</Badge>
+              <Badge color={p.is_active ? '#ff7a00' : '#94a3b8'}>{p.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</Badge>
             </div>
             <p className="text-2xl font-bold text-[#ff7a00]">{p.currency_code} {p.price}</p>
             <p className="text-xs text-[#64748b] mt-1">{p.duration_days} {locale === 'fr' ? 'jours' : 'days'}</p>
@@ -1063,7 +1063,7 @@ function AdvertisingPaymentsTab() {
                 <p className="text-sm font-semibold text-[#0f172a] truncate">{p.internal_reference}</p>
                 <p className="text-xs text-[#64748b]">{p.provider} • {p.currency_code} {p.amount} • {new Date(p.created_at).toLocaleString()}</p>
               </div>
-              <Badge color={p.status === 'paid' ? '#22c55e' : p.status === 'failed' ? '#ef4444' : '#64748b'}>{p.status}</Badge>
+              <Badge color={p.status === 'paid' ? '#ff7a00' : p.status === 'failed' ? '#ef4444' : '#64748b'}>{p.status}</Badge>
             </div>
           ))}
         </div>
