@@ -1,0 +1,30 @@
+# Config Supabase CLI — introduite avec le module Advertising (aucun
+# config.toml n'existait avant dans ce projet).
+#
+# verify_jwt = false est indispensable pour les webhooks providers
+# (Stripe/Flutterwave/PayUnit n'envoient pas de JWT Supabase — leur
+# authentification propre, vérifiée dans le code de chaque fonction, en
+# tient lieu : signature Stripe, verif-hash Flutterwave, revérification
+# serveur PayUnit).
+#
+# Les fonctions appelées par un vendeur connecté gardent verify_jwt = true
+# (comportement par défaut) pour que Supabase rejette toute requête sans
+# session valide avant même d'exécuter le code.
+
+[functions.ads-create-payment]
+verify_jwt = true
+
+[functions.ads-cancel-campaign]
+verify_jwt = true
+
+[functions.ads-webhook-stripe]
+verify_jwt = false
+
+[functions.ads-webhook-flutterwave]
+verify_jwt = false
+
+[functions.ads-webhook-payunit]
+verify_jwt = false
+
+[functions.ads-expire-campaigns]
+verify_jwt = false

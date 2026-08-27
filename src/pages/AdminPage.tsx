@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
 
@@ -130,6 +130,10 @@ export function AdminPage() {
     { id: 'geography', label: t.admin.geography, icon: Globe, superOnly: true },
     { id: 'staff', label: t.admin.staff, icon: Users, superOnly: true },
     { id: 'plans', label: t.admin.plans, icon: CreditCard, superOnly: true },
+    { id: 'adv-dashboard', label: locale === 'fr' ? 'Publicité — Dashboard' : 'Advertising — Dashboard', icon: Megaphone, superOnly: true },
+    { id: 'adv-campaigns', label: locale === 'fr' ? 'Publicité — Campagnes' : 'Advertising — Campaigns', icon: Megaphone, superOnly: true },
+    { id: 'adv-plans', label: locale === 'fr' ? 'Publicité — Formules' : 'Advertising — Plans', icon: CreditCard, superOnly: true },
+    { id: 'adv-payments', label: locale === 'fr' ? 'Publicité — Paiements' : 'Advertising — Payments', icon: DollarSign, superOnly: true },
     { id: 'analytics', label: t.admin.analytics, icon: BarChart3 },
     { id: 'documents', label: t.admin.documents, icon: FileText },
     { id: 'trust-safety', label: locale === 'fr' ? 'Conformité' : 'Trust & Safety', icon: ShieldCheck, superOnly: true },
@@ -627,6 +631,11 @@ export function AdminPage() {
               </div>
             )}
 
+            {tab === 'adv-dashboard' && isSuperAdmin && <AdvertisingDashboardTab />}
+            {tab === 'adv-campaigns' && isSuperAdmin && <AdvertisingCampaignsTab />}
+            {tab === 'adv-plans' && isSuperAdmin && <AdvertisingPlansTab />}
+            {tab === 'adv-payments' && isSuperAdmin && <AdvertisingPaymentsTab />}
+
             {tab === 'documents' && (
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.documents}</h2>
@@ -723,28 +732,53 @@ function ToggleRow({ label, desc, enabled, onToggle }: { label: string; desc: st
 function RevenueTab() {
   const { locale } = useApp();
   const [revenue, setRevenue] = useState<PlatformRevenueSummary | null>(null);
+  const [adRevenue, setAdRevenue] = useState<{ total: number; byProvider: Record<string, number> } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const data = await fetchPlatformRevenue();
+      const [data, adv] = await Promise.all([fetchPlatformRevenue(), fetchAdvertisingRevenue()]);
       setRevenue(data);
+      setAdRevenue(adv);
       setLoading(false);
     })();
   }, []);
 
-  if (loading || !revenue) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+  if (loading || !revenue || !adRevenue) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
 
-  const totalMonthly = revenue.subscriptionMonthlyRevenue + revenue.adSpendActive;
+  const totalMonthly = revenue.subscriptionMonthlyRevenue + adRevenue.total;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={locale === 'fr' ? 'Revenu mensuel total' : 'Total monthly revenue'} value={`$${totalMonthly.toFixed(0)}`} icon={DollarSign} />
+        <StatCard label={locale === 'fr' ? 'Revenu marketplace total' : 'Total marketplace revenue'} value={`$${totalMonthly.toFixed(0)}`} icon={DollarSign} />
         <StatCard label={locale === 'fr' ? 'Abonnements / mois' : 'Subscriptions / mo'} value={`$${revenue.subscriptionMonthlyRevenue.toFixed(0)}`} icon={CreditCard} />
-        <StatCard label={locale === 'fr' ? 'Pub active (budget)' : 'Active ads (budget)'} value={`$${revenue.adSpendActive.toFixed(0)}`} icon={Megaphone} />
-        <StatCard label={locale === 'fr' ? 'Pub totale (cumul)' : 'Total ad spend (all-time)'} value={`$${revenue.adSpendTotal.toFixed(0)}`} icon={TrendingUp} />
+        <StatCard label={locale === 'fr' ? 'Publicité (paiements confirmés)' : 'Advertising (confirmed payments)'} value={`$${adRevenue.total.toFixed(0)}`} icon={Megaphone} />
+        <StatCard label={locale === 'fr' ? 'Ancien système pub (legacy budget)' : 'Legacy ads system (budget)'} value={`$${revenue.adSpendTotal.toFixed(0)}`} icon={TrendingUp} />
       </div>
+
+      <div className="card p-4 bg-amber-50 border border-amber-200 flex items-start gap-3">
+        <DollarSign className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+        <p className="text-sm text-[#0f172a]">
+          {locale === 'fr'
+            ? "Séparation comptable stricte : les ventes vendeurs n'apparaissent jamais dans le revenu marketplace. Seuls les abonnements et la publicité (paiements réellement confirmés côté serveur, table advertising_payments) comptent comme revenu Zando."
+            : 'Strict accounting separation: seller sales never appear in marketplace revenue. Only subscriptions and advertising (payments actually confirmed server-side, advertising_payments table) count as Zando revenue.'}
+        </p>
+      </div>
+
+      {Object.keys(adRevenue.byProvider).length > 0 && (
+        <div className="card p-6 bg-white">
+          <h3 className="font-display text-lg font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Revenu publicitaire par fournisseur' : 'Ad revenue by provider'}</h3>
+          <div className="space-y-3">
+            {Object.entries(adRevenue.byProvider).map(([provider, amount]) => (
+              <div key={provider} className="flex items-center justify-between text-sm">
+                <span className="font-medium text-[#0f172a] capitalize">{provider}</span>
+                <span className="text-[#64748b]">${amount.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card p-6 bg-white">
         <h3 className="font-display text-lg font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Vendeurs par plan' : 'Sellers by plan'}</h3>
@@ -767,6 +801,263 @@ function RevenueTab() {
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+function AdvertisingDashboardTab() {
+  const { locale } = useApp();
+  const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [revenue, setRevenue] = useState<{ total: number; byProvider: Record<string, number> } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [camps, rev] = await Promise.all([fetchAllCampaignsAdmin(), fetchAdvertisingRevenue()]);
+      setCampaigns(camps); setRevenue(rev); setLoading(false);
+    })();
+  }, []);
+
+  if (loading || !revenue) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  const active = campaigns.filter((c) => c.status === 'active');
+  const expired = campaigns.filter((c) => c.status === 'expired');
+  const pending = campaigns.filter((c) => c.status === 'pending');
+  const cancelled = campaigns.filter((c) => c.status === 'cancelled');
+  const uniqueSellers = new Set(campaigns.map((c) => c.seller_id)).size;
+  const uniqueProducts = new Set(campaigns.filter((c) => c.status === 'active').map((c) => c.product_id)).size;
+
+  return (
+    <div className="animate-fade-up space-y-4">
+      <h2 className="font-display text-xl font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Publicité — Vue d\'ensemble' : 'Advertising — Overview'}</h2>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label={locale === 'fr' ? 'Revenus publicitaires' : 'Advertising revenue'} value={`$${revenue.total.toFixed(0)}`} icon={DollarSign} />
+        <StatCard label={locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'} value={active.length.toString()} icon={Megaphone} />
+        <StatCard label={locale === 'fr' ? 'En attente de paiement' : 'Awaiting payment'} value={pending.length.toString()} icon={Clock} />
+        <StatCard label={locale === 'fr' ? 'Expirées' : 'Expired'} value={expired.length.toString()} icon={XCircle} />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label={locale === 'fr' ? 'Vendeurs utilisant la pub' : 'Sellers using ads'} value={uniqueSellers.toString()} icon={Store} />
+        <StatCard label={locale === 'fr' ? 'Produits sponsorisés actifs' : 'Active sponsored products'} value={uniqueProducts.toString()} icon={Package} />
+        <StatCard label={locale === 'fr' ? 'Annulées' : 'Cancelled'} value={cancelled.length.toString()} icon={XCircle} />
+        <StatCard label={locale === 'fr' ? 'Total campagnes' : 'Total campaigns'} value={campaigns.length.toString()} icon={BarChart3} />
+      </div>
+      {Object.keys(revenue.byProvider).length > 0 && (
+        <div className="card p-6 bg-white">
+          <h3 className="font-semibold text-[#0f172a] mb-3">{locale === 'fr' ? 'Revenus par fournisseur de paiement' : 'Revenue by payment provider'}</h3>
+          <div className="space-y-2">
+            {Object.entries(revenue.byProvider).map(([p, amt]) => (
+              <div key={p} className="flex items-center justify-between text-sm"><span className="capitalize font-medium text-[#0f172a]">{p}</span><span className="text-[#64748b]">${amt.toFixed(2)}</span></div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdvertisingCampaignsTab() {
+  const { locale, showToast } = useApp();
+  const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
+  const [providerFilter, setProviderFilter] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    const data = await fetchAllCampaignsAdmin({
+      status: statusFilter || undefined,
+      paymentStatus: paymentFilter || undefined,
+      provider: providerFilter || undefined,
+    });
+    setCampaigns(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, paymentFilter, providerFilter]);
+
+  const handleSuspend = async (id: string) => {
+    const ok = await cancelAdvertisingCampaign(id);
+    if (ok) { showToast(locale === 'fr' ? 'Campagne suspendue' : 'Campaign suspended'); load(); }
+    else showToast(locale === 'fr' ? 'Action impossible' : 'Action failed', 'error');
+  };
+
+  return (
+    <div className="animate-fade-up space-y-4">
+      <h2 className="font-display text-xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Publicité — Campagnes' : 'Advertising — Campaigns'}</h2>
+      <div className="flex flex-wrap gap-2">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input-field text-xs py-2 w-auto">
+          <option value="">{locale === 'fr' ? 'Tous statuts' : 'All statuses'}</option>
+          {['pending', 'active', 'paused', 'expired', 'cancelled'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className="input-field text-xs py-2 w-auto">
+          <option value="">{locale === 'fr' ? 'Tout paiement' : 'All payment statuses'}</option>
+          {['pending', 'paid', 'failed', 'refunded', 'cancelled'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={providerFilter} onChange={(e) => setProviderFilter(e.target.value)} className="input-field text-xs py-2 w-auto">
+          <option value="">{locale === 'fr' ? 'Tout fournisseur' : 'All providers'}</option>
+          {['stripe', 'flutterwave', 'payunit'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+      {loading ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>
+      ) : campaigns.length === 0 ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Aucune campagne.' : 'No campaigns.'}</div>
+      ) : (
+        <div className="space-y-2">
+          {campaigns.map((c) => (
+            <div key={c.id} className="card p-4 bg-white flex flex-wrap items-center gap-3">
+              <Megaphone className="w-4 h-4 text-[#ff7a00] shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#0f172a] truncate">{c.name}</p>
+                <p className="text-xs text-[#64748b]">
+                  {c.sellers?.business_name || c.seller_id} • {c.currency_code} {c.price ?? c.budget} • {c.payment_provider || '—'}
+                </p>
+              </div>
+              <Badge color={c.status === 'active' ? '#ff7a00' : c.status === 'pending' ? '#64748b' : c.status === 'cancelled' ? '#ef4444' : '#94a3b8'}>{c.status}</Badge>
+              <Badge color={c.payment_status === 'paid' ? '#22c55e' : c.payment_status === 'failed' ? '#ef4444' : '#64748b'}>{c.payment_status}</Badge>
+              {c.status === 'active' && (
+                <button onClick={() => handleSuspend(c.id)} className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Suspendre' : 'Suspend'}</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdvertisingPlansTab() {
+  const { locale, showToast } = useApp();
+  const [plans, setPlans] = useState<AdvertisingPlan[]>([]);
+  const [placements, setPlacements] = useState<AdvertisingPlacement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: '', description: '', durationDays: '7', price: '9.99', currencyCode: 'USD', placements: [] as string[] });
+
+  const load = async () => {
+    const [p, pl] = await Promise.all([fetchAdvertisingPlans(false), fetchAdvertisingPlacements()]);
+    setPlans(p); setPlacements(pl); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const togglePlacement = (id: string) => {
+    setForm((f) => ({ ...f, placements: f.placements.includes(id) ? f.placements.filter((x) => x !== id) : [...f.placements, id] }));
+  };
+
+  const handleCreate = async () => {
+    if (!form.name || form.placements.length === 0) {
+      showToast(locale === 'fr' ? 'Nom et au moins un emplacement requis' : 'Name and at least one placement required', 'error');
+      return;
+    }
+    const id = await createAdvertisingPlan({
+      name: form.name, description: form.description || null,
+      duration_days: parseInt(form.durationDays) || 7, price: parseFloat(form.price) || 0,
+      currency_code: form.currencyCode, allowed_placements: form.placements,
+      max_active_per_seller: null, is_active: true, sort_order: plans.length,
+    });
+    if (id) {
+      showToast(locale === 'fr' ? 'Formule créée' : 'Plan created');
+      setShowForm(false);
+      setForm({ name: '', description: '', durationDays: '7', price: '9.99', currencyCode: 'USD', placements: [] });
+      load();
+    } else {
+      showToast(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating plan', 'error');
+    }
+  };
+
+  const toggleActive = async (plan: AdvertisingPlan) => {
+    const ok = await updateAdvertisingPlan(plan.id, { is_active: !plan.is_active });
+    if (ok) load();
+  };
+
+  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  return (
+    <div className="animate-fade-up space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Publicité — Formules' : 'Advertising — Plans'}</h2>
+        <button onClick={() => setShowForm(!showForm)} className="btn-green px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"><Plus className="w-4 h-4" /> {locale === 'fr' ? 'Nouvelle formule' : 'New plan'}</button>
+      </div>
+
+      {showForm && (
+        <div className="card p-5 bg-white space-y-3">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={locale === 'fr' ? 'Nom (ex: Boost 7 jours)' : 'Name (e.g. Boost 7 days)'} className="input-field" />
+            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={locale === 'fr' ? 'Description' : 'Description'} className="input-field" />
+            <input type="number" value={form.durationDays} onChange={(e) => setForm({ ...form, durationDays: e.target.value })} placeholder={locale === 'fr' ? 'Durée (jours)' : 'Duration (days)'} className="input-field" />
+            <div className="flex gap-2">
+              <input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Prix" className="input-field flex-1" />
+              <input value={form.currencyCode} onChange={(e) => setForm({ ...form, currencyCode: e.target.value.toUpperCase() })} placeholder="USD" className="input-field w-24" maxLength={3} />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Emplacements autorisés' : 'Allowed placements'}</p>
+            <div className="flex flex-wrap gap-2">
+              {placements.map((p) => (
+                <button key={p.id} onClick={() => togglePlacement(p.id)}
+                  className={'px-3 py-1.5 rounded-lg text-xs font-medium border ' + (form.placements.includes(p.id) ? 'border-[#ff7a00] bg-[#ff7a00]/10 text-[#ff7a00]' : 'border-[#e2e8f0] text-[#64748b]')}>
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button onClick={handleCreate} className="btn-gold px-5 py-2 rounded-lg text-sm font-semibold">{locale === 'fr' ? 'Créer la formule' : 'Create plan'}</button>
+        </div>
+      )}
+
+      <div className="grid sm:grid-cols-3 gap-4">
+        {plans.map((p) => (
+          <div key={p.id} className="card p-5 bg-white">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display text-lg font-bold text-[#0f172a]">{p.name}</h3>
+              <Badge color={p.is_active ? '#22c55e' : '#94a3b8'}>{p.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</Badge>
+            </div>
+            <p className="text-2xl font-bold text-[#ff7a00]">{p.currency_code} {p.price}</p>
+            <p className="text-xs text-[#64748b] mt-1">{p.duration_days} {locale === 'fr' ? 'jours' : 'days'}</p>
+            <p className="text-xs text-[#64748b] mt-2">{p.allowed_placements.length} {locale === 'fr' ? 'emplacements' : 'placements'}</p>
+            <button onClick={() => toggleActive(p)} className="mt-3 text-xs font-semibold text-[#0f172a] underline">
+              {p.is_active ? (locale === 'fr' ? 'Désactiver' : 'Deactivate') : (locale === 'fr' ? 'Activer' : 'Activate')}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdvertisingPaymentsTab() {
+  const { locale } = useApp();
+  const [payments, setPayments] = useState<AdvertisingPayment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { fetchAllAdvertisingPayments().then((p) => { setPayments(p); setLoading(false); }); }, []);
+
+  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  return (
+    <div className="animate-fade-up space-y-4">
+      <h2 className="font-display text-xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Publicité — Paiements' : 'Advertising — Payments'}</h2>
+      {payments.length === 0 ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Aucun paiement publicitaire.' : 'No advertising payments.'}</div>
+      ) : (
+        <div className="space-y-2">
+          {payments.map((p) => (
+            <div key={p.id} className="card p-4 bg-white flex flex-wrap items-center gap-3">
+              <DollarSign className="w-4 h-4 text-[#ff7a00] shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#0f172a] truncate">{p.internal_reference}</p>
+                <p className="text-xs text-[#64748b]">{p.provider} • {p.currency_code} {p.amount} • {new Date(p.created_at).toLocaleString()}</p>
+              </div>
+              <Badge color={p.status === 'paid' ? '#22c55e' : p.status === 'failed' ? '#ef4444' : '#64748b'}>{p.status}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

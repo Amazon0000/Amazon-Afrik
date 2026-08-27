@@ -65,8 +65,45 @@ export type AdCampaign = {
   id: string; seller_id: string; name: string; target_country: string | null;
   target_city: string | null; target_category: string | null; budget: number;
   duration_days: number; impressions: number; clicks: number; conversions: number;
-  status: 'pending' | 'active' | 'ended' | 'rejected'; created_at: string;
+  status: 'pending' | 'active' | 'paused' | 'expired' | 'cancelled' | 'ended' | 'rejected';
+  created_at: string;
   reviewed_by?: string | null; reviewed_at?: string | null;
+  // Module Advertising / Sponsored Products (migration 016)
+  plan_id?: string | null;
+  product_id?: string | null;
+  placement_id?: string | null;
+  price?: number | null;
+  currency_code?: string | null;
+  payment_provider?: 'stripe' | 'flutterwave' | 'payunit' | null;
+  payment_reference?: string | null;
+  payment_status?: 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
+  starts_at?: string | null;
+  expires_at?: string | null;
+  updated_at?: string | null;
+  products?: Product;
+  sellers?: Seller;
+  advertising_plans?: AdvertisingPlan;
+};
+
+export type AdvertisingPlan = {
+  id: string; name: string; description: string | null;
+  duration_days: number; price: number; currency_code: string;
+  allowed_placements: string[]; max_active_per_seller: number | null;
+  is_active: boolean; sort_order: number; created_at: string; updated_at?: string;
+};
+
+export type AdvertisingPlacement = {
+  id: string; name: string; description: string | null;
+  is_active: boolean; sort_order: number;
+};
+
+export type AdvertisingPayment = {
+  id: string; campaign_id: string; seller_id: string;
+  provider: 'stripe' | 'flutterwave' | 'payunit';
+  provider_reference: string; internal_reference: string;
+  amount: number; currency_code: string;
+  status: 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
+  created_at: string; updated_at?: string;
 };
 
 export type PaymentProvider = {
@@ -1234,4 +1271,142 @@ export async function fetchPlatformRevenue(): Promise<PlatformRevenueSummary> {
     }
   }
   return { subscriptionMonthlyRevenue, sellersByPlan, adSpendTotal, adSpendActive };
+}
+
+// ============ ADVERTISING / SPONSORED PRODUCTS (module payant, migration 016) ============
+// Revenu publicitaire RÉEL (paiements confirmés uniquement), distinct de
+// adSpendTotal ci-dessus qui reflète l'ancien champ `budget` (déclaratif,
+// non lié à un paiement réel). À utiliser pour tout reporting financier.
+export async function fetchAdvertisingRevenue(): Promise<{ total: number; byProvider: Record<string, number> }> {
+  const { data, error } = await supabase
+    .from('advertising_payments')
+    .select('amount, provider')
+    .eq('status', 'paid');
+  if (error || !data) { console.error('fetchAdvertisingRevenue:', error?.message); return { total: 0, byProvider: {} }; }
+  const byProvider: Record<string, number> = {};
+  let total = 0;
+  for (const row of data as { amount: number; provider: string }[]) {
+    total += row.amount;
+    byProvider[row.provider] = (byProvider[row.provider] || 0) + row.amount;
+  }
+  return { total, byProvider };
+}
+
+export async function fetchAdvertisingPlans(activeOnly = true): Promise<AdvertisingPlan[]> {
+  let query = supabase.from('advertising_plans').select('*');
+  if (activeOnly) query = query.eq('is_active', true);
+  query = query.order('sort_order', { ascending: true });
+  const { data, error } = await query;
+  if (error) { console.error('fetchAdvertisingPlans:', error.message); return []; }
+  return data || [];
+}
+
+export async function createAdvertisingPlan(plan: Omit<AdvertisingPlan, 'id' | 'created_at' | 'updated_at'>): Promise<string | null> {
+  const { data, error } = await supabase.from('advertising_plans').insert(plan).select('id').single();
+  if (error || !data) { console.error('createAdvertisingPlan:', error?.message); return null; }
+  return data.id;
+}
+
+export async function updateAdvertisingPlan(id: string, updates: Partial<AdvertisingPlan>): Promise<boolean> {
+  const { error } = await supabase.from('advertising_plans').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) { console.error('updateAdvertisingPlan:', error.message); return false; }
+  return true;
+}
+
+export async function fetchAdvertisingPlacements(): Promise<AdvertisingPlacement[]> {
+  const { data, error } = await supabase.from('advertising_placements').select('*').eq('is_active', true).order('sort_order');
+  if (error) { console.error('fetchAdvertisingPlacements:', error.message); return []; }
+  return data || [];
+}
+
+// Crée la campagne en statut 'pending' / payment_status 'pending' — ne paie
+// pas encore. L'étape de paiement est faite ensuite par createAdvertisingPayment().
+export async function createDraftCampaign(opts: {
+  sellerId: string; productId: string; planId: string; placementId: string;
+  price: number; currencyCode: string; name: string;
+}): Promise<string | null> {
+  const { data, error } = await supabase.from('ad_campaigns').insert({
+    seller_id: opts.sellerId,
+    product_id: opts.productId,
+    plan_id: opts.planId,
+    placement_id: opts.placementId,
+    price: opts.price,
+    currency_code: opts.currencyCode,
+    name: opts.name,
+    status: 'pending',
+    payment_status: 'pending',
+    impressions: 0,
+    clicks: 0,
+    conversions: 0,
+    budget: opts.price, // compat avec l'ancien champ requis
+    duration_days: 0, // sera fixé à l'activation via la durée réelle du plan
+  }).select('id').single();
+  if (error || !data) { console.error('createDraftCampaign:', error?.message); return null; }
+  return data.id;
+}
+
+// Appelle l'Edge Function ads-create-payment. Le frontend ne fait QUE
+// initier la demande — il ne reçoit ni ne décide jamais d'un statut "payé".
+export async function initiateAdvertisingPayment(opts: {
+  campaignId: string; provider: 'stripe' | 'flutterwave' | 'payunit'; returnUrl: string;
+}): Promise<{ redirectUrl: string } | { error: string }> {
+  const { data, error } = await supabase.functions.invoke('ads-create-payment', {
+    body: { campaignId: opts.campaignId, provider: opts.provider, returnUrl: opts.returnUrl },
+  });
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+  return { redirectUrl: data.redirectUrl };
+}
+
+export async function cancelAdvertisingCampaign(campaignId: string): Promise<boolean> {
+  const { data, error } = await supabase.functions.invoke('ads-cancel-campaign', { body: { campaignId } });
+  if (error || data?.error) { console.error('cancelAdvertisingCampaign:', error?.message || data?.error); return false; }
+  return true;
+}
+
+export async function fetchSellerCampaignsDetailed(sellerId: string): Promise<AdCampaign[]> {
+  const { data, error } = await supabase
+    .from('ad_campaigns')
+    .select('*, products(*, product_images(*)), advertising_plans(*)')
+    .eq('seller_id', sellerId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchSellerCampaignsDetailed:', error.message); return []; }
+  return data || [];
+}
+
+// Source de vérité unique pour les produits sponsorisés — passe par la
+// fonction SQL get_active_sponsored_products() (campagne active + payée +
+// non expirée + produit/vendeur valides). Ne jamais utiliser products.is_sponsored
+// directement pour du contenu payant réel.
+export async function fetchSponsoredProducts(placementId?: string, limit = 20): Promise<Product[]> {
+  const { data, error } = await supabase.rpc('get_active_sponsored_products', {
+    p_placement: placementId ?? null,
+    p_limit: limit,
+  });
+  if (error) { console.error('fetchSponsoredProducts:', error.message); return []; }
+  return (data || []) as Product[];
+}
+
+export async function fetchAllCampaignsAdmin(filters?: {
+  status?: string; paymentStatus?: string; provider?: string; placementId?: string;
+}): Promise<AdCampaign[]> {
+  let query = supabase.from('ad_campaigns').select('*, products(*), sellers(*), advertising_plans(*)');
+  if (filters?.status) query = query.eq('status', filters.status);
+  if (filters?.paymentStatus) query = query.eq('payment_status', filters.paymentStatus);
+  if (filters?.provider) query = query.eq('payment_provider', filters.provider);
+  if (filters?.placementId) query = query.eq('placement_id', filters.placementId);
+  query = query.order('created_at', { ascending: false });
+  const { data, error } = await query;
+  if (error) { console.error('fetchAllCampaignsAdmin:', error.message); return []; }
+  return data || [];
+}
+
+export async function fetchAllAdvertisingPayments(): Promise<AdvertisingPayment[]> {
+  const { data, error } = await supabase
+    .from('advertising_payments')
+    .select('*, ad_campaigns(name), sellers(business_name)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) { console.error('fetchAllAdvertisingPayments:', error.message); return []; }
+  return data || [];
 }

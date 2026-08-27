@@ -1,90 +1,148 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchAdCampaigns, createAdCampaign, type AdCampaign } from '@/lib/db';
+import {
+  fetchProducts, fetchAdvertisingPlans, fetchAdvertisingPlacements,
+  createDraftCampaign, initiateAdvertisingPayment, cancelAdvertisingCampaign,
+  fetchSellerCampaignsDetailed,
+} from '@/lib/db';
+import type { Product, AdvertisingPlan, AdvertisingPlacement, AdCampaign } from '@/lib/db';
 import { StatCard } from '@/components/ui';
-import { Megaphone, MousePointerClick, Eye, Target, Plus, Gift, Calculator, ChevronRight } from 'lucide-react';
+import { Megaphone, MousePointerClick, Eye, Target, Plus, ChevronRight, Check, CreditCard, Smartphone, Landmark, Loader2, X } from 'lucide-react';
 
-const PLACEMENT_TYPES = [
-  { id: 'search', label: { fr: 'Résultats de recherche', en: 'Search results' }, cpm: 2.5 },
-  { id: 'homepage', label: { fr: "Page d'accueil", en: 'Homepage banner' }, cpm: 4.0 },
-  { id: 'category', label: { fr: 'Page de catégorie', en: 'Category page' }, cpm: 3.0 },
-  { id: 'product', label: { fr: 'Page produit similaire', en: 'Related product page' }, cpm: 2.0 },
-];
+type WizardStep = 'product' | 'plan' | 'placement' | 'payment' | 'recap';
 
-const REACH_LEVELS = [
-  { id: 'local', label: { fr: 'Local (ville)', en: 'Local (city)' }, multiplier: 0.6 },
-  { id: 'national', label: { fr: 'National (pays)', en: 'National (country)' }, multiplier: 1.0 },
-  { id: 'continental', label: { fr: 'Continental (Afrique)', en: 'Continental (Africa)' }, multiplier: 1.8 },
-];
+const PROVIDER_META: Record<'stripe' | 'flutterwave' | 'payunit', { label: string; icon: typeof CreditCard; hint: { fr: string; en: string } }> = {
+  stripe: { label: 'Stripe', icon: CreditCard, hint: { fr: 'Carte bancaire internationale', en: 'International card payment' } },
+  flutterwave: { label: 'Flutterwave', icon: Smartphone, hint: { fr: 'Carte, Mobile Money, virement (Afrique)', en: 'Card, Mobile Money, transfer (Africa)' } },
+  payunit: { label: 'PayUnit', icon: Landmark, hint: { fr: 'MTN MoMo, Orange Money (Cameroun)', en: 'MTN MoMo, Orange Money (Cameroon)' } },
+};
 
 export function AdsPage() {
-  const { t, locale, user, navigate, showToast, categories, countries } = useApp();
+  const { t, locale, user, navigate, showToast } = useApp();
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [plans, setPlans] = useState<AdvertisingPlan[]>([]);
+  const [placements, setPlacements] = useState<AdvertisingPlacement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    name: '', country: '', city: '', category: '',
-    duration: 7, dailyBudget: 5, placement: 'search', reach: 'national',
-  });
-  const [billingConfirmed, setBillingConfirmed] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+  const [step, setStep] = useState<WizardStep>('product');
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [selectedPlacementId, setSelectedPlacementId] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState<'stripe' | 'flutterwave' | 'payunit'>('stripe');
+  const [submitting, setSubmitting] = useState(false);
+
+  const sellerId = user?.sellerId || user?.id || '';
+
+  const reload = async () => {
+    if (!sellerId) { setLoading(false); return; }
+    const [prods, camps, adPlans, adPlacements] = await Promise.all([
+      fetchProducts({ sellerId, limit: 100 }),
+      fetchSellerCampaignsDetailed(sellerId),
+      fetchAdvertisingPlans(),
+      fetchAdvertisingPlacements(),
+    ]);
+    setProducts(prods);
+    setCampaigns(camps);
+    setPlans(adPlans);
+    setPlacements(adPlacements);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    if (!user?.sellerId && !user?.id) return;
-    const sellerId = user.sellerId || user.id;
-    fetchAdCampaigns(sellerId).then((data) => { setCampaigns(data); setLoading(false); });
-  }, [user]);
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sellerId]);
 
-  const selectedPlacement = PLACEMENT_TYPES.find((p) => p.id === form.placement) || PLACEMENT_TYPES[0];
-  const selectedReach = REACH_LEVELS.find((r) => r.id === form.reach) || REACH_LEVELS[1];
+  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId);
+  const availablePlacements = placements.filter((pl) => selectedPlan?.allowed_placements?.includes(pl.id));
 
-  const dailyBudget = form.dailyBudget;
-  const duration = form.duration;
-  const effectiveCPM = selectedPlacement.cpm * selectedReach.multiplier;
-  const estimatedDailyImpressions = Math.round((dailyBudget / effectiveCPM) * 1000);
-  const estimatedTotalImpressions = estimatedDailyImpressions * duration;
-  const estimatedClicks = Math.round(estimatedTotalImpressions * 0.032);
-  const estimatedConversions = Math.round(estimatedClicks * 0.08);
-  const totalCost = dailyBudget * duration;
-  const avgCpc = estimatedClicks > 0 ? (totalCost / estimatedClicks) : 0;
+  const resetWizard = () => {
+    setStep('product'); setSelectedProductId(''); setSelectedPlanId('');
+    setSelectedPlacementId(''); setSelectedProvider('stripe'); setShowWizard(false);
+  };
+
+  const goNext = () => {
+    if (step === 'product' && !selectedProductId) {
+      showToast(locale === 'fr' ? 'Sélectionnez un produit' : 'Select a product', 'error'); return;
+    }
+    if (step === 'plan' && !selectedPlanId) {
+      showToast(locale === 'fr' ? 'Sélectionnez une formule' : 'Select a plan', 'error'); return;
+    }
+    if (step === 'placement' && !selectedPlacementId) {
+      showToast(locale === 'fr' ? 'Sélectionnez un emplacement' : 'Select a placement', 'error'); return;
+    }
+    const order: WizardStep[] = ['product', 'plan', 'placement', 'payment', 'recap'];
+    const idx = order.indexOf(step);
+    if (idx < order.length - 1) setStep(order[idx + 1]);
+  };
+  const goBack = () => {
+    const order: WizardStep[] = ['product', 'plan', 'placement', 'payment', 'recap'];
+    const idx = order.indexOf(step);
+    if (idx > 0) setStep(order[idx - 1]);
+  };
+
+  const confirmAndPay = async () => {
+    if (!selectedProduct || !selectedPlan || !selectedPlacementId || !sellerId) return;
+    setSubmitting(true);
+    try {
+      const campaignId = await createDraftCampaign({
+        sellerId,
+        productId: selectedProduct.id,
+        planId: selectedPlan.id,
+        placementId: selectedPlacementId,
+        price: selectedPlan.price,
+        currencyCode: selectedPlan.currency_code,
+        name: `${selectedPlan.name} — ${selectedProduct.name}`.slice(0, 120),
+      });
+      if (!campaignId) {
+        showToast(locale === 'fr' ? 'Erreur lors de la création de la campagne' : 'Error creating campaign', 'error');
+        setSubmitting(false); return;
+      }
+      const returnUrl = `${window.location.origin}${window.location.pathname}#ads-return`;
+      const result = await initiateAdvertisingPayment({ campaignId, provider: selectedProvider, returnUrl });
+      if ('error' in result) {
+        showToast(result.error, 'error');
+        setSubmitting(false); return;
+      }
+      // Redirection réelle vers la page de paiement du provider — la
+      // campagne reste 'pending' tant que le webhook n'a pas confirmé le paiement.
+      window.location.href = result.redirectUrl;
+    } catch (e) {
+      console.error(e);
+      showToast(locale === 'fr' ? 'Erreur inattendue' : 'Unexpected error', 'error');
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancel = async (campaignId: string) => {
+    const ok = await cancelAdvertisingCampaign(campaignId);
+    if (ok) { showToast(locale === 'fr' ? 'Campagne annulée' : 'Campaign cancelled'); reload(); }
+    else showToast(locale === 'fr' ? "Impossible d'annuler cette campagne" : 'Could not cancel this campaign', 'error');
+  };
 
   const totalImpressions = campaigns.reduce((s, c) => s + c.impressions, 0);
   const totalClicks = campaigns.reduce((s, c) => s + c.clicks, 0);
   const totalConversions = campaigns.reduce((s, c) => s + c.conversions, 0);
   const activeCount = campaigns.filter((c) => c.status === 'active').length;
 
-  const launch = async () => {
-    if (!form.name) { showToast(locale === 'fr' ? 'Nom requis' : 'Name required', 'error'); return; }
-    if (!billingConfirmed) { showToast(locale === 'fr' ? 'Veuillez confirmer la facturation' : 'Please confirm billing', 'error'); return; }
-    if (!user?.sellerId && !user?.id) return;
-    const sellerId = user.sellerId || user.id;
-    const id = await createAdCampaign({
-      sellerId,
-      name: form.name,
-      targetCountry: form.country || null,
-      targetCity: form.city || null,
-      targetCategory: form.category || null,
-      budget: totalCost,
-      durationDays: duration,
-    });
-    if (id) {
-      const newCampaign: AdCampaign = {
-        id, seller_id: sellerId, name: form.name,
-        target_country: form.country || null, target_city: form.city || null,
-        target_category: form.category || null, budget: totalCost,
-        duration_days: duration, impressions: 0, clicks: 0, conversions: 0,
-        status: 'pending', created_at: new Date().toISOString(),
-      };
-      setCampaigns([newCampaign, ...campaigns]);
-      setForm({ name: '', country: '', city: '', category: '', duration: 7, dailyBudget: 5, placement: 'search', reach: 'national' });
-      setBillingConfirmed(false);
-      setShowForm(false);
-      showToast(locale === 'fr' ? "Campagne créée — en attente d'approbation" : 'Campaign created — pending approval');
-    } else {
-      showToast(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating campaign', 'error');
-    }
+  const statusLabel = (c: AdCampaign) => {
+    if (c.payment_status === 'pending') return locale === 'fr' ? 'En attente de paiement' : 'Awaiting payment';
+    if (c.payment_status === 'failed') return locale === 'fr' ? 'Paiement échoué' : 'Payment failed';
+    if (c.payment_status === 'refunded') return locale === 'fr' ? 'Remboursée' : 'Refunded';
+    if (c.status === 'active') return locale === 'fr' ? 'Active' : 'Active';
+    if (c.status === 'paused') return locale === 'fr' ? 'Suspendue' : 'Paused';
+    if (c.status === 'expired') return locale === 'fr' ? 'Expirée' : 'Expired';
+    if (c.status === 'cancelled') return locale === 'fr' ? 'Annulée' : 'Cancelled';
+    return c.status;
   };
-
-  const rootCategories = categories.filter((c) => !c.parent_id).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const statusColor = (c: AdCampaign) => {
+    if (c.status === 'active') return 'bg-[#ff7a00]/15 text-[#e06c00]';
+    if (c.payment_status === 'pending') return 'bg-amber-100 text-amber-700';
+    if (c.payment_status === 'failed' || c.status === 'cancelled') return 'bg-red-100 text-red-600';
+    return 'bg-gray-100 text-gray-500';
+  };
 
   return (
     <div className="motif-bg min-h-screen">
@@ -98,168 +156,159 @@ export function AdsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-display text-3xl font-bold text-[#0f172a]">{t.ads.title}</h1>
-            <p className="text-sm text-[#64748b] mt-1">{t.ads.subtitle}</p>
+            <p className="text-sm text-[#64748b] mt-1">
+              {locale === 'fr'
+                ? "Payez pour mettre vos produits en avant. Zando ne prend aucune commission sur vos ventes — la publicité est un service séparé et optionnel."
+                : 'Pay to feature your products. Zando takes no commission on your sales — advertising is a separate, optional service.'}
+            </p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2">
+          <button onClick={() => { resetWizard(); setShowWizard(true); }} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2">
             <Plus className="w-4 h-4" /> {t.ads.createCampaign}
           </button>
         </div>
 
-        {user?.sellerPlan === 'enterprise' && (
-          <div className="card p-4 mb-6 flex items-center gap-3 bg-[#ff7a00]/5">
-            <Gift className="w-5 h-5 text-[#ff7a00]" />
-            <p className="text-sm text-[#0f172a]">
-              {locale === 'fr' ? 'Plan Entreprise : publicité gratuite en avant pendant 7 jours à chaque renouvellement.' : 'Enterprise plan: free featured ad for 7 days on each renewal.'}
-            </p>
-          </div>
-        )}
-
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard label={t.ads.impressions} value={totalImpressions.toLocaleString()} icon={Eye} />
-          <StatCard label={t.ads.clicks} value={totalClicks.toLocaleString()} icon={MousePointerClick} trend="+12%" />
-          <StatCard label={t.ads.conversions} value={totalConversions.toString()} icon={Target} trend="+8%" />
+          <StatCard label={t.ads.clicks} value={totalClicks.toLocaleString()} icon={MousePointerClick} />
+          <StatCard label={t.ads.conversions} value={totalConversions.toString()} icon={Target} />
           <StatCard label={t.ads.activeCampaigns} value={activeCount.toString()} icon={Megaphone} />
         </div>
 
-        {showForm && (
-          <div className="card p-6 mb-6 animate-fade-up">
-            <h3 className="font-display text-lg font-bold text-[#0f172a] mb-4 flex items-center gap-2">
+        {showWizard && (
+          <div className="card p-6 mb-6 animate-fade-up relative">
+            <button onClick={resetWizard} className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-[#f7f8fa]"><X className="w-4 h-4 text-[#64748b]" /></button>
+            <h3 className="font-display text-lg font-bold text-[#0f172a] mb-1 flex items-center gap-2">
               <Megaphone className="w-5 h-5 text-[#ff7a00]" /> {t.ads.createCampaign}
             </h3>
-            <div className="grid lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.campaignName}</label>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" placeholder={locale === 'fr' ? 'Soldes Wax' : 'Wax Sale'} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.targetCountry}</label>
-                    <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="input-field">
-                      <option value="">—</option>
-                      {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.targetCity}</label>
-                    <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="input-field" placeholder="Abidjan" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.targetCategory}</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-field">
-                    <option value="">—</option>
-                    {rootCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Placement' : 'Placement'}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PLACEMENT_TYPES.map((p) => (
-                      <button key={p.id} onClick={() => setForm({ ...form, placement: p.id })}
-                        className={'px-3 py-2 rounded-lg text-xs font-medium border transition-all ' + (form.placement === p.id ? 'border-[#ff7a00] bg-[#ff7a00]/10 text-[#ff7a00]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#ff7a00]/50')}>
-                        {p.label[locale]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Portée' : 'Reach'}</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {REACH_LEVELS.map((r) => (
-                      <button key={r.id} onClick={() => setForm({ ...form, reach: r.id })}
-                        className={'px-3 py-2 rounded-lg text-xs font-medium border transition-all ' + (form.reach === r.id ? 'border-[#ff7a00] bg-[#ff7a00]/10 text-[#ff7a00]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#ff7a00]/50')}>
-                        {r.label[locale]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Budget quotidien ($)' : 'Daily budget ($)'}</label>
-                    <input type="number" value={form.dailyBudget} onChange={(e) => setForm({ ...form, dailyBudget: Math.max(1, parseInt(e.target.value) || 5) })} className="input-field" min={1} max={500} />
-                    <div className="flex gap-1 mt-2">
-                      {[1, 5, 10, 25, 50].map((v) => (
-                        <button key={v} onClick={() => setForm({ ...form, dailyBudget: v })} className={'px-2 py-1 text-[10px] rounded font-medium ' + (form.dailyBudget === v ? 'bg-[#ff7a00] text-white' : 'bg-[#f7f8fa] text-[#64748b]')}>{'$' + v}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.ads.duration}</label>
-                    <input type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: Math.max(1, Math.min(90, parseInt(e.target.value) || 7)) })} className="input-field" min={1} max={90} />
-                    <div className="flex gap-1 mt-2">
-                      {[3, 7, 14, 30].map((v) => (
-                        <button key={v} onClick={() => setForm({ ...form, duration: v })} className={'px-2 py-1 text-[10px] rounded font-medium ' + (form.duration === v ? 'bg-[#ff7a00] text-white' : 'bg-[#f7f8fa] text-[#64748b]')}>{v}d</button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[#0f172a] rounded-xl p-5 text-white">
-                <h4 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-[#ff7a00]" /> {locale === 'fr' ? 'Simulateur de coût' : 'Cost Simulator'}
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'CPM effectif (coût pour 1000 vues)' : 'Effective CPM (cost per 1000 views)'}</span>
-                    <span className="text-sm font-bold text-[#ff7a00]">${effectiveCPM.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Budget quotidien' : 'Daily budget'}</span>
-                    <span className="text-sm font-bold">${dailyBudget.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Durée' : 'Duration'}</span>
-                    <span className="text-sm font-bold">{duration} {locale === 'fr' ? 'jours' : 'days'}</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Vues quotidiennes estimées' : 'Est. daily impressions'}</span>
-                    <span className="text-sm font-bold">{estimatedDailyImpressions.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Vues totales estimées' : 'Est. total impressions'}</span>
-                    <span className="text-sm font-bold">{estimatedTotalImpressions.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Clics estimés (CTR ~3.2%)' : 'Est. clicks (CTR ~3.2%)'}</span>
-                    <span className="text-sm font-bold">{estimatedClicks.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Conversions estimées (~8%)' : 'Est. conversions (~8%)'}</span>
-                    <span className="text-sm font-bold">{estimatedConversions}</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Coût par clic (CPC)' : 'Cost per click (CPC)'}</span>
-                    <span className="text-sm font-bold text-[#ff7a00]">${avgCpc.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-sm font-semibold text-white/80">{locale === 'fr' ? 'COÛT TOTAL' : 'TOTAL COST'}</span>
-                    <span className="text-2xl font-bold text-[#ff7a00]">${totalCost.toFixed(2)}</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-white/40 mt-4 leading-relaxed">
-                  {locale === 'fr'
-                    ? 'Estimations basées sur le CPM du placement, la portée et le budget. Les performances réelles peuvent varier. Paiement en USD.'
-                    : 'Estimates based on placement CPM, reach, and budget. Actual performance may vary. Payment in USD.'}
-                </p>
-              </div>
+            <div className="flex items-center gap-1.5 mb-6 mt-3">
+              {(['product', 'plan', 'placement', 'payment', 'recap'] as WizardStep[]).map((s, i) => (
+                <div key={s} className={'h-1.5 flex-1 rounded-full ' + (['product', 'plan', 'placement', 'payment', 'recap'].indexOf(step) >= i ? 'bg-[#ff7a00]' : 'bg-[#e2e8f0]')} />
+              ))}
             </div>
 
-            <label className="flex items-start gap-2.5 mt-5 p-3 rounded-xl bg-[#ff7a00]/5 cursor-pointer">
-              <input type="checkbox" checked={billingConfirmed} onChange={(e) => setBillingConfirmed(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#ff7a00]" />
-              <span className="text-xs text-[#0f172a]">
-                {locale === 'fr'
-                  ? `Je confirme vouloir lancer cette campagne pour un budget total de $${totalCost.toFixed(2)}. Ce montant sera facturé par Zando dès la validation de la campagne (revenu publicitaire Zando — distinct des paiements de vos ventes, qui vont directement à votre PSP).`
-                  : `I confirm I want to launch this campaign for a total budget of $${totalCost.toFixed(2)}. This amount will be billed by Zando once the campaign is approved (Zando ad revenue — separate from your sales payments, which go directly to your PSP).`}
-              </span>
-            </label>
+            {step === 'product' && (
+              <div>
+                <p className="text-xs font-semibold text-[#0f172a] uppercase mb-3">{locale === 'fr' ? '1. Choisissez un produit' : '1. Choose a product'}</p>
+                {products.length === 0 ? (
+                  <p className="text-sm text-[#64748b]">{locale === 'fr' ? "Vous n'avez pas encore de produit approuvé." : "You don't have any approved product yet."}</p>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto">
+                    {products.map((p) => (
+                      <button key={p.id} onClick={() => setSelectedProductId(p.id)}
+                        className={'flex items-center gap-3 p-3 rounded-xl border text-left transition-all ' + (selectedProductId === p.id ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#e2e8f0] hover:border-[#ff7a00]/50')}>
+                        <img src={p.product_images?.[0]?.image_url || ''} className="w-12 h-12 rounded-lg object-cover bg-[#f7f8fa]" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#0f172a] truncate">{p.name}</p>
+                          <p className="text-xs text-[#64748b]">${p.price}</p>
+                        </div>
+                        {selectedProductId === p.id && <Check className="w-4 h-4 text-[#ff7a00] ml-auto shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-            <div className="flex gap-3 mt-4">
-              <button onClick={launch} disabled={!billingConfirmed} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-                <Megaphone className="w-4 h-4" /> {t.ads.launch} — ${totalCost.toFixed(2)}
-              </button>
-              <button onClick={() => setShowForm(false)} className="px-6 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a]">{t.common.cancel}</button>
+            {step === 'plan' && (
+              <div>
+                <p className="text-xs font-semibold text-[#0f172a] uppercase mb-3">{locale === 'fr' ? '2. Choisissez une formule' : '2. Choose a plan'}</p>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {plans.map((plan) => (
+                    <button key={plan.id} onClick={() => { setSelectedPlanId(plan.id); setSelectedPlacementId(''); }}
+                      className={'p-4 rounded-xl border text-left transition-all ' + (selectedPlanId === plan.id ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#e2e8f0] hover:border-[#ff7a00]/50')}>
+                      <p className="font-semibold text-[#0f172a]">{plan.name}</p>
+                      <p className="text-xs text-[#64748b] mt-1">{plan.duration_days} {locale === 'fr' ? 'jours' : 'days'}</p>
+                      <p className="text-xl font-bold text-[#ff7a00] mt-2">{plan.currency_code} {plan.price}</p>
+                      {plan.description && <p className="text-xs text-[#64748b] mt-1">{plan.description}</p>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 'placement' && (
+              <div>
+                <p className="text-xs font-semibold text-[#0f172a] uppercase mb-3">{locale === 'fr' ? '3. Choisissez un emplacement' : '3. Choose a placement'}</p>
+                <div className="grid sm:grid-cols-3 gap-2">
+                  {availablePlacements.map((pl) => (
+                    <button key={pl.id} onClick={() => setSelectedPlacementId(pl.id)}
+                      className={'px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left ' + (selectedPlacementId === pl.id ? 'border-[#ff7a00] bg-[#ff7a00]/10 text-[#ff7a00]' : 'border-[#e2e8f0] text-[#64748b] hover:border-[#ff7a00]/50')}>
+                      {pl.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 'payment' && (
+              <div>
+                <p className="text-xs font-semibold text-[#0f172a] uppercase mb-3">{locale === 'fr' ? '4. Moyen de paiement' : '4. Payment method'}</p>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {(Object.keys(PROVIDER_META) as Array<'stripe' | 'flutterwave' | 'payunit'>).map((key) => {
+                    const meta = PROVIDER_META[key];
+                    const Icon = meta.icon;
+                    return (
+                      <button key={key} onClick={() => setSelectedProvider(key)}
+                        className={'p-4 rounded-xl border text-left transition-all ' + (selectedProvider === key ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#e2e8f0] hover:border-[#ff7a00]/50')}>
+                        <Icon className="w-5 h-5 text-[#ff7a00] mb-2" />
+                        <p className="font-semibold text-[#0f172a] text-sm">{meta.label}</p>
+                        <p className="text-xs text-[#64748b] mt-1">{meta.hint[locale]}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-[#64748b] mt-3">
+                  {locale === 'fr'
+                    ? 'Ce paiement va sur le compte marchand Zando (revenu publicitaire de la marketplace) — jamais sur votre propre PSP.'
+                    : "This payment goes to Zando's merchant account (marketplace ad revenue) — never to your own PSP."}
+                </p>
+              </div>
+            )}
+
+            {step === 'recap' && selectedProduct && selectedPlan && (
+              <div>
+                <p className="text-xs font-semibold text-[#0f172a] uppercase mb-3">{locale === 'fr' ? '5. Récapitulatif' : '5. Summary'}</p>
+                <div className="bg-[#0f172a] rounded-xl p-5 text-white space-y-3">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Produit' : 'Product'}</span>
+                    <span className="text-sm font-semibold">{selectedProduct.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Formule' : 'Plan'}</span>
+                    <span className="text-sm font-semibold">{selectedPlan.name} ({selectedPlan.duration_days}j)</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Emplacement' : 'Placement'}</span>
+                    <span className="text-sm font-semibold">{placements.find((p) => p.id === selectedPlacementId)?.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <span className="text-xs text-white/60">{locale === 'fr' ? 'Paiement via' : 'Payment via'}</span>
+                    <span className="text-sm font-semibold">{PROVIDER_META[selectedProvider].label}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-sm font-semibold text-white/80">TOTAL</span>
+                    <span className="text-2xl font-bold text-[#ff7a00]">{selectedPlan.currency_code} {selectedPlan.price}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              {step !== 'product' && (
+                <button onClick={goBack} className="px-5 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a]">
+                  {locale === 'fr' ? 'Retour' : 'Back'}
+                </button>
+              )}
+              {step !== 'recap' ? (
+                <button onClick={goNext} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold ml-auto">
+                  {locale === 'fr' ? 'Continuer' : 'Continue'}
+                </button>
+              ) : (
+                <button onClick={confirmAndPay} disabled={submitting} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 ml-auto disabled:opacity-50">
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
+                  {locale === 'fr' ? 'Payer et lancer' : 'Pay and launch'}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -278,18 +327,17 @@ export function AdsPage() {
               <div key={c.id} className="card p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#ff7a00]/10 flex items-center justify-center">
-                      <Megaphone className="w-5 h-5 text-[#ff7a00]" />
-                    </div>
+                    <img src={c.products?.product_images?.[0]?.image_url || ''} className="w-10 h-10 rounded-xl object-cover bg-[#ff7a00]/10" />
                     <div>
-                      <h3 className="font-semibold text-[#0f172a]">{c.name}</h3>
+                      <h3 className="font-semibold text-[#0f172a]">{c.products?.name || c.name}</h3>
                       <p className="text-xs text-[#64748b]">
-                        {c.target_city || '—'} • {c.duration_days} {locale === 'fr' ? 'jours' : 'days'} • ${c.budget}
+                        {c.advertising_plans?.name || '—'} • {c.currency_code} {c.price ?? c.budget}
+                        {c.expires_at && c.status === 'active' ? ` • ${locale === 'fr' ? 'expire le' : 'expires'} ${new Date(c.expires_at).toLocaleDateString()}` : ''}
                       </p>
                     </div>
                   </div>
-                  <span className={'px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ' + (c.status === 'active' ? 'bg-[#ff7a00]/15 text-[#e06c00]' : c.status === 'pending' ? 'bg-[#ff7a00]/15 text-[#e06c00]' : c.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500')}>
-                    {c.status === 'pending' ? (locale === 'fr' ? "en attente d'approbation" : 'pending approval') : c.status}
+                  <span className={'px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ' + statusColor(c)}>
+                    {statusLabel(c)}
                   </span>
                 </div>
                 <div className="grid grid-cols-4 gap-4 pt-3 border-t border-[#ff7a00]/10">
@@ -302,12 +350,15 @@ export function AdsPage() {
                     <p className="font-bold text-[#0f172a]">{c.clicks.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-[#64748b]">{t.ads.conversions}</p>
-                    <p className="font-bold text-[#0f172a]">{c.conversions}</p>
-                  </div>
-                  <div>
                     <p className="text-xs text-[#64748b]">CTR</p>
                     <p className="font-bold text-[#0f172a]">{c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(1) : '0'}%</p>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    {c.payment_status === 'pending' && (
+                      <button onClick={() => handleCancel(c.id)} className="text-xs font-semibold text-red-600 hover:underline">
+                        {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

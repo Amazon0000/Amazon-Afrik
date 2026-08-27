@@ -2,18 +2,24 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
-import { fetchActiveFlashDeals, type FlashDeal } from '@/lib/db';
+import { fetchActiveFlashDeals, fetchSponsoredProducts, type FlashDeal, type Product } from '@/lib/db';
 import { ArrowRight, Sparkles, TrendingUp, Store, MapPin, Zap, Tag, Gift, Award, Megaphone, ChevronLeft, ChevronRight, Star, Flame } from 'lucide-react';
 
 export function HomePage() {
   const { t, navigate, geo, locale, products, loadingProducts, categories, countries } = useApp();
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
+  const [paidSponsored, setPaidSponsored] = useState<Product[]>([]);
 
   useEffect(() => {
     fetchActiveFlashDeals().then(setFlashDeals);
+    // Source de vérité réelle pour la publicité payante (module Advertising) :
+    // campagne active + payée + non expirée. Le champ products.is_sponsored
+    // n'est conservé que comme repli pour les données de démo/seed sans
+    // campagne réelle associée.
+    fetchSponsoredProducts('homepage').then(setPaidSponsored);
   }, []);
 
-  const sponsored = products.filter((p) => p.is_sponsored);
+  const sponsored = paidSponsored.length > 0 ? paidSponsored : products.filter((p) => p.is_sponsored);
   const deals = products.filter((p) => p.old_price);
   const topRated = [...products].sort((a, b) => b.rating - a.rating).slice(0, 10);
   const trending = [...products].sort((a, b) => b.total_reviews - a.total_reviews).slice(0, 10);
