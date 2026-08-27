@@ -48,6 +48,7 @@ type AppState = {
   categories: Category[];
   currencyCode: string;
   setCurrencyCode: (c: string) => void;
+  formatPrice: (usdAmount: number) => string;
   products: Product[];
   loadingProducts: boolean;
   loadingReference: boolean;
@@ -109,6 +110,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currencyCode, setCurrencyCodeState] = useState<string>(() => localStorage.getItem('zando-currency') || 'USD');
+  const [currencyManual, setCurrencyManual] = useState<boolean>(() => localStorage.getItem('zando-currency-manual') === 'true');
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingReference, setLoadingReference] = useState(true);
@@ -120,6 +122,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('zando-cart', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('zando-wishlist', JSON.stringify(wishlist)); }, [wishlist]);
   useEffect(() => { localStorage.setItem('zando-currency', currencyCode); }, [currencyCode]);
+
+  // Currency follows the selected country automatically — unless the user
+  // has explicitly picked a currency themselves, in which case that choice
+  // sticks even if they later change their delivery country.
+  useEffect(() => {
+    if (currencyManual || countries.length === 0) return;
+    const country = countries.find((c) => c.id === geo.countryId);
+    if (country?.currency_code && country.currency_code !== currencyCode) {
+      setCurrencyCodeState(country.currency_code);
+    }
+  }, [geo.countryId, countries, currencyManual]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -225,7 +238,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWishlist((prev) => prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]);
   };
 
-  const setCurrencyCode = (c: string) => setCurrencyCodeState(c);
+  const setCurrencyCode = (c: string) => {
+    setCurrencyCodeState(c);
+    setCurrencyManual(true);
+    localStorage.setItem('zando-currency-manual', 'true');
+  };
+
+  // Real conversion: converts a USD amount into the user's selected currency
+  // and formats it with the right symbol/decimals. Falls back to raw USD if
+  // the currency isn't loaded yet or is unknown — never silently mis-converts.
+  const formatPrice = (usdAmount: number): string => {
+    const currency = currencies.find((c) => c.code === currencyCode);
+    if (!currency || currency.code === 'USD') return `$${usdAmount.toFixed(2)}`;
+    const localAmount = usdAmount / currency.exchange_rate;
+    const noDecimalCurrencies = ['JPY', 'KRW', 'VND', 'IDR', 'XOF', 'XAF', 'GNF', 'RWF', 'UGX', 'TZS', 'CDF', 'DJF', 'BIF', 'KMF'];
+    const decimals = noDecimalCurrencies.includes(currency.code) ? 0 : 2;
+    const formatted = localAmount.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    return `${currency.symbol}${formatted}`;
+  };
 
   return (
     <AppContext.Provider value={{
@@ -235,7 +265,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cart, addToCart, removeFromCart, updateCartQty, clearCart, cartCount,
       wishlist, toggleWishlist,
       toasts, showToast, dismissToast,
-      countries, currencies, categories, currencyCode, setCurrencyCode,
+      countries, currencies, categories, currencyCode, setCurrencyCode, formatPrice,
       products, loadingProducts,
       loadingReference, referenceError,
     }}>

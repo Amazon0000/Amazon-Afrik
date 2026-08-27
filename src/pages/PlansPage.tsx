@@ -1,23 +1,30 @@
 import { useApp } from '@/lib/store';
 import { Check, Crown, Award, Star, Zap } from 'lucide-react';
 
+// Canonical prices in USD — the only source of truth for plan pricing.
+// Displayed converted to the user's currency via formatPrice(); never
+// hardcode a pre-formatted price string, or conversion silently breaks.
+const PLAN_PRICE_USD: Record<'starter' | 'premium' | 'enterprise', number> = {
+  starter: 9, premium: 29, enterprise: 79,
+};
+
 export function PlansPage() {
-  const { t, navigate, user, setUser, locale } = useApp();
+  const { t, navigate, user, setUser, locale, formatPrice, currencyCode } = useApp();
 
   const plans = [
     {
-      id: 'starter', name: t.plans.starter, price: t.plans.starterPrice, icon: Star, color: '#64748b',
+      id: 'starter', name: t.plans.starter, icon: Star, color: '#64748b',
       features: t.plans.starterFeatures, highlight: false,
     },
     {
-      id: 'premium', name: t.plans.premium, price: t.plans.premiumPrice, icon: Award, color: '#ff7a00',
+      id: 'premium', name: t.plans.premium, icon: Award, color: '#ff7a00',
       features: t.plans.premiumFeatures, highlight: true,
     },
     {
-      id: 'enterprise', name: t.plans.enterprise, price: t.plans.enterprisePrice, icon: Crown, color: '#0f172a',
+      id: 'enterprise', name: t.plans.enterprise, icon: Crown, color: '#0f172a',
       features: t.plans.enterpriseFeatures, highlight: false,
     },
-  ];
+  ] as const;
 
   const choose = (planId: 'starter' | 'premium' | 'enterprise') => {
     if (user) {
@@ -54,8 +61,11 @@ export function PlansPage() {
                 <h3 className="font-display text-2xl font-bold text-[#0f172a]">{plan.name}</h3>
               </div>
               <div className="mb-6">
-                <span className="text-4xl font-bold text-[#0f172a]">{plan.price}</span>
+                <span className="text-4xl font-bold text-[#0f172a]">{formatPrice(PLAN_PRICE_USD[plan.id])}</span>
                 <span className="text-sm text-[#64748b]"> {t.plans.perMonth}</span>
+                {currencyCode !== 'USD' && (
+                  <p className="text-xs text-[#64748b] mt-1">≈ ${PLAN_PRICE_USD[plan.id]} USD</p>
+                )}
               </div>
               <ul className="space-y-3 mb-8">
                 {plan.features.map((f, i) => (

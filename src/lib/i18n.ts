@@ -72,7 +72,6 @@ export type Dict = {
   plans: {
     title: string; subtitle: string; perMonth: string;
     starter: string; premium: string; enterprise: string;
-    starterPrice: string; premiumPrice: string; enterprisePrice: string;
     choose: string; current: string;
     starterFeatures: string[]; premiumFeatures: string[]; enterpriseFeatures: string[];
   };
@@ -211,7 +210,6 @@ const fr: Dict = {
   plans: {
     title: 'Abonnements Vendeurs', subtitle: 'Choisissez le plan qui correspond à votre activité',
     perMonth: '/ mois', starter: 'Starter', premium: 'Premium', enterprise: 'Entreprise',
-    starterPrice: '9 $', premiumPrice: '29 $', enterprisePrice: '79 $',
     choose: 'Choisir ce plan', current: 'Plan actuel',
     starterFeatures: ['Jusqu\'à 10 produits', 'Accès limité', 'Pas de publicité gratuite', 'Visibilité standard'],
     premiumFeatures: ['Jusqu\'à 100 produits', 'Outils marketing', 'Analytics avancés', 'Accès aux publicités internes', 'Visibilité améliorée'],
@@ -356,7 +354,6 @@ const en: Dict = {
   plans: {
     title: 'Seller Subscriptions', subtitle: 'Choose the plan that fits your business',
     perMonth: '/ month', starter: 'Starter', premium: 'Premium', enterprise: 'Enterprise',
-    starterPrice: '$9', premiumPrice: '$29', enterprisePrice: '$79',
     choose: 'Choose this plan', current: 'Current plan',
     starterFeatures: ['Up to 10 products', 'Limited access', 'No free ads', 'Standard visibility'],
     premiumFeatures: ['Up to 100 products', 'Marketing tools', 'Advanced analytics', 'Access to internal ads', 'Improved visibility'],

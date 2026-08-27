@@ -5,6 +5,12 @@ export type Country = {
   currency_code: string; is_active: boolean; is_african: boolean; region: string;
 };
 
+// exchange_rate convention: the USD value of ONE unit of this currency
+// (e.g. XOF ≈ 0.0017 since 1 XOF ≈ $0.0017, roughly 610 XOF per USD).
+// To convert a USD price to this currency: usdAmount / exchange_rate.
+// Keep every currency in this table on this same convention — a prior
+// migration briefly mixed in the opposite one for non-African currencies
+// and silently broke conversion by orders of magnitude.
 export type Currency = {
   code: string; name: string; symbol: string; exchange_rate: number; is_active: boolean;
 };
@@ -224,11 +230,11 @@ const MOCK_COUNTRIES: Country[] = [
 
 const MOCK_CURRENCIES: Currency[] = [
   { code: 'USD', name: 'US Dollar', symbol: '$', exchange_rate: 1.0, is_active: true },
-  { code: 'XOF', name: 'CFA Franc', symbol: 'FCFA', exchange_rate: 610.0, is_active: true },
-  { code: 'NGN', name: 'Naira', symbol: '₦', exchange_rate: 1500.0, is_active: true },
-  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', exchange_rate: 130.0, is_active: true },
-  { code: 'GHS', name: 'Ghanaian Cedi', symbol: 'GH₵', exchange_rate: 14.5, is_active: true },
-  { code: 'ZAR', name: 'South African Rand', symbol: 'R', exchange_rate: 18.5, is_active: true },
+  { code: 'XOF', name: 'CFA Franc', symbol: 'FCFA', exchange_rate: 0.00164, is_active: true },
+  { code: 'NGN', name: 'Naira', symbol: '₦', exchange_rate: 0.000667, is_active: true },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', exchange_rate: 0.00769, is_active: true },
+  { code: 'GHS', name: 'Ghanaian Cedi', symbol: 'GH₵', exchange_rate: 0.06897, is_active: true },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R', exchange_rate: 0.05405, is_active: true },
 ];
 
 const MOCK_CATEGORIES: Category[] = [
@@ -1335,10 +1341,14 @@ export type PlatformRevenueSummary = {
   adSpendActive: number;
 };
 
+// Must match PLAN_PRICE_USD in PlansPage.tsx — the canonical seller
+// subscription prices in USD. Keeping one number per plan in two files is
+// fragile; both are pinned to the same values so admin revenue reporting
+// never silently drifts from what sellers are actually shown/charged.
 const PLAN_PRICE_USD: Record<'starter' | 'premium' | 'enterprise', number> = {
-  starter: 0,
+  starter: 9,
   premium: 29,
-  enterprise: 99,
+  enterprise: 79,
 };
 
 export async function fetchPlatformRevenue(): Promise<PlatformRevenueSummary> {
