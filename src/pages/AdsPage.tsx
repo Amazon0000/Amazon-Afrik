@@ -168,10 +168,10 @@ export function AdsPage() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard label={t.ads.impressions} value={totalImpressions.toLocaleString()} icon={Eye} />
-          <StatCard label={t.ads.clicks} value={totalClicks.toLocaleString()} icon={MousePointerClick} />
-          <StatCard label={t.ads.conversions} value={totalConversions.toString()} icon={Target} />
-          <StatCard label={t.ads.activeCampaigns} value={activeCount.toString()} icon={Megaphone} />
+          <StatCard label={t.ads.impressions} value={totalImpressions.toLocaleString()} icon={Eye} color="#0284c7" />
+          <StatCard label={t.ads.clicks} value={totalClicks.toLocaleString()} icon={MousePointerClick} color="#7c3aed" />
+          <StatCard label={t.ads.conversions} value={totalConversions.toString()} icon={Target} color="#16a34a" />
+          <StatCard label={t.ads.activeCampaigns} value={activeCount.toString()} icon={Megaphone} color="#ff7a00" />
         </div>
 
         {showWizard && (

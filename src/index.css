@@ -132,10 +132,12 @@ button, input, select, textarea { font: inherit; }
   box-shadow: 0 1px 3px rgba(0,0,0,.1) inset;
 }
 
-/* Accent — Verified/Success Green Button */
+/* Accent — Verified/Success Green Button (distinct du CTA orange principal :
+   utilisé pour les actions positives/de confirmation — Ajouter, Enregistrer,
+   Connecter — afin de ne pas les confondre visuellement avec btn-gold). */
 .btn-green {
-  background: linear-gradient(to bottom, #ff9633, #ff7a00);
-  border: 1px solid #e06c00;
+  background: linear-gradient(to bottom, #22c55e, #16a34a);
+  border: 1px solid #15803d;
   color: #ffffff;
   border-radius: 8px;
   font-weight: 600;
@@ -146,15 +148,15 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(255, 122, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.25);
 }
 .btn-green:hover {
-  background: linear-gradient(to bottom, #ff9633, #e06c00);
-  border-color: #cc5f00;
-  box-shadow: 0 2px 8px rgba(255, 122, 0, 0.35);
+  background: linear-gradient(to bottom, #16a34a, #15803d);
+  border-color: #14532d;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
 }
 .btn-green:active {
-  background: #ff7a00;
+  background: #16a34a;
 }
 
 /* Zando Cards */

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchOrders, fetchAdCampaigns, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal } from '@/lib/db';
+import { fetchProducts, fetchOrders, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame } from 'lucide-react';
@@ -55,7 +55,7 @@ export function SellerCenterPage() {
         const [prods, ords, adCamp] = await Promise.all([
           fetchProducts({ sellerId, limit: 50 }),
           fetchOrders(),
-          fetchAdCampaigns(sellerId),
+          fetchSellerCampaignsDetailed(sellerId),
         ]);
         setProducts(prods);
         setOrders(ords.slice(0, 10));
@@ -441,19 +441,27 @@ export function SellerCenterPage() {
                   <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><Megaphone className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune campagne publicitaire.' : 'No ad campaigns yet.'}</div>
                 ) : (
                   <div className="space-y-3">
-                    {ads.map((ad) => (
-                      <div key={ad.id} className="card p-5 bg-white">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="font-semibold text-[#0f172a]">{ad.name}</p>
-                          <Badge color={ad.status === 'active' ? '#ff7a00' : ad.status === 'pending' ? '#ff7a00' : '#64748b'}>{ad.status}</Badge>
+                    {ads.map((ad) => {
+                      const statusColor = ad.status === 'active' ? '#ff7a00' : ad.payment_status === 'pending' ? '#d97706' : ad.status === 'cancelled' || ad.payment_status === 'failed' ? '#ef4444' : '#94a3b8';
+                      return (
+                        <div key={ad.id} className="card p-5 bg-white">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="font-semibold text-[#0f172a]">{ad.products?.name || ad.name}</p>
+                            <Badge color={statusColor}>{ad.payment_status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending') : ad.status}</Badge>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 text-center">
+                            <div><p className="text-lg font-bold text-[#0f172a]">{ad.impressions.toLocaleString()}</p><p className="text-xs text-[#64748b]">{t.ads.impressions}</p></div>
+                            <div><p className="text-lg font-bold text-[#0f172a]">{ad.clicks.toLocaleString()}</p><p className="text-xs text-[#64748b]">{t.ads.clicks}</p></div>
+                            <div><p className="text-lg font-bold text-[#0f172a]">{ad.currency_code || '$'} {ad.price ?? ad.budget}</p><p className="text-xs text-[#64748b]">{t.ads.budget}</p></div>
+                          </div>
+                          {ad.status === 'active' && ad.expires_at && (
+                            <p className="text-xs text-[#64748b] mt-3 pt-3 border-t border-[#f0f4f8]">
+                              {locale === 'fr' ? 'Expire le' : 'Expires on'} {new Date(ad.expires_at).toLocaleDateString()}
+                            </p>
+                          )}
                         </div>
-                        <div className="grid grid-cols-3 gap-3 text-center">
-                          <div><p className="text-lg font-bold text-[#0f172a]">{ad.impressions.toLocaleString()}</p><p className="text-xs text-[#64748b]">{t.ads.impressions}</p></div>
-                          <div><p className="text-lg font-bold text-[#0f172a]">{ad.clicks.toLocaleString()}</p><p className="text-xs text-[#64748b]">{t.ads.clicks}</p></div>
-                          <div><p className="text-lg font-bold text-[#0f172a]">${ad.budget}</p><p className="text-xs text-[#64748b]">{t.ads.budget}</p></div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

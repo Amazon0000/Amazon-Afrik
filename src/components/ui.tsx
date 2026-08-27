@@ -70,14 +70,14 @@ export function EmptyState({ message }: { message: string }) {
   );
 }
 
-export function StatCard({ label, value, icon: Icon, trend }: { label: string; value: string; icon: React.ElementType; trend?: string }) {
+export function StatCard({ label, value, icon: Icon, trend, color = '#ff7a00' }: { label: string; value: string; icon: React.ElementType; trend?: string; color?: string }) {
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-2">
-        <div className="w-10 h-10 rounded-xl bg-[#ff7a00]/10 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-[#ff7a00]" />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
+          <Icon className="w-5 h-5" style={{ color }} />
         </div>
-        {trend && <span className="text-xs font-semibold text-[#ff7a00]">{trend}</span>}
+        {trend && <span className="text-xs font-semibold" style={{ color }}>{trend}</span>}
       </div>
       <p className="text-2xl font-bold text-[#0f172a]">{value}</p>
       <p className="text-xs text-[#64748b] mt-0.5">{label}</p>

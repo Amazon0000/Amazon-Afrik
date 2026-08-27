@@ -751,10 +751,10 @@ function RevenueTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={locale === 'fr' ? 'Revenu marketplace total' : 'Total marketplace revenue'} value={`$${totalMonthly.toFixed(0)}`} icon={DollarSign} />
-        <StatCard label={locale === 'fr' ? 'Abonnements / mois' : 'Subscriptions / mo'} value={`$${revenue.subscriptionMonthlyRevenue.toFixed(0)}`} icon={CreditCard} />
-        <StatCard label={locale === 'fr' ? 'Publicité (paiements confirmés)' : 'Advertising (confirmed payments)'} value={`$${adRevenue.total.toFixed(0)}`} icon={Megaphone} />
-        <StatCard label={locale === 'fr' ? 'Ancien système pub (legacy budget)' : 'Legacy ads system (budget)'} value={`$${revenue.adSpendTotal.toFixed(0)}`} icon={TrendingUp} />
+        <StatCard label={locale === 'fr' ? 'Revenu marketplace total' : 'Total marketplace revenue'} value={`$${totalMonthly.toFixed(0)}`} icon={DollarSign} color="#16a34a" />
+        <StatCard label={locale === 'fr' ? 'Abonnements / mois' : 'Subscriptions / mo'} value={`$${revenue.subscriptionMonthlyRevenue.toFixed(0)}`} icon={CreditCard} color="#0284c7" />
+        <StatCard label={locale === 'fr' ? 'Publicité (paiements confirmés)' : 'Advertising (confirmed payments)'} value={`$${adRevenue.total.toFixed(0)}`} icon={Megaphone} color="#ff7a00" />
+        <StatCard label={locale === 'fr' ? 'Ancien système pub (legacy budget)' : 'Legacy ads system (budget)'} value={`$${revenue.adSpendTotal.toFixed(0)}`} icon={TrendingUp} color="#94a3b8" />
       </div>
 
       <div className="card p-4 bg-amber-50 border border-amber-200 flex items-start gap-3">
@@ -831,16 +831,16 @@ function AdvertisingDashboardTab() {
     <div className="animate-fade-up space-y-4">
       <h2 className="font-display text-xl font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Publicité — Vue d\'ensemble' : 'Advertising — Overview'}</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={locale === 'fr' ? 'Revenus publicitaires' : 'Advertising revenue'} value={`$${revenue.total.toFixed(0)}`} icon={DollarSign} />
-        <StatCard label={locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'} value={active.length.toString()} icon={Megaphone} />
-        <StatCard label={locale === 'fr' ? 'En attente de paiement' : 'Awaiting payment'} value={pending.length.toString()} icon={Clock} />
-        <StatCard label={locale === 'fr' ? 'Expirées' : 'Expired'} value={expired.length.toString()} icon={XCircle} />
+        <StatCard label={locale === 'fr' ? 'Revenus publicitaires' : 'Advertising revenue'} value={`$${revenue.total.toFixed(0)}`} icon={DollarSign} color="#16a34a" />
+        <StatCard label={locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'} value={active.length.toString()} icon={Megaphone} color="#ff7a00" />
+        <StatCard label={locale === 'fr' ? 'En attente de paiement' : 'Awaiting payment'} value={pending.length.toString()} icon={Clock} color="#d97706" />
+        <StatCard label={locale === 'fr' ? 'Expirées' : 'Expired'} value={expired.length.toString()} icon={XCircle} color="#64748b" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={locale === 'fr' ? 'Vendeurs utilisant la pub' : 'Sellers using ads'} value={uniqueSellers.toString()} icon={Store} />
-        <StatCard label={locale === 'fr' ? 'Produits sponsorisés actifs' : 'Active sponsored products'} value={uniqueProducts.toString()} icon={Package} />
-        <StatCard label={locale === 'fr' ? 'Annulées' : 'Cancelled'} value={cancelled.length.toString()} icon={XCircle} />
-        <StatCard label={locale === 'fr' ? 'Total campagnes' : 'Total campaigns'} value={campaigns.length.toString()} icon={BarChart3} />
+        <StatCard label={locale === 'fr' ? 'Vendeurs utilisant la pub' : 'Sellers using ads'} value={uniqueSellers.toString()} icon={Store} color="#0284c7" />
+        <StatCard label={locale === 'fr' ? 'Produits sponsorisés actifs' : 'Active sponsored products'} value={uniqueProducts.toString()} icon={Package} color="#ff7a00" />
+        <StatCard label={locale === 'fr' ? 'Annulées' : 'Cancelled'} value={cancelled.length.toString()} icon={XCircle} color="#ef4444" />
+        <StatCard label={locale === 'fr' ? 'Total campagnes' : 'Total campaigns'} value={campaigns.length.toString()} icon={BarChart3} color="#7c3aed" />
       </div>
       {Object.keys(revenue.byProvider).length > 0 && (
         <div className="card p-6 bg-white">
