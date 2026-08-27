@@ -289,7 +289,7 @@ export function ProductPage() {
                     <span className="font-bold text-gray-900">{s.spec_name}:</span> {s.spec_value}
                   </li>
                 ))}
-                <li>{locale === 'fr' ? '100% fabriqué et expédié d\'Afrique.' : '100% sourced and distributed directly in Africa.'}</li>
+                <li>{locale === 'fr' ? 'Expédié directement par le vendeur.' : 'Shipped directly by the seller.'}</li>
                 <li>{locale === 'fr' ? 'Soutenez les artisans et vendeurs régionaux via Zando.' : 'Direct support to localized regional SaaS merchants.'}</li>
                 <li>{locale === 'fr' ? 'Livré et garanti directement par le vendeur.' : 'Sellers guarantee active, verified physical courier dropoff.'}</li>
               </ul>
@@ -533,7 +533,7 @@ export function ProductPage() {
 
           {/* Right reviews stream */}
           <div className="lg:col-span-8 space-y-4">
-            <h4 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-2">Top reviews from Africa</h4>
+            <h4 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-2">Top reviews</h4>
 
             {reviews.length === 0 ? (
               <p className="text-xs text-gray-500 italic py-6">No reviews written yet. Be the first to review this product!</p>

@@ -5,12 +5,13 @@ import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag } from 'lucide-react';
 
-// Major payment service providers by category, with strong African coverage —
-// sellers pick their own PSP here; Zando never touches the funds or takes a cut.
+// Major global payment service providers, with strong African + worldwide
+// coverage — sellers pick their own PSP here; Zando never touches the
+// funds or takes a cut.
 const PSP_OPTIONS: Record<string, string[]> = {
-  card: ['Flutterwave', 'Paystack', 'Interswitch', 'DPO Pay', 'Peach Payments', 'Yoco', 'PayFast', 'Cellulant (Tingg)', 'Fawry', 'PawaPay', 'Stripe', 'Autre / Other'],
-  mobile_money: ['M-Pesa', 'MTN Mobile Money (MoMo)', 'Orange Money', 'Airtel Money', 'Moov Money', 'Wave', 'Tigo Pesa', 'EcoCash', 'Autre / Other'],
-  bank: ['Virement bancaire direct / Direct bank transfer', 'Autre / Other'],
+  card: ['Stripe', 'PayPal', 'Adyen', 'Square', 'Worldpay', 'PayUnit', 'Flutterwave', 'Paystack', 'CinetPay', 'Interswitch', 'DPO Pay', 'Peach Payments', 'Yoco', 'PayFast', 'Cellulant (Tingg)', 'Fawry', 'PawaPay', 'Razorpay', 'PayU', 'Mercado Pago', 'Alipay', 'Autre / Other'],
+  mobile_money: ['M-Pesa', 'MTN Mobile Money (MoMo)', 'Orange Money', 'Airtel Money', 'Moov Money', 'Wave', 'Tigo Pesa', 'EcoCash', 'PayUnit', 'Autre / Other'],
+  bank: ['Virement bancaire direct / Direct bank transfer', 'PayUnit', 'Autre / Other'],
   crypto: ['USDT (TRC20)', 'USDT (ERC20)', 'Bitcoin', 'Autre / Other'],
 };
 
@@ -56,7 +57,7 @@ export function SellerCenterPage() {
       try {
         const sellerId = user.sellerId || user.id;
         const [prods, ords, adCamp] = await Promise.all([
-          fetchProducts({ sellerId, limit: 50 }),
+          fetchProducts({ sellerId, limit: 50, approvalStatus: 'all' }),
           fetchSellerOrders(sellerId),
           fetchSellerCampaignsDetailed(sellerId),
         ]);
@@ -101,7 +102,7 @@ export function SellerCenterPage() {
   const reloadProducts = async () => {
     if (!user?.sellerId && !user?.id) return;
     const sellerId = user.sellerId || user.id;
-    const prods = await fetchProducts({ sellerId, limit: 50 });
+    const prods = await fetchProducts({ sellerId, limit: 50, approvalStatus: 'all' });
     setProducts(prods);
   };
 
@@ -151,13 +152,13 @@ export function SellerCenterPage() {
     });
     setSaving(false);
     if (productId) {
-      showToast(locale === 'fr' ? 'Produit créé avec succès' : 'Product created successfully');
+      showToast(locale === 'fr' ? 'Produit créé — en attente de validation Zando avant mise en ligne' : 'Product created — pending Zando approval before it goes live');
       setNewProduct(emptyProduct);
       setUploadedImages([]);
       setShowAddProduct(false);
       await reloadProducts();
     } else {
-      showToast(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating product');
+      showToast(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating product', 'error');
     }
   };
 
@@ -332,6 +333,8 @@ export function SellerCenterPage() {
                             <span className="text-xs text-[#64748b]">{p.rating} ({p.total_reviews})</span>
                             {p.is_sponsored && <Badge color="#ff7a00">Sponsored</Badge>}
                             {activeDeal && <Badge color="#ff7a00">-{activeDeal.discount_percent}% • {locale === 'fr' ? 'flash active' : 'flash active'}</Badge>}
+                            {p.approval_status === 'pending' && <Badge color="#e06c00">{locale === 'fr' ? "En attente d'approbation" : 'Pending approval'}</Badge>}
+                            {p.approval_status === 'rejected' && <Badge color="#dc2626">{locale === 'fr' ? 'Rejeté' : 'Rejected'}{p.rejection_reason ? ` — ${p.rejection_reason}` : ''}</Badge>}
                           </div>
                         </div>
                         <div className="text-right">

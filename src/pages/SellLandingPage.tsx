@@ -8,17 +8,17 @@ export function SellLandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const benefits = [
-    { icon: TrendingUp, title: locale === 'fr' ? 'Croissance Garantie' : 'Guaranteed Growth', desc: locale === 'fr' ? 'Accédez à des millions de clients à travers l\'Afrique.' : 'Reach millions of customers across Africa.' },
+    { icon: TrendingUp, title: locale === 'fr' ? 'Croissance Garantie' : 'Guaranteed Growth', desc: locale === 'fr' ? 'Accédez à des millions de clients à travers le monde.' : 'Reach millions of customers worldwide.' },
     { icon: Wallet, title: locale === 'fr' ? 'Paiement Direct' : 'Direct Payment', desc: locale === 'fr' ? 'Recevez votre argent directement, sans commission sur les ventes.' : 'Get paid directly, no commission on sales.' },
     { icon: Truck, title: locale === 'fr' ? 'Livraison Autonome' : 'Self-Delivery', desc: locale === 'fr' ? 'Vous gérez vos propres livraisons et votre logistique.' : 'You manage your own deliveries and logistics.' },
     { icon: Shield, title: locale === 'fr' ? 'Sécurité & Confiance' : 'Security & Trust', desc: locale === 'fr' ? 'KYC strict et système anti-fraude pour protéger votre boutique.' : 'Strict KYC and anti-fraud system to protect your store.' },
-    { icon: Globe, title: locale === 'fr' ? 'Multi-Pays' : 'Multi-Country', desc: locale === 'fr' ? 'Vendez dans tous les pays africains depuis une seule plateforme.' : 'Sell across all African countries from one platform.' },
+    { icon: Globe, title: locale === 'fr' ? 'Multi-Pays' : 'Multi-Country', desc: locale === 'fr' ? 'Vendez dans le monde entier depuis une seule plateforme.' : 'Sell worldwide from one platform.' },
     { icon: Megaphone, title: locale === 'fr' ? 'Publicités Intégrées' : 'Built-in Advertising', desc: locale === 'fr' ? 'Promouvez vos produits avec Zando Ads et atteignez plus de clients.' : 'Promote your products with Zando Ads and reach more customers.' },
   ];
 
   const steps = [
     { num: 1, title: locale === 'fr' ? 'Créez votre compte' : 'Create your account', desc: locale === 'fr' ? 'Inscrivez-vous gratuitement avec votre e-mail. Aucune carte requise.' : 'Sign up for free with your email. No card required.', icon: Store },
-    { num: 2, title: locale === 'fr' ? 'Sélectionnez votre pays' : 'Select your country', desc: locale === 'fr' ? 'Choisissez parmi les 54 pays africains.' : 'Choose from all 54 African countries.', icon: Globe },
+    { num: 2, title: locale === 'fr' ? 'Sélectionnez votre pays' : 'Select your country', desc: locale === 'fr' ? 'Choisissez parmi tous les pays disponibles sur Zando.' : 'Choose from every country available on Zando.', icon: Globe },
     { num: 3, title: locale === 'fr' ? 'Vérifiez votre identité (KYC)' : 'Verify your identity (KYC)', desc: locale === 'fr' ? 'Téléversez vos documents légaux : pièce d\'identité, certificat d\'entreprise, photos du magasin.' : 'Upload legal documents: ID, business certificate, store photos.', icon: Shield },
     { num: 4, title: locale === 'fr' ? 'Configurez votre boutique' : 'Set up your store', desc: locale === 'fr' ? 'Logo, bannière, description, réseaux sociaux et moyen de paiement.' : 'Logo, banner, description, social links and payment method.', icon: ShoppingBag },
     { num: 5, title: locale === 'fr' ? 'Configurez votre paiement' : 'Configure your payment', desc: locale === 'fr' ? 'Mobile Money, Paystack, Flutterwave, Stripe, PayPal ou virement. Les acheteurs paient directement chez vous.' : 'Mobile Money, Paystack, Flutterwave, Stripe, PayPal or bank transfer. Buyers pay directly to you.', icon: Wallet },
@@ -26,7 +26,7 @@ export function SellLandingPage() {
   ];
 
   const testimonials = [
-    { name: 'Awa Koné', business: 'Maison Baoulé', city: 'Abidjan', text: locale === 'fr' ? 'Zando a transformé mon business. Je vends maintenant dans 5 pays africains et reçois mes paiements directement.' : 'Zando transformed my business. I now sell in 5 African countries and receive payments directly.', rating: 5 },
+    { name: 'Awa Koné', business: 'Maison Baoulé', city: 'Abidjan', text: locale === 'fr' ? 'Zando a transformé mon business. Je vends maintenant dans 5 pays et reçois mes paiements directement.' : 'Zando transformed my business. I now sell in 5 countries and receive payments directly.', rating: 5 },
     { name: 'Kwame Mensah', business: 'Accra Tech Hub', city: 'Accra', text: locale === 'fr' ? 'Le paiement direct sans commission change tout. Mes marges sont beaucoup meilleures.' : 'Direct payment without commission changes everything. My margins are much better.', rating: 5 },
     { name: 'Fatou Diallo', business: 'Dakar Fashion', city: 'Dakar', text: locale === 'fr' ? 'L\'onboarding est professionnel et rapide. J\'ai été validée en 24h et j\'ai eu 14 jours gratuits.' : 'The onboarding is professional and fast. I was approved in 24h and got 14 days free.', rating: 5 },
   ];
@@ -36,7 +36,7 @@ export function SellLandingPage() {
     { q: locale === 'fr' ? 'Comment suis-je payé ?' : 'How do I get paid?', a: locale === 'fr' ? 'Le client paie directement sur votre compte via Mobile Money, Paystack, Flutterwave, Stripe, PayPal ou virement bancaire. L\'argent va directement chez vous, sans intermédiaire.' : 'The customer pays directly to your account via Mobile Money, Paystack, Flutterwave, Stripe, PayPal or bank transfer. The money goes directly to you, no intermediary.' },
     { q: locale === 'fr' ? 'Qui gère la livraison ?' : 'Who handles delivery?', a: locale === 'fr' ? 'Vous gérez vous-même la livraison de vos produits. Vous choisissez vos modes de livraison (standard, express, point relais, local, international).' : 'You handle delivery of your products yourself. You choose your delivery methods (standard, express, pickup point, local, international).' },
     { q: locale === 'fr' ? 'Quels documents sont nécessaires ?' : 'What documents are needed?', a: locale === 'fr' ? 'Pièce d\'identité (recto/verso + selfie), certificat d\'entreprise, licence commerciale et photo du magasin. Le tout téléversable en ligne pendant l\'onboarding.' : 'ID card (front/back + selfie), company certificate, business license and store photo. All uploadable online during onboarding.' },
-    { q: locale === 'fr' ? 'Puis-je vendre dans plusieurs pays ?' : 'Can I sell in multiple countries?', a: locale === 'fr' ? 'Oui, vous pouvez configurer la livraison internationale et vendre dans tous les pays africains.' : 'Yes, you can configure international shipping and sell across all African countries.' },
+    { q: locale === 'fr' ? 'Puis-je vendre dans plusieurs pays ?' : 'Can I sell in multiple countries?', a: locale === 'fr' ? 'Oui, vous pouvez configurer la livraison internationale et vendre dans le monde entier.' : 'Yes, you can configure international shipping and sell worldwide.' },
     { q: locale === 'fr' ? 'Que se passe-t-il après les 14 jours gratuits ?' : 'What happens after the 14-day free trial?', a: locale === 'fr' ? 'Après 14 jours, un abonnement est requis pour continuer à vendre. Si vous ne payez pas, vos produits disparaissent automatiquement de la plateforme.' : 'After 14 days, a subscription is required to continue selling. If you don\'t subscribe, your products are automatically hidden from the platform.' },
   ];
 
@@ -63,11 +63,11 @@ export function SellLandingPage() {
             <Sparkles className="w-3.5 h-3.5" /> {locale === 'fr' ? '14 jours gratuits — sans carte' : '14 days free — no card required'}
           </div>
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
-            {locale === 'fr' ? 'Vendez en Afrique.' : 'Sell in Africa.'}<br />
+            {locale === 'fr' ? 'Vendez dans le monde.' : 'Sell worldwide.'}<br />
             {locale === 'fr' ? 'Développez votre business.' : 'Grow your business.'}
           </h1>
           <p className="text-lg text-[#f7f8fa]/70 mb-8 max-w-xl mx-auto">
-            {locale === 'fr' ? 'Rejoignez des milliers de vendeurs professionnels sur la marketplace premium d\'Afrique. Paiement direct, sans commission.' : 'Join thousands of professional sellers on Africa\'s premium marketplace. Direct payment, no commission.'}
+            {locale === 'fr' ? 'Rejoignez des milliers de vendeurs professionnels sur la marketplace premium mondiale. Paiement direct, sans commission.' : 'Join thousands of professional sellers on the world\'s premium marketplace. Direct payment, no commission.'}
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <button onClick={() => navigate('onboarding')} className="btn-gold px-8 py-4 rounded-xl font-semibold text-lg flex items-center gap-2">

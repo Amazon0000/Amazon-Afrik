@@ -14,10 +14,13 @@ type PaymentMethod = {
 
 const PAYMENT_METHODS: PaymentMethod[] = [
   { id: 'mobile_money', label: 'Mobile Money', desc: 'Orange Money, MTN MoMo, Wave, M-Pesa', icon: Wallet },
+  { id: 'payunit', label: 'PayUnit', desc: 'MTN MoMo, Orange Money — Afrique centrale', icon: Wallet },
   { id: 'paystack', label: 'Paystack', desc: 'Cartes bancaires locales & internationales', icon: CreditCard },
   { id: 'flutterwave', label: 'Flutterwave', desc: 'Paiement transfrontalier Afrique', icon: CreditCard },
+  { id: 'cinetpay', label: 'CinetPay', desc: 'Mobile Money & cartes — Afrique de l\'Ouest', icon: CreditCard },
   { id: 'stripe', label: 'Stripe', desc: 'Cartes Visa, Mastercard, Amex', icon: CreditCard },
   { id: 'paypal', label: 'PayPal', desc: 'Paiement international', icon: CreditCard },
+  { id: 'razorpay', label: 'Razorpay', desc: 'Cartes, UPI — Inde', icon: CreditCard },
   { id: 'bank_transfer', label: 'Virement bancaire', desc: 'Virement direct sur votre compte', icon: Banknote },
 ];
 

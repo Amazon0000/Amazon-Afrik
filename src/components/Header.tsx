@@ -32,7 +32,7 @@ const MEGA_CATEGORIES = [
   { label: 'Musical Instruments', cat: 'art-crafts' },
   { label: 'Arts', cat: 'art-crafts' },
   { label: 'Handmade', cat: 'art-crafts' },
-  { label: 'African Products', cat: 'textiles' },
+  { label: 'Global Marketplace', cat: 'textiles' },
   { label: 'Official Stores', key: 'stores' },
   { label: 'Brands', key: 'brands' },
   { label: 'Gift Cards', key: 'gift' },
@@ -110,7 +110,7 @@ export function Header() {
             <Globe className="w-3.5 h-3.5" /> {locale.toUpperCase()} <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
           <div className="hidden sm:block text-white/80 truncate text-center flex-1">
-            {locale === 'fr' ? 'Livraison directe par le vendeur, dans toute l\u2019Afrique — 0% commission Zando' : 'Direct seller delivery, all across Africa — 0% Zando commission'}
+            {locale === 'fr' ? 'Livraison directe par le vendeur, partout dans le monde — 0% commission Zando' : 'Direct seller delivery, worldwide — 0% Zando commission'}
           </div>
           <button onClick={() => go('account')} className="hidden sm:flex items-center gap-1 font-bold hover:opacity-80 transition-opacity shrink-0">
             <MapPin className="w-3.5 h-3.5" /> {currentCountry?.flag} {currentCountry?.name} <ChevronDown className="w-3 h-3 opacity-70" />

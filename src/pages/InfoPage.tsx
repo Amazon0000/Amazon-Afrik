@@ -84,7 +84,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-[#0f172a]">{title}</h1>
-            <p className="text-sm text-[#64748b]">Zando — {locale === 'fr' ? 'La marketplace premium d\'Afrique' : 'Africa\'s premium marketplace'}</p>
+            <p className="text-sm text-[#64748b]">Zando — {locale === 'fr' ? 'La marketplace premium mondiale' : 'The world\'s premium marketplace'}</p>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           {pageKey === 'about' && (locale === 'fr' ? (
             <>
               <Section title="Notre mission">
-                <p>Zando est la marketplace premium dédiée au commerce africain. Notre mission est de connecter les vendeurs professionnels vérifiés à des millions d'acheteurs à travers les 54 pays d'Afrique, avec un système de paiement direct et une livraison assurée par le vendeur lui-même.</p>
+                <p>Zando est la marketplace premium mondiale de nouvelle génération. Notre mission est de connecter des vendeurs professionnels vérifiés, partout dans le monde, à des millions d'acheteurs, avec un système de paiement direct et une livraison assurée par le vendeur lui-même.</p>
                 <p>Contrairement aux marketplaces traditionnelles qui prélèvent des commissions importantes, Zando permet aux vendeurs de recevoir le paiement directement, renforçant ainsi la confiance et la transparence dans chaque transaction.</p>
               </Section>
               <Section title="Pourquoi Zando ?">
@@ -103,7 +103,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="Nos valeurs">
                 <p><strong>Confiance :</strong> La vérification systématique des vendeurs et la transparence des transactions sont au cœur de notre approche.</p>
-                <p><strong>Inclusion :</strong> Nous soutenons les artisans, PME et entrepreneurs africains en leur donnant accès à un marché continental.</p>
+                <p><strong>Inclusion :</strong> Nous soutenons les artisans, PME et entrepreneurs en leur donnant accès à un marché mondial.</p>
                 <p><strong>Qualité :</strong> Nous privilégions des produits authentiques et un service client de premier ordre.</p>
               </Section>
               <Section title="Contact">
@@ -113,7 +113,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           ) : (
             <>
               <Section title="Our Mission">
-                <p>Zando is the premium marketplace dedicated to African commerce. Our mission is to connect verified professional sellers with millions of buyers across all 54 African countries, with a direct payment system and delivery handled by the seller themselves.</p>
+                <p>Zando is the premium global marketplace of the next generation. Our mission is to connect verified professional sellers with millions of buyers worldwide, with a direct payment system and delivery handled by the seller themselves.</p>
                 <p>Unlike traditional marketplaces that take significant commissions, Zando allows sellers to receive payment directly, reinforcing trust and transparency in every transaction.</p>
               </Section>
               <Section title="Why Zando?">
@@ -124,7 +124,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="Our Values">
                 <p><strong>Trust:</strong> Systematic seller verification and transaction transparency are at the core of our approach.</p>
-                <p><strong>Inclusion:</strong> We support African artisans, SMEs, and entrepreneurs by giving them access to a continental market.</p>
+                <p><strong>Inclusion:</strong> We support artisans, SMEs, and entrepreneurs by giving them access to a global market.</p>
                 <p><strong>Quality:</strong> We prioritize authentic products and top-tier customer service.</p>
               </Section>
               <Section title="Contact">
@@ -143,7 +143,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="Étape 2 : Onboarding et KYC">
                 <p>Après l'inscription, vous devez compléter le processus d'onboarding en 5 étapes :</p>
-                <p>1. <strong>Pays :</strong> Sélectionnez votre pays d'activité parmi les 54 pays africains.</p>
+                <p>1. <strong>Pays :</strong> Sélectionnez votre pays d'activité parmi tous les pays disponibles sur Zando.</p>
                 <p>2. <strong>Localisation :</strong> Indiquez votre ville, région et adresse exacte.</p>
                 <p>3. <strong>Informations légales :</strong> Renseignez le nom de votre entreprise, numéro de registre de commerce, et numéro de TVA si applicable.</p>
                 <p>4. <strong>Documents :</strong> Téléversez votre pièce d'identité (recto/verso), certificat d'entreprise, licence commerciale et photos du magasin/entrepôt.</p>
@@ -174,7 +174,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="Step 2: Onboarding & KYC">
                 <p>After registration, complete the 5-step onboarding process:</p>
-                <p>1. <strong>Country:</strong> Select your country of operation from 54 African countries.</p>
+                <p>1. <strong>Country:</strong> Select your country of operation from every country available on Zando.</p>
                 <p>2. <strong>Location:</strong> Provide your city, region, and exact address.</p>
                 <p>3. <strong>Legal Information:</strong> Enter your business name, trade register number, and VAT number if applicable.</p>
                 <p>4. <strong>Documents:</strong> Upload your ID (front/back), business certificate, commercial license, and store/warehouse photos.</p>
@@ -207,7 +207,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                   { q: 'Puis-je retourner un produit ?', a: 'Oui, sous 7 jours après réception si le produit est défectueux ou non conforme. Consultez notre politique de retours pour plus de détails.' },
                   { q: 'Comment devenir vendeur ?', a: 'Inscrivez-vous avec un compte vendeur, complétez l\'onboarding KYC en 5 étapes, et commencez à vendre après validation (sous 48h).' },
                   { q: 'Dans quelles devises puis-je vendre ?', a: 'Zando supporte USD, XOF (Franc CFA), NGN (Naira), GHS (Cedi), KES (Shilling kényan), ZAR (Rand) et d\'autres. Le vendeur choisit sa devise.' },
-                  { q: 'Quels pays sont couverts ?', a: 'Les 54 pays d\'Afrique. Vous pouvez filtrer les produits par pays et par ville dans le catalogue.' },
+                  { q: 'Quels pays sont couverts ?', a: 'Zando couvre le monde entier. Vous pouvez filtrer les produits par pays et par ville dans le catalogue.' },
                   { q: 'Comment fonctionnent les publicités Zando Ads ?', a: 'Les vendeurs peuvent créer des campagnes sponsorisées avec un budget et une durée. Le coût est calculé automatiquement en USD selon la durée et les paramètres choisis.' },
                 ] : [
                   { q: 'How do I track my order?', a: 'Go to My Account > My Orders and click Track to see real-time status. You can also use the tracking page with your order number.' },
@@ -216,7 +216,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                   { q: 'Can I return a product?', a: 'Yes, within 7 days of receipt if the product is defective or not as described. See our returns policy for details.' },
                   { q: 'How do I become a seller?', a: 'Sign up with a seller account, complete the 5-step KYC onboarding, and start selling after approval (within 48h).' },
                   { q: 'Which currencies can I sell in?', a: 'Zando supports USD, XOF (CFA Franc), NGN (Naira), GHS (Cedi), KES (Kenyan Shilling), ZAR (Rand) and more. The seller chooses their currency.' },
-                  { q: 'Which countries are covered?', a: 'All 54 African countries. You can filter products by country and city in the catalog.' },
+                  { q: 'Which countries are covered?', a: 'Zando covers the whole world. You can filter products by country and city in the catalog.' },
                   { q: 'How do Zando Ads work?', a: 'Sellers can create sponsored campaigns with a budget and duration. Cost is automatically calculated in USD based on duration and chosen parameters.' },
                 ]} />
               </Section>
@@ -238,7 +238,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               <Section title="Délais estimés">
                 <p><strong>Livraison locale (même ville) :</strong> 1 à 3 jours ouvrés.</p>
                 <p><strong>Livraison nationale (même pays) :</strong> 2 à 5 jours ouvrés.</p>
-                <p><strong>Livraison internationale (autre pays africain) :</strong> 5 à 14 jours ouvrés selon la destination.</p>
+                <p><strong>Livraison internationale :</strong> 5 à 14 jours ouvrés selon la destination.</p>
                 <p><strong>Paiement à la livraison (COD) :</strong> Disponible dans certains pays. Vérifiez lors du checkout.</p>
               </Section>
               <Section title="Suivi de commande">
@@ -248,7 +248,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Les frais de livraison sont fixés par le vendeur et affichés clairement lors du checkout. Zando ne prend aucune commission sur les frais de livraison.</p>
               </Section>
               <Section title="Zones de livraison">
-                <p>Zando couvre les 54 pays d'Afrique. Cependant, la disponibilité de la livraison dépend du vendeur et de sa capacité à livrer dans votre région. Utilisez les filtres « Pays » et « Ville » dans le catalogue pour voir les produits disponibles près de chez vous.</p>
+                <p>Zando couvre le monde entier. Cependant, la disponibilité de la livraison dépend du vendeur et de sa capacité à livrer dans votre région. Utilisez les filtres « Pays » et « Ville » dans le catalogue pour voir les produits disponibles près de chez vous.</p>
               </Section>
             </>
           ) : (
@@ -259,7 +259,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               <Section title="Estimated Times">
                 <p><strong>Local delivery (same city):</strong> 1 to 3 business days.</p>
                 <p><strong>National delivery (same country):</strong> 2 to 5 business days.</p>
-                <p><strong>International delivery (other African country):</strong> 5 to 14 business days depending on destination.</p>
+                <p><strong>International delivery:</strong> 5 to 14 business days depending on destination.</p>
                 <p><strong>Cash on Delivery (COD):</strong> Available in select countries. Check at checkout.</p>
               </Section>
               <Section title="Order Tracking">
@@ -269,7 +269,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Shipping costs are set by the seller and clearly displayed at checkout. Zando takes no commission on shipping costs.</p>
               </Section>
               <Section title="Delivery Zones">
-                <p>Zando covers all 54 African countries. However, delivery availability depends on the seller and their ability to deliver to your region. Use the "Country" and "City" filters in the catalog to see products available near you.</p>
+                <p>Zando covers the whole world. However, delivery availability depends on the seller and their ability to deliver to your region. Use the "Country" and "City" filters in the catalog to see products available near you.</p>
               </Section>
             </>
           ))}
@@ -315,10 +315,10 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           {pageKey === 'payment-methods' && (locale === 'fr' ? (
             <>
               <Section title="Modes de paiement acceptés">
-                <p>Zando supporte une large gamme de moyens de paiement adaptés au terrain africain :</p>
+                <p>Zando supporte une large gamme de moyens de paiement adaptés à chaque marché :</p>
               </Section>
               <Section title="Mobile Money">
-                <p>Orange Money, MTN MoMo, Moov Money, M-Pesa, Wave, Airtel Money. Disponible dans la plupart des pays africains. Le paiement est instantané et sécurisé.</p>
+                <p>Cartes bancaires, virements, et solutions mobiles locales (Orange Money, MTN MoMo, M-Pesa, Wave...) selon les pays. Le paiement est instantané et sécurisé.</p>
               </Section>
               <Section title="Cartes bancaires">
                 <p>Cartes Visa, Mastercard locales et internationales. Traitement via Paystack, Flutterwave ou Stripe selon votre pays.</p>
@@ -330,7 +330,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Disponible dans certains pays. Vous payez en espèces au moment de la réception. Vérifiez la disponibilité lors du checkout.</p>
               </Section>
               <Section title="Paiement transfrontalier">
-                <p>Pour les achats auprès de vendeurs situés dans d'autres pays africains, Zando facilite le paiement transfrontalier via des solutions comme Flutterwave et Stripe.</p>
+                <p>Pour les achats auprès de vendeurs situés dans un autre pays, Zando facilite le paiement transfrontalier via des solutions comme Flutterwave et Stripe.</p>
               </Section>
               <Section title="Devises supportées">
                 <p>USD, XOF (Franc CFA), NGN (Naira), GHS (Cedi), KES (Shilling kényan), ZAR (Rand), EGP (Livre égyptienne), et plus. Le vendeur choisit la devise dans laquelle il vend.</p>
@@ -339,10 +339,10 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           ) : (
             <>
               <Section title="Accepted Payment Methods">
-                <p>Zando supports a wide range of payment methods adapted to the African market:</p>
+                <p>Zando supports a wide range of payment methods adapted to every market:</p>
               </Section>
               <Section title="Mobile Money">
-                <p>Orange Money, MTN MoMo, Moov Money, M-Pesa, Wave, Airtel Money. Available in most African countries. Payment is instant and secure.</p>
+                <p>Cards, bank transfers, and local mobile solutions (Orange Money, MTN MoMo, M-Pesa, Wave...) depending on the country. Payment is instant and secure.</p>
               </Section>
               <Section title="Bank Cards">
                 <p>Local and international Visa, Mastercard. Processed via Paystack, Flutterwave, or Stripe depending on your country.</p>
@@ -354,7 +354,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Available in select countries. You pay in cash upon receipt. Check availability at checkout.</p>
               </Section>
               <Section title="Cross-Border Payment">
-                <p>For purchases from sellers in other African countries, Zando facilitates cross-border payment via solutions like Flutterwave and Stripe.</p>
+                <p>For purchases from sellers in another country, Zando facilitates cross-border payment via solutions like Flutterwave and Stripe.</p>
               </Section>
               <Section title="Supported Currencies">
                 <p>USD, XOF (CFA Franc), NGN (Naira), GHS (Cedi), KES (Kenyan Shilling), ZAR (Rand), EGP (Egyptian Pound), and more. The seller chooses the currency they sell in.</p>
@@ -365,7 +365,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           {pageKey === 'terms' && (locale === 'fr' ? (
             <>
               <Section title="Conditions générales d'utilisation">
-                <p>En utilisant Zando, vous acceptez les présentes conditions générales. Zando est une marketplace qui met en relation des vendeurs vérifiés et des acheteurs à travers l'Afrique.</p>
+                <p>En utilisant Zando, vous acceptez les présentes conditions générales. Zando est une marketplace qui met en relation des vendeurs vérifiés et des acheteurs partout dans le monde.</p>
               </Section>
               <Section title="1. Comptes utilisateurs">
                 <p>Vous devez créer un compte pour acheter ou vendre. Les vendeurs doivent compléter le processus KYC. Vous êtes responsable de la confidentialité de vos identifiants.</p>
@@ -389,7 +389,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           ) : (
             <>
               <Section title="Terms of Use">
-                <p>By using Zando, you agree to these terms and conditions. Zando is a marketplace that connects verified sellers with buyers across Africa.</p>
+                <p>By using Zando, you agree to these terms and conditions. Zando is a marketplace that connects verified sellers with buyers worldwide.</p>
               </Section>
               <Section title="1. User Accounts">
                 <p>You must create an account to buy or sell. Sellers must complete the KYC process. You are responsible for keeping your credentials confidential.</p>
@@ -493,7 +493,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           {pageKey === 'legal-notice' && (locale === 'fr' ? (
             <>
               <Section title="Mentions légales">
-                <p>Zando est une marketplace opérée par Liafrik, spécialisée dans le commerce électronique africain.</p>
+                <p>Zando est une marketplace opérée par Liafrik, spécialisée dans le commerce électronique mondial.</p>
               </Section>
               <Section title="Éditeur">
                 <p><strong>Liafrik</strong></p>
@@ -511,7 +511,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           ) : (
             <>
               <Section title="Legal Notice">
-                <p>Zando is a marketplace operated by Liafrik, specializing in African e-commerce.</p>
+                <p>Zando is a marketplace operated by Liafrik, specializing in global e-commerce.</p>
               </Section>
               <Section title="Publisher">
                 <p><strong>Liafrik</strong></p>
@@ -531,11 +531,11 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           {pageKey === 'careers' && (locale === 'fr' ? (
             <>
               <Section title="Carrières chez Zando">
-                <p>Zando est une marketplace en pleine croissance qui sert les 54 pays d'Afrique. Nous recherchons des talents passionnés par le commerce africain et l'innovation technologique.</p>
+                <p>Zando est une marketplace mondiale en pleine croissance. Nous recherchons des talents passionnés par le commerce international et l'innovation technologique.</p>
               </Section>
               <Section title="Pourquoi rejoindre Zando ?">
-                <p><strong>Impact continental :</strong> Notre travail affecte des millions d'acheteurs et de vendeurs à travers l'Afrique.</p>
-                <p><strong>Innovation :</strong> Nous construisons des solutions adaptées au terrain africain (Mobile Money, livraison par le vendeur, paiements transfrontaliers).</p>
+                <p><strong>Impact mondial :</strong> Notre travail affecte des millions d'acheteurs et de vendeurs à travers le monde.</p>
+                <p><strong>Innovation :</strong> Nous construisons des solutions adaptées à chaque marché local (Mobile Money, livraison par le vendeur, paiements transfrontaliers).</p>
                 <p><strong>Croissance :</strong> Nous sommes une startup en expansion avec des opportunités d'évolution rapide.</p>
               </Section>
               <Section title="Postes ouverts">
@@ -553,11 +553,11 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           ) : (
             <>
               <Section title="Careers at Zando">
-                <p>Zando is a fast-growing marketplace serving all 54 African countries. We're looking for talent passionate about African commerce and technological innovation.</p>
+                <p>Zando is a fast-growing global marketplace. We're looking for talent passionate about global commerce and technological innovation.</p>
               </Section>
               <Section title="Why Join Zando?">
-                <p><strong>Continental Impact:</strong> Our work affects millions of buyers and sellers across Africa.</p>
-                <p><strong>Innovation:</strong> We build solutions adapted to the African terrain (Mobile Money, seller delivery, cross-border payments).</p>
+                <p><strong>Global Impact:</strong> Our work affects millions of buyers and sellers worldwide.</p>
+                <p><strong>Innovation:</strong> We build solutions adapted to every local market (Mobile Money, seller delivery, cross-border payments).</p>
                 <p><strong>Growth:</strong> We're an expanding startup with rapid advancement opportunities.</p>
               </Section>
               <Section title="Open Positions">
@@ -603,7 +603,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </div>
               <Section title={locale === 'fr' ? 'Siège social' : 'Headquarters'}>
                 <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Abidjan, Côte d\'Ivoire' : 'Abidjan, Côte d\'Ivoire'}</p>
-                <p className="flex items-center gap-2"><Globe className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Desserte : 54 pays africains' : 'Coverage: 54 African countries'}</p>
+                <p className="flex items-center gap-2"><Globe className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? 'Desserte : couverture mondiale' : 'Coverage: worldwide'}</p>
               </Section>
             </>
           )}

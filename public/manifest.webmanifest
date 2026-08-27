@@ -1,7 +1,7 @@
 {
-  "name": "Zando — Marketplace Africain Premium",
+  "name": "Zando — Marketplace Mondiale Premium",
   "short_name": "Zando",
-  "description": "Marketplace africain premium. Vendeurs professionnels, livraison directe, paiement sécurisé.",
+  "description": "Marketplace mondiale premium. Vendeurs professionnels, livraison directe, paiement sécurisé.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
