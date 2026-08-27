@@ -510,7 +510,7 @@ export function OnboardingPage() {
               <p className="text-sm text-[#64748b] mb-6">
                 {locale === 'fr' ? 'Soumettez votre dossier. Notre équipe l\'examinera sous 48h.' : 'Submit your application. Our team will review it within 48h.'}
               </p>
-              <button onClick={submit} disabled={submitting} className="btn-gold px-8 py-3.5 rounded-xl font-semibold flex items-center gap-2 mx-auto disabled:opacity-50">
+              <button onClick={submit} disabled={submitting} className="btn-gold px-8 py-3.5 rounded-full font-semibold flex items-center gap-2 mx-auto disabled:opacity-50">
                 <ShieldCheck className="w-5 h-5" /> {submitting ? (uploadingDocs ? (locale === 'fr' ? 'Envoi des documents...' : 'Uploading documents...') : (locale === 'fr' ? 'Soumission...' : 'Submitting...')) : t.onboarding.submit}
               </button>
               {error && <p className="text-sm text-red-500 mt-3">{error}</p>}

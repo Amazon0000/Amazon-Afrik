@@ -285,7 +285,7 @@ export function CheckoutPage() {
                   <span className="text-2xl font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
                 </div>
               </div>
-              <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address) || !allSellersHavePayment} className="w-full btn-gold py-3.5 rounded-xl font-semibold mt-5 disabled:opacity-50 soft-glow">
+              <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address) || !allSellersHavePayment} className="w-full btn-gold py-3.5 rounded-full font-semibold mt-5 disabled:opacity-50 soft-glow">
                 {t.checkout.placeOrder}
               </button>
               <button onClick={() => navigate('cart')} className="w-full mt-2 text-sm text-[#64748b] hover:text-[#0f172a] transition-colors">{t.common.back}</button>

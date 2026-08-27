@@ -177,7 +177,7 @@ export function CatalogPage() {
       <div>
         {/* Country moved to top bar */}
       </div>
-      <button onClick={clearFilters} className="w-full btn-cocoa py-2.5 rounded-lg text-sm font-medium">{t.catalog.clearFilters}</button>
+      <button onClick={clearFilters} className="w-full btn-cocoa py-2.5 rounded-full text-sm font-medium">{t.catalog.clearFilters}</button>
     </div>
   );
 
