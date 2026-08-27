@@ -3,6 +3,7 @@
 // Aucun webhook n'active directement une campagne "à la main" : tout passe ici.
 import { getAdminClient } from './supabase-admin.ts';
 import { notifyUser, notifyAllSuperAdmins } from './notify.ts';
+import { validatePaymentMatch, resolveIdempotentAction, computeExpiryDate } from './payment-validation.ts';
 import type { SupportedProvider, VerifyPaymentResult } from './payment-provider.ts';
 
 interface ActivateArgs {
@@ -27,12 +28,14 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
     return { ok: false, message: `Paiement introuvable pour la référence ${internalReference}` };
   }
 
-  // 2. Idempotence stricte : si déjà traité en 'paid' ou 'failed'/'cancelled', ne rien refaire.
-  if (payment.status === 'paid') {
+  // 2. Idempotence stricte : décision basée sur l'état actuel (fonction pure
+  //    testée unitairement — voir activate-campaign.test.ts).
+  const idempotentAction = resolveIdempotentAction(payment.status);
+  if (idempotentAction.type === 'already_paid') {
     return { ok: true, message: 'Déjà traité (idempotent) — aucune action.' };
   }
-  if (payment.status === 'refunded' || payment.status === 'cancelled') {
-    return { ok: true, message: `Paiement déjà en état terminal (${payment.status}) — ignoré.` };
+  if (idempotentAction.type === 'terminal_ignored') {
+    return { ok: true, message: `Paiement déjà en état terminal (${idempotentAction.status}) — ignoré.` };
   }
 
   const campaign = payment.ad_campaigns;
@@ -49,12 +52,15 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
 
   // 3. Validation stricte : montant + devise + provider doivent correspondre
   //    à ce qui était attendu — jamais confiance aveugle au provider.
+  //    (fonction pure testée unitairement)
   const expectedAmount = Number(campaign.price);
   const expectedCurrency = String(campaign.currency_code || '').toUpperCase();
-  const amountMatches = Math.abs(verified.amount - expectedAmount) < 0.01 || verified.amount === 0; // certains providers ne renvoient pas toujours amount au verify initial
-  const currencyMatches = !verified.currency || verified.currency.toUpperCase() === expectedCurrency;
+  const match = validatePaymentMatch({
+    expectedAmount, expectedCurrency,
+    receivedAmount: verified.amount, receivedCurrency: verified.currency,
+  });
 
-  if (verified.status === 'paid' && (!amountMatches || !currencyMatches)) {
+  if (verified.status === 'paid' && !match.isValid) {
     await supabase.from('advertising_payments').update({
       status: 'failed',
       raw_webhook_payload: rawWebhookPayload ?? null,
@@ -125,7 +131,7 @@ export async function processVerifiedPayment(args: ActivateArgs): Promise<{ ok: 
 
   const durationDays = plan?.duration_days ?? 7;
   const startsAt = new Date();
-  const expiresAt = new Date(startsAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  const expiresAt = computeExpiryDate(startsAt, durationDays);
 
   // 7. Activation atomique : condition WHERE payment_status='pending' AND status='pending'
   //    empêche toute double activation même en cas de webhooks concurrents.
