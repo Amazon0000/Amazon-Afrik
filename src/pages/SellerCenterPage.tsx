@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag } from 'lucide-react';
 
 // Major payment service providers by category, with strong African coverage —
 // sellers pick their own PSP here; Zando never touches the funds or takes a cut.
@@ -46,6 +46,9 @@ export function SellerCenterPage() {
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
   const [flashDealFor, setFlashDealFor] = useState<string | null>(null);
   const [newDeal, setNewDeal] = useState({ discountPercent: '20', durationHours: '24', stockLimit: '' });
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [showAddCoupon, setShowAddCoupon] = useState(false);
+  const [newCoupon, setNewCoupon] = useState({ code: '', discountType: 'percent' as 'percent' | 'fixed', discountValue: '10', minOrderAmount: '', usageLimit: '', expiresAt: '' });
 
   useEffect(() => {
     (async () => {
@@ -63,6 +66,7 @@ export function SellerCenterPage() {
         const pms = await fetchSellerPaymentMethods(sellerId);
         setPaymentMethods(pms);
         setFlashDeals(await fetchSellerFlashDeals(sellerId));
+        setCoupons(await fetchSellerCoupons(sellerId));
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
@@ -76,6 +80,7 @@ export function SellerCenterPage() {
     { id: 'returns', label: t.seller.returns, icon: RotateCcw },
     { id: 'reputation', label: t.seller.reputation, icon: Star },
     { id: 'ads', label: t.seller.ads, icon: Megaphone },
+    { id: 'coupons', label: locale === 'fr' ? 'Codes promo' : 'Coupons', icon: Tag },
     { id: 'analytics', label: t.seller.analytics, icon: BarChart3 },
     { id: 'messages', label: locale === 'fr' ? 'Messages' : 'Messages', icon: MessageSquare },
     { id: 'payments', label: locale === 'fr' ? 'Moyens de paiement' : 'Payment methods', icon: Wallet },
@@ -462,6 +467,99 @@ export function SellerCenterPage() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {tab === 'coupons' && (
+              <div className="animate-fade-up">
+                <div className="flex items-center justify-between mb-6">
+                  <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Codes promo' : 'Coupons'}</h1>
+                  <button onClick={() => setShowAddCoupon(!showAddCoupon)} className="btn-cocoa px-4 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2"><Tag className="w-4 h-4" /> {locale === 'fr' ? 'Créer un code' : 'Create code'}</button>
+                </div>
+
+                {showAddCoupon && (
+                  <div className="card p-5 bg-white mb-5 space-y-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Code' : 'Code'}</label>
+                        <input value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })} placeholder="SUMMER20" className="input-field font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Type de remise' : 'Discount type'}</label>
+                        <select value={newCoupon.discountType} onChange={(e) => setNewCoupon({ ...newCoupon, discountType: e.target.value as 'percent' | 'fixed' })} className="input-field">
+                          <option value="percent">{locale === 'fr' ? 'Pourcentage (%)' : 'Percentage (%)'}</option>
+                          <option value="fixed">{locale === 'fr' ? 'Montant fixe ($)' : 'Fixed amount ($)'}</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{newCoupon.discountType === 'percent' ? '%' : '$'}</label>
+                        <input type="number" min={1} value={newCoupon.discountValue} onChange={(e) => setNewCoupon({ ...newCoupon, discountValue: e.target.value })} className="input-field" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Achat min. ($)' : 'Min order ($)'}</label>
+                        <input type="number" min={0} value={newCoupon.minOrderAmount} onChange={(e) => setNewCoupon({ ...newCoupon, minOrderAmount: e.target.value })} placeholder="0" className="input-field" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? "Limite d'utilisation" : 'Usage limit'}</label>
+                        <input type="number" min={1} value={newCoupon.usageLimit} onChange={(e) => setNewCoupon({ ...newCoupon, usageLimit: e.target.value })} placeholder={locale === 'fr' ? 'Illimité' : 'Unlimited'} className="input-field" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? "Date d'expiration (optionnel)" : 'Expiry date (optional)'}</label>
+                      <input type="date" value={newCoupon.expiresAt} onChange={(e) => setNewCoupon({ ...newCoupon, expiresAt: e.target.value })} className="input-field max-w-xs" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={async () => {
+                        const sellerId = user?.sellerId || user?.id;
+                        if (!sellerId) return;
+                        if (!newCoupon.code.trim()) { showToast(locale === 'fr' ? 'Code requis' : 'Code required', 'error'); return; }
+                        const id = await createCoupon({
+                          sellerId, code: newCoupon.code.trim(), discountType: newCoupon.discountType,
+                          discountValue: parseFloat(newCoupon.discountValue) || 10,
+                          minOrderAmount: newCoupon.minOrderAmount ? parseFloat(newCoupon.minOrderAmount) : 0,
+                          usageLimit: newCoupon.usageLimit ? parseInt(newCoupon.usageLimit) : null,
+                          expiresAt: newCoupon.expiresAt ? new Date(newCoupon.expiresAt).toISOString() : null,
+                        });
+                        if (id) {
+                          setCoupons(await fetchSellerCoupons(sellerId));
+                          setShowAddCoupon(false);
+                          setNewCoupon({ code: '', discountType: 'percent', discountValue: '10', minOrderAmount: '', usageLimit: '', expiresAt: '' });
+                          showToast(locale === 'fr' ? 'Code promo créé' : 'Coupon created');
+                        } else {
+                          showToast(locale === 'fr' ? 'Erreur — ce code existe peut-être déjà' : 'Error — this code may already exist', 'error');
+                        }
+                      }} className="btn-cocoa px-5 py-2 rounded-full text-xs font-semibold">{locale === 'fr' ? 'Créer' : 'Create'}</button>
+                      <button onClick={() => setShowAddCoupon(false)} className="px-5 py-2 rounded-full text-xs font-medium border border-[#0f172a]/15 text-[#0f172a]">{t.common.cancel}</button>
+                    </div>
+                  </div>
+                )}
+
+                {coupons.length === 0 ? (
+                  <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><Tag className="w-10 h-10 text-[#0f172a]/20 mx-auto mb-3" />{locale === 'fr' ? 'Aucun code promo. Créez-en un pour booster vos ventes.' : 'No coupons yet. Create one to boost your sales.'}</div>
+                ) : (
+                  <div className="space-y-2">
+                    {coupons.map((c) => (
+                      <div key={c.id} className="card p-4 bg-white flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-[#0f172a]/5 flex items-center justify-center shrink-0"><Tag className="w-4.5 h-4.5 text-[#0f172a]" /></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-mono font-bold text-[#0f172a]">{c.code}</p>
+                          <p className="text-xs text-[#64748b]">
+                            {c.discount_type === 'percent' ? `-${c.discount_value}%` : `-$${c.discount_value}`}
+                            {c.min_order_amount > 0 && ` · ${locale === 'fr' ? 'min' : 'min'} $${c.min_order_amount}`}
+                            {` · ${c.times_used}${c.usage_limit ? `/${c.usage_limit}` : ''} ${locale === 'fr' ? 'utilisations' : 'uses'}`}
+                            {c.expires_at && ` · ${locale === 'fr' ? 'expire le' : 'expires'} ${new Date(c.expires_at).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                        <Badge color={c.is_active ? '#3d1f00' : '#94a3b8'}>{c.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</Badge>
+                        {c.is_active && (
+                          <button onClick={async () => { const ok = await deactivateCoupon(c.id); if (ok) setCoupons(coupons.map(x => x.id === c.id ? { ...x, is_active: false } : x)); }} className="px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold shrink-0">{locale === 'fr' ? 'Désactiver' : 'Deactivate'}</button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

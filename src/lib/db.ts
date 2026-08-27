@@ -54,6 +54,16 @@ export type Product = {
   countries?: Country;
 };
 
+export type Coupon = {
+  id: string; seller_id: string; code: string; discount_type: 'percent' | 'fixed';
+  discount_value: number; min_order_amount: number; usage_limit: number | null;
+  times_used: number; expires_at: string | null; is_active: boolean; created_at: string;
+};
+
+export type CouponValidation =
+  | { valid: true; discount_amount: number; coupon_id: string; discount_type: 'percent' | 'fixed'; discount_value: number }
+  | { valid: false; reason: 'not_found' | 'expired' | 'limit_reached' | 'min_order_not_met'; min_order_amount?: number };
+
 export type FlashDeal = {
   id: string; product_id: string; seller_id: string; discount_percent: number;
   deal_price: number; stock_limit: number | null; claimed_count: number;
@@ -688,6 +698,49 @@ export async function endFlashDeal(dealId: string): Promise<boolean> {
   const { error } = await supabase.from('flash_deals').update({ is_active: false }).eq('id', dealId);
   if (error) { console.error('endFlashDeal:', error.message); return false; }
   return true;
+}
+
+export async function fetchSellerCoupons(sellerId: string): Promise<Coupon[]> {
+  const { data, error } = await supabase.from('coupons').select('*').eq('seller_id', sellerId).order('created_at', { ascending: false });
+  if (error) { console.error('fetchSellerCoupons:', error.message); return []; }
+  return data || [];
+}
+
+export async function createCoupon(opts: {
+  sellerId: string; code: string; discountType: 'percent' | 'fixed'; discountValue: number;
+  minOrderAmount?: number; usageLimit?: number | null; expiresAt?: string | null;
+}): Promise<string | null> {
+  const { data, error } = await supabase.from('coupons').insert({
+    seller_id: opts.sellerId,
+    code: opts.code,
+    discount_type: opts.discountType,
+    discount_value: opts.discountValue,
+    min_order_amount: opts.minOrderAmount ?? 0,
+    usage_limit: opts.usageLimit ?? null,
+    expires_at: opts.expiresAt ?? null,
+  }).select('id').single();
+  if (error || !data) { console.error('createCoupon:', error?.message); return null; }
+  return data.id;
+}
+
+export async function deactivateCoupon(couponId: string): Promise<boolean> {
+  const { error } = await supabase.from('coupons').update({ is_active: false }).eq('id', couponId);
+  if (error) { console.error('deactivateCoupon:', error.message); return false; }
+  return true;
+}
+
+// Server-side authoritative check — never trust a client-computed discount.
+export async function validateCoupon(code: string, sellerId: string, subtotal: number): Promise<CouponValidation> {
+  const { data, error } = await supabase.rpc('validate_coupon', { p_code: code, p_seller_id: sellerId, p_subtotal: subtotal });
+  if (error || !data) { console.error('validateCoupon:', error?.message); return { valid: false, reason: 'not_found' }; }
+  return data as CouponValidation;
+}
+
+// Atomically consumes one use — called once per seller-group at order placement.
+export async function redeemCoupon(code: string, sellerId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('redeem_coupon', { p_code: code, p_seller_id: sellerId });
+  if (error) { console.error('redeemCoupon:', error.message); return false; }
+  return !!data;
 }
 
 export async function fetchOrders(userId?: string): Promise<Order[]> {

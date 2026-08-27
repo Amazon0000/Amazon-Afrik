@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon } from '@/lib/db';
 import type { Product, Address, SellerPaymentMethod, FlashDeal } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle } from 'lucide-react';
+import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X } from 'lucide-react';
 
 export function CheckoutPage() {
   const { t, locale, cart, navigate, clearCart, showToast, user } = useApp();
@@ -17,6 +17,9 @@ export function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderIds, setOrderIds] = useState<string[]>([]);
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', address: '', city: '' });
+  const [couponInput, setCouponInput] = useState<Record<string, string>>({});
+  const [appliedCoupons, setAppliedCoupons] = useState<Record<string, { code: string; discount: number }>>({});
+  const [couponChecking, setCouponChecking] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     (async () => {
@@ -67,6 +70,37 @@ export function CheckoutPage() {
   }, {});
   const sellerIds = Object.keys(sellerGroups);
   const allSellersHavePayment = sellerIds.every((sid) => selectedPayment[sid]);
+  const sellerSubtotal = (sid: string) => sellerGroups[sid].reduce((sum, i) => sum + effectivePrice(i) * i.qty, 0);
+  const sellerFinalTotal = (sid: string) => Math.max(0, sellerSubtotal(sid) - (appliedCoupons[sid]?.discount || 0));
+  const totalDiscount = Object.values(appliedCoupons).reduce((sum, c) => sum + c.discount, 0);
+  const grandTotal = Math.max(0, subtotal - totalDiscount);
+
+  const applyCoupon = async (sellerId: string) => {
+    const code = (couponInput[sellerId] || '').trim();
+    if (!code) return;
+    setCouponChecking({ ...couponChecking, [sellerId]: true });
+    const result = await validateCoupon(code, sellerId, sellerSubtotal(sellerId));
+    setCouponChecking({ ...couponChecking, [sellerId]: false });
+    if (result.valid) {
+      setAppliedCoupons({ ...appliedCoupons, [sellerId]: { code: code.toUpperCase(), discount: result.discount_amount } });
+      showToast(locale === 'fr' ? `Code appliqué : -$${result.discount_amount.toFixed(2)}` : `Code applied: -$${result.discount_amount.toFixed(2)}`);
+    } else {
+      const messages: Record<string, { fr: string; en: string }> = {
+        not_found: { fr: 'Code invalide pour ce vendeur', en: 'Invalid code for this seller' },
+        expired: { fr: 'Ce code a expiré', en: 'This code has expired' },
+        limit_reached: { fr: "Ce code a atteint sa limite d'utilisation", en: 'This code has reached its usage limit' },
+        min_order_not_met: { fr: `Achat minimum de $${result.min_order_amount} requis`, en: `Minimum order of $${result.min_order_amount} required` },
+      };
+      const m = messages[result.reason];
+      showToast((locale === 'fr' ? m?.fr : m?.en) || (locale === 'fr' ? 'Code invalide' : 'Invalid code'), 'error');
+    }
+  };
+
+  const removeCoupon = (sellerId: string) => {
+    const next = { ...appliedCoupons };
+    delete next[sellerId];
+    setAppliedCoupons(next);
+  };
 
   const placeOrder = async () => {
     if (items.length === 0) return;
@@ -100,7 +134,24 @@ export function CheckoutPage() {
       const createdIds: string[] = [];
       for (const sellerId of sellerIds) {
         const groupItems = sellerGroups[sellerId];
-        const groupTotal = groupItems.reduce((sum, i) => sum + effectivePrice(i) * i.qty, 0);
+        const rawTotal = groupItems.reduce((sum, i) => sum + effectivePrice(i) * i.qty, 0);
+        const coupon = appliedCoupons[sellerId];
+        let discountAmount = 0;
+        let redeemedCode: string | null = null;
+        if (coupon) {
+          // Re-validate + atomically consume the use right at order time — the
+          // preview above could be stale (another buyer may have just used the
+          // last redemption). If redemption fails, the order still goes through
+          // at full price rather than blocking the whole checkout.
+          const stillValid = await redeemCoupon(coupon.code, sellerId);
+          if (stillValid) {
+            discountAmount = coupon.discount;
+            redeemedCode = coupon.code;
+          } else {
+            showToast(locale === 'fr' ? `Le code ${coupon.code} n'est plus disponible — commande passée au prix plein` : `Code ${coupon.code} is no longer available — order placed at full price`, 'error');
+          }
+        }
+        const groupTotal = Math.max(0, rawTotal - discountAmount);
         const method = sellerPayments[sellerId]?.find((m) => m.id === selectedPayment[sellerId]);
         const trackingId = `ORD-${Date.now().toString().slice(-6)}-${sellerId.slice(0, 4)}`;
 
@@ -112,6 +163,8 @@ export function CheckoutPage() {
           seller_id: sellerId,
           status: 'confirmed',
           total: groupTotal,
+          coupon_code: redeemedCode,
+          discount_amount: discountAmount,
           payment_method: method?.display_name || method?.provider_name || null,
           delivery_address: deliveryAddress,
           tracking_id: trackingId,
@@ -241,6 +294,7 @@ export function CheckoutPage() {
                       <div className="flex items-center gap-2 mb-3">
                         <Store className="w-4 h-4 text-[#64748b]" />
                         <span className="text-sm font-semibold text-[#0f172a]">{seller?.business_name || sellerId}</span>
+                        <span className="ml-auto text-sm font-bold text-[#0f172a]">${sellerFinalTotal(sellerId).toFixed(2)}</span>
                       </div>
                       {methods.length === 0 ? (
                         <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 text-xs">
@@ -263,6 +317,23 @@ export function CheckoutPage() {
                           ))}
                         </div>
                       )}
+
+                      {/* Coupon code — per seller, since discounts are seller-funded, not Zando's */}
+                      <div className="mt-3 pt-3 border-t border-[#0f172a]/10">
+                        {appliedCoupons[sellerId] ? (
+                          <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-[#3d1f00]/20">
+                            <span className="text-xs font-semibold text-[#3d1f00] flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> {appliedCoupons[sellerId].code} · -${appliedCoupons[sellerId].discount.toFixed(2)}</span>
+                            <button onClick={() => removeCoupon(sellerId)} className="text-[#64748b] hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input value={couponInput[sellerId] || ''} onChange={(e) => setCouponInput({ ...couponInput, [sellerId]: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && applyCoupon(sellerId)} placeholder={locale === 'fr' ? 'Code promo' : 'Coupon code'} className="input-field text-xs py-2 flex-1 font-mono uppercase" />
+                            <button onClick={() => applyCoupon(sellerId)} disabled={couponChecking[sellerId]} className="btn-cocoa px-4 py-2 rounded-full text-xs font-semibold shrink-0 flex items-center gap-1.5 disabled:opacity-50">
+                              {couponChecking[sellerId] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (locale === 'fr' ? 'Appliquer' : 'Apply')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -291,12 +362,15 @@ export function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="space-y-2 pt-3 border-t border-[#ff7a00]/20">
+              <div className="space-y-2 pt-3 border-t border-[#3d1f00]/15">
                 <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${subtotal.toFixed(2)}</span></div>
-                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#e06c00] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
-                <div className="flex items-center justify-between pt-2 border-t border-[#ff7a00]/20">
+                {totalDiscount > 0 && (
+                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b] flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Remise' : 'Discount'}</span><span className="font-semibold text-[#3d1f00]">-${totalDiscount.toFixed(2)}</span></div>
+                )}
+                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#3d1f00] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
+                <div className="flex items-center justify-between pt-2 border-t border-[#3d1f00]/15">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
-                  <span className="text-2xl font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[#0f172a]">${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
               <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address) || !allSellersHavePayment} className="w-full btn-gold py-3.5 rounded-full font-semibold mt-5 disabled:opacity-50 soft-glow">
