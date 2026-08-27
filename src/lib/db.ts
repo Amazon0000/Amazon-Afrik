@@ -817,6 +817,13 @@ export async function createSellerDocument(opts: { sellerId: string; docType: st
   return data.id;
 }
 
+// Atomic — safe under concurrent checkouts, never goes negative (floored at 0 in the DB function).
+export async function decrementProductStock(productId: string, qty: number): Promise<number | null> {
+  const { data, error } = await supabase.rpc('decrement_product_stock', { p_product_id: productId, p_qty: qty });
+  if (error) { console.error('decrementProductStock:', error.message); return null; }
+  return data as number;
+}
+
 export async function submitContactMessage(opts: { firstName: string; lastName: string; email: string; message: string }): Promise<boolean> {
   const { error } = await supabase.from('contact_messages').insert({
     first_name: opts.firstName,

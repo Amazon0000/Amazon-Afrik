@@ -5,7 +5,7 @@ import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, Truck, Flame } from 'luci
 import { useState, useEffect } from 'react';
 
 export function CartPage() {
-  const { t, locale, cart, removeFromCart, updateCartQty, navigate } = useApp();
+  const { t, locale, cart, removeFromCart, updateCartQty, navigate, showToast } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [deals, setDeals] = useState<Record<string, FlashDeal>>({});
   const [loading, setLoading] = useState(true);
@@ -28,6 +28,19 @@ export function CartPage() {
       setProducts(prods);
       setDeals(dealMap);
       setLoading(false);
+      // If stock dropped since this item was added, clamp for real — or
+      // remove it entirely if a seller sold out in the meantime.
+      for (const item of cart) {
+        const p = prods[item.productId];
+        if (!p) continue;
+        if (p.stock === 0) {
+          removeFromCart(item.productId);
+          showToast(locale === 'fr' ? `${p.name} n'est plus en stock — retiré du panier` : `${p.name} is out of stock — removed from cart`, 'error');
+        } else if (item.qty > p.stock) {
+          updateCartQty(item.productId, p.stock);
+          showToast(locale === 'fr' ? `Quantité de ${p.name} ajustée au stock disponible (${p.stock})` : `${p.name} quantity adjusted to available stock (${p.stock})`);
+        }
+      }
     })();
   }, [cart]);
 
@@ -67,10 +80,15 @@ export function CartPage() {
                       <div className="flex items-center border border-[#0f172a]/15 rounded-lg overflow-hidden">
                         <button onClick={() => updateCartQty(item.productId, item.qty - 1)} className="p-1.5 hover:bg-[#0f172a]/5"><Minus className="w-3.5 h-3.5 text-[#0f172a]" /></button>
                         <span className="px-3 text-sm font-semibold text-[#0f172a]">{item.qty}</span>
-                        <button onClick={() => updateCartQty(item.productId, item.qty + 1)} className="p-1.5 hover:bg-[#0f172a]/5"><Plus className="w-3.5 h-3.5 text-[#0f172a]" /></button>
+                        <button onClick={() => item.qty < item.product!.stock && updateCartQty(item.productId, item.qty + 1)} disabled={item.qty >= item.product!.stock} className="p-1.5 hover:bg-[#0f172a]/5 disabled:opacity-30 disabled:cursor-not-allowed"><Plus className="w-3.5 h-3.5 text-[#0f172a]" /></button>
                       </div>
                       <button onClick={() => removeFromCart(item.productId)} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /> {t.cart.remove}</button>
                     </div>
+                    {item.qty >= item.product!.stock && (
+                      <p className="text-[10px] text-[#e06c00] mt-1 font-medium">
+                        {locale === 'fr' ? `Stock maximum atteint (${item.product!.stock} disponible${item.product!.stock > 1 ? 's' : ''})` : `Max stock reached (${item.product!.stock} available)`}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-[#0f172a]">${(effectivePrice(item) * item.qty).toFixed(0)}</p>
