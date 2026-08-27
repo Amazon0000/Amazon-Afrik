@@ -770,7 +770,7 @@ function ActionBtn({ icon: Icon, label, color, onClick }: { icon: typeof Ban; la
     blue: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
   };
   return (
-    <button onClick={onClick} className={`px-3 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${colors[color]}`}>
+    <button onClick={onClick} className={`px-3 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${colors[color]}`}>
       <Icon className="w-4 h-4" /> {label}
     </button>
   );
@@ -820,7 +820,7 @@ function ConfirmModal({ action, locale, onConfirm, onCancel }: {
           <textarea value={reason} onChange={(e) => setReason(e.target.value)} className="input-field mb-4" rows={3} placeholder={locale === 'fr' ? 'Raison (obligatoire)' : 'Reason (required)'} />
         )}
         <div className="flex gap-3 justify-end">
-          <button onClick={onCancel} className="px-5 py-2.5 rounded-lg text-sm font-medium border border-[#e2e8f0] text-[#0f172a]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+          <button onClick={onCancel} className="px-5 py-2.5 rounded-full text-sm font-medium border border-[#e2e8f0] text-[#0f172a]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
           <button onClick={() => onConfirm(reason || undefined)} className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#0f172a] text-white">{locale === 'fr' ? 'Confirmer' : 'Confirm'}</button>
         </div>
       </div>
@@ -841,7 +841,7 @@ function DocViewerModal({ doc, locale, onAction, onClose }: {
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-fade-up">
         <div className="sticky top-0 bg-white border-b border-[#e2e8f0] px-6 py-4 flex items-center justify-between z-10">
           <h3 className="font-display text-lg font-bold text-[#0f172a] capitalize">{doc.doc_type.replace(/_/g, ' ')}</h3>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[#f7f8fa]"><X className="w-5 h-5 text-[#64748b]" /></button>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-[#f7f8fa]"><X className="w-5 h-5 text-[#64748b]" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div className="rounded-xl overflow-hidden bg-[#f7f8fa] flex items-center justify-center min-h-[300px]">

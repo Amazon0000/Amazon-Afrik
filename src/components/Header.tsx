@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart, Bell } from 'lucide-react';
+import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart, Bell, ShoppingBasket } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
 import { searchSuggestions, fetchNotifications, fetchUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, type AppNotification } from '@/lib/db';
@@ -128,10 +128,10 @@ export function Header() {
           {/* Search Bar */}
           <div className="flex-1 relative min-w-0" ref={searchRef}>
             <form onSubmit={handleSearch} className="flex w-full">
-              <div className="flex items-center w-full rounded-lg bg-[#f2f2f2] overflow-hidden focus-within:ring-2 focus-within:ring-[#ff7a00] transition-shadow">
+              <div className="flex items-center w-full rounded-full bg-[#f2f2f2] overflow-hidden focus-within:ring-2 focus-within:ring-[#ff7a00] transition-shadow">
                 <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }} onFocus={() => setShowSuggestions(true)}
                   placeholder={t.common.searchPlaceholder} className="flex-1 min-w-0 px-4 py-2.5 text-[14px] bg-transparent focus:outline-none text-[#0f172a] h-11" />
-                <button type="submit" className="w-11 h-11 bg-[#3d1f00] hover:bg-[#2a1400] transition-colors flex items-center justify-center shrink-0 rounded-lg m-0.5">
+                <button type="submit" className="w-11 h-11 bg-[#3d1f00] hover:bg-[#2a1400] transition-colors flex items-center justify-center shrink-0 rounded-full m-0.5">
                   <Search className="w-4.5 h-4.5 text-white" />
                 </button>
               </div>
@@ -160,14 +160,24 @@ export function Header() {
               {wishlist.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-[#ff7a00] text-white">{wishlist.length}</span>}
             </button>
 
+            {user && (
+              <div className="hidden sm:block">
+                <NotificationBell locale={locale} navigate={navigate} />
+              </div>
+            )}
+
+            <button onClick={() => go(user ? 'account' : 'login', user ? { tab: 'orders' } : undefined)} className="hidden sm:flex w-10 h-10 rounded-full border border-[#e2e8f0] items-center justify-center hover:border-[#3d1f00] transition-colors" title={locale === 'fr' ? 'Mes commandes' : 'My Orders'}>
+              <ShoppingBasket className="w-4.5 h-4.5 text-[#3d1f00]" />
+            </button>
+
             <button onClick={() => setCartDrawerOpen(true)} className="relative w-10 h-10 rounded-full border border-[#e2e8f0] flex items-center justify-center hover:border-[#3d1f00] transition-colors">
-              <ShoppingBag className="w-4.5 h-4.5 text-[#3d1f00]" />
+              <ShoppingCart className="w-4.5 h-4.5 text-[#3d1f00]" />
               {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-[#ff7a00] text-white">{cartCount}</span>}
             </button>
 
             {user ? (
               <div className="relative">
-                <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="hidden sm:flex items-center gap-1.5 px-2 py-2 rounded-lg hover:bg-[#f3f3f3] transition-colors text-left">
+                <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="hidden sm:flex items-center gap-1.5 px-2 py-2 rounded-full hover:bg-[#f3f3f3] transition-colors text-left">
                   <span className="text-[13px] font-bold text-[#0f172a]">{locale === 'fr' ? 'Bonjour, ' : 'Hi, '}{user.fullName.split(' ')[0]}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-[#565959]" />
                 </button>

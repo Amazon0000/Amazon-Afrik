@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock } from '@/lib/db';
 import type { Product, Address, SellerPaymentMethod, FlashDeal } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle } from 'lucide-react';
@@ -78,6 +78,19 @@ export function CheckoutPage() {
       showToast(locale === 'fr' ? "Un vendeur n'a pas encore de moyen de paiement actif" : 'A seller has no active payment method yet', 'error');
       return;
     }
+
+    // Defensive re-check: stock may have moved since the cart/checkout page loaded
+    // (another buyer could have just bought the last units).
+    for (const item of items) {
+      const fresh = await fetchProductById(item.productId);
+      if (!fresh || fresh.stock < item.qty) {
+        showToast(locale === 'fr'
+          ? `Stock insuffisant pour "${item.product!.name}" (${fresh?.stock ?? 0} disponible${(fresh?.stock ?? 0) > 1 ? 's' : ''}) — ajustez votre panier.`
+          : `Not enough stock for "${item.product!.name}" (${fresh?.stock ?? 0} available) — please adjust your cart.`, 'error');
+        return;
+      }
+    }
+
     const addr = addresses.find((a) => a.id === selectedAddressId);
     const deliveryAddress = user
       ? (addr ? `${addr.street}, ${addr.city}` : '')
@@ -114,6 +127,7 @@ export function CheckoutPage() {
               price: effectivePrice(item),
               image_url: item.product!.product_images?.[0]?.image_url || null,
             });
+            await decrementProductStock(item.productId, item.qty);
           }
           createdIds.push(trackingId);
         }
@@ -285,7 +299,7 @@ export function CheckoutPage() {
                   <span className="text-2xl font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
                 </div>
               </div>
-              <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address) || !allSellersHavePayment} className="w-full btn-gold py-3.5 rounded-xl font-semibold mt-5 disabled:opacity-50 soft-glow">
+              <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address) || !allSellersHavePayment} className="w-full btn-gold py-3.5 rounded-full font-semibold mt-5 disabled:opacity-50 soft-glow">
                 {t.checkout.placeOrder}
               </button>
               <button onClick={() => navigate('cart')} className="w-full mt-2 text-sm text-[#64748b] hover:text-[#0f172a] transition-colors">{t.common.back}</button>

@@ -4,7 +4,7 @@ import { fetchProductById, fetchProducts, createReview, fetchProductFlashDeal, f
 import type { Product, FlashDeal } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
-import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame } from 'lucide-react';
+import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame, Store } from 'lucide-react';
 
 export function ProductPage() {
   const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user } = useApp();
@@ -353,20 +353,20 @@ export function ProductPage() {
               )}
 
               {/* Buy actions block */}
-              <div className="space-y-2 pt-2">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={product.stock === 0}
-                  className="w-full btn-gold py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow"
-                >
-                  <ShoppingCart className="w-4 h-4" /> {t.product.addToCart}
-                </button>
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   onClick={handleBuyNow}
                   disabled={product.stock === 0}
-                  className="w-full btn-green py-2 text-xs font-bold rounded-full text-white flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow"
+                  className="py-3 text-sm font-bold rounded-full flex items-center justify-center gap-2 disabled:opacity-50 transition-all bg-white border border-[#e2e8f0] text-[#3d1f00] hover:border-[#3d1f00]"
                 >
-                  {t.product.buyNow}
+                  <Store className="w-4 h-4" /> {t.product.buyNow}
+                </button>
+                <button
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0}
+                  className="py-3 text-sm font-bold rounded-full flex items-center justify-center gap-2 disabled:opacity-50 transition-all bg-[#3d1f00] hover:bg-[#2a1400] text-white shadow"
+                >
+                  <ShoppingCart className="w-4 h-4" /> {t.product.addToCart}
                 </button>
               </div>
 

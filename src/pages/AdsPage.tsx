@@ -295,16 +295,16 @@ export function AdsPage() {
 
             <div className="flex gap-3 mt-6">
               {step !== 'product' && (
-                <button onClick={goBack} className="px-5 py-2.5 rounded-lg text-sm font-medium border border-[#0f172a]/15 text-[#0f172a]">
+                <button onClick={goBack} className="px-5 py-2.5 rounded-full text-sm font-medium border border-[#0f172a]/15 text-[#0f172a]">
                   {locale === 'fr' ? 'Retour' : 'Back'}
                 </button>
               )}
               {step !== 'recap' ? (
-                <button onClick={goNext} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold ml-auto">
+                <button onClick={goNext} className="btn-gold px-6 py-2.5 rounded-full text-sm font-semibold ml-auto">
                   {locale === 'fr' ? 'Continuer' : 'Continue'}
                 </button>
               ) : (
-                <button onClick={confirmAndPay} disabled={submitting} className="btn-gold px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 ml-auto disabled:opacity-50">
+                <button onClick={confirmAndPay} disabled={submitting} className="btn-gold px-6 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 ml-auto disabled:opacity-50">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
                   {locale === 'fr' ? 'Payer et lancer' : 'Pay and launch'}
                 </button>

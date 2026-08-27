@@ -699,6 +699,37 @@ export async function fetchOrders(userId?: string): Promise<Order[]> {
   return data || [];
 }
 
+// Orders placed against a seller's own products — distinct from fetchOrders(userId),
+// which returns orders the person placed as a buyer.
+export async function fetchSellerOrders(sellerId: string): Promise<Order[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`*, order_items(*), sellers(*)`)
+    .eq('seller_id', sellerId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchSellerOrders:', error.message); return []; }
+  return data || [];
+}
+
+// Real, derived notification feed — no separate notifications table; built
+// from actual order status so nothing shown is fabricated.
+export type NotificationItem = { id: string; text: string; date: string; status: string };
+
+export async function fetchRecentNotifications(userId: string, sellerId?: string): Promise<NotificationItem[]> {
+  const items: NotificationItem[] = [];
+  const { data: orders } = await supabase.from('orders').select('id, status, tracking_id, total, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
+  for (const o of orders || []) {
+    items.push({ id: `order-${o.id}`, text: `${o.tracking_id} — $${o.total}`, date: o.created_at, status: o.status });
+  }
+  if (sellerId) {
+    const { data: ads } = await supabase.from('ad_campaigns').select('id, name, status, reviewed_at').eq('seller_id', sellerId).not('reviewed_at', 'is', null).order('reviewed_at', { ascending: false }).limit(3);
+    for (const a of ads || []) {
+      items.push({ id: `ad-${a.id}`, text: `${a.name} — ${a.status}`, date: a.reviewed_at, status: a.status });
+    }
+  }
+  return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
+}
+
 export async function fetchAddresses(userId: string): Promise<Address[]> {
   const { data, error } = await supabase.from('addresses').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   if (error) throw error;
@@ -784,6 +815,13 @@ export async function createSellerDocument(opts: { sellerId: string; docType: st
   }).select('id').single();
   if (error || !data) { console.error('createSellerDocument:', error?.message); return null; }
   return data.id;
+}
+
+// Atomic — safe under concurrent checkouts, never goes negative (floored at 0 in the DB function).
+export async function decrementProductStock(productId: string, qty: number): Promise<number | null> {
+  const { data, error } = await supabase.rpc('decrement_product_stock', { p_product_id: productId, p_qty: qty });
+  if (error) { console.error('decrementProductStock:', error.message); return null; }
+  return data as number;
 }
 
 export async function submitContactMessage(opts: { firstName: string; lastName: string; email: string; message: string }): Promise<boolean> {

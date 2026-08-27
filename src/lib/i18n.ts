@@ -290,7 +290,7 @@ const en: Dict = {
     page: 'Page', of: 'of', next: 'Next', prev: 'Previous',
   },
   product: {
-    addToCart: 'Add to cart', buyNow: 'Buy now', seller: 'Seller',
+    addToCart: 'Add to Cart', buyNow: 'Buy Now', seller: 'Seller',
     description: 'Description', reviews: 'Reviews', delivery: 'Delivery',
     deliveryBySeller: 'Delivered directly by the seller', inStock: 'In stock',
     outOfStock: 'Out of stock', relatedProducts: 'Related products', quantity: 'Quantity',

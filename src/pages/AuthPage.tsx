@@ -164,7 +164,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
                 </div>
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <button type="submit" disabled={submitting} className="w-full btn-gold py-3.5 rounded-xl font-semibold disabled:opacity-50">
+              <button type="submit" disabled={submitting} className="w-full btn-gold py-3.5 rounded-full font-semibold disabled:opacity-50">
                 {submitting ? (locale === 'fr' ? 'Envoi...' : 'Sending...') : (locale === 'fr' ? 'Envoyer le lien' : 'Send reset link')}
               </button>
             </form>
@@ -262,7 +262,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <button type="submit" disabled={submitting} className="w-full btn-gold py-3.5 rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit" disabled={submitting} className="w-full btn-gold py-3.5 rounded-full font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
               {submitting
                 ? (locale === 'fr' ? 'Veuillez patienter...' : 'Please wait...')
                 : (mode === 'login' ? t.auth.loginBtn : t.auth.signupBtn)}

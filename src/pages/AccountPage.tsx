@@ -153,7 +153,7 @@ export function AccountPage() {
                       <input placeholder={t.account.selectCity} value={addrForm.city} onChange={(e) => setAddrForm({ ...addrForm, city: e.target.value })} className="input-field text-sm" />
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={saveAddress} className="btn-gold px-5 py-2 rounded-lg text-sm font-semibold">{t.common.save}</button>
+                      <button onClick={saveAddress} className="btn-gold px-5 py-2 rounded-full text-sm font-semibold">{t.common.save}</button>
                       <button onClick={() => setShowAddrForm(false)} className="px-5 py-2 rounded-lg text-sm border border-[#0f172a]/15 text-[#0f172a]">{t.common.cancel}</button>
                     </div>
                   </div>

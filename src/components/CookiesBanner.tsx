@@ -44,13 +44,13 @@ export function CookiesBanner() {
             </p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto shrink-0">
-            <button onClick={decline} className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-xs font-medium text-white/70 border border-white/20 hover:bg-white/10 transition-colors">
+            <button onClick={decline} className="flex-1 sm:flex-none px-4 py-2.5 rounded-full text-xs font-medium text-white/70 border border-white/20 hover:bg-white/10 transition-colors">
               {locale === 'fr' ? 'Refuser' : 'Decline'}
             </button>
-            <button onClick={accept} className="flex-1 sm:flex-none px-5 py-2.5 rounded-lg text-xs font-semibold bg-[#ff7a00] text-[#0f172a] hover:bg-[#ff7a00]/90 transition-colors">
+            <button onClick={accept} className="flex-1 sm:flex-none px-5 py-2.5 rounded-full text-xs font-semibold bg-[#ff7a00] text-[#0f172a] hover:bg-[#ff7a00]/90 transition-colors">
               {locale === 'fr' ? 'Accepter' : 'Accept'}
             </button>
-            <button onClick={decline} className="p-2.5 rounded-lg text-white/40 hover:text-white">
+            <button onClick={decline} className="p-2.5 rounded-full text-white/40 hover:text-white">
               <X className="w-4 h-4" />
             </button>
           </div>
