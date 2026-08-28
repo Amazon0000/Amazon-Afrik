@@ -237,7 +237,7 @@ export function OnboardingPage() {
 
   return (
     <div className="motif-bg min-h-screen">
-      <header className="sticky top-0 z-50 bg-[#0f172a] safe-top">
+      <header className="sticky top-0 z-50 bg-[#3d1f00] safe-top">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate('sell')}><Logo size={40} variant="light" /></button>
           <button onClick={() => navigate('home')} className="text-sm text-[#f7f8fa]/60 hover:text-[#ff7a00]">
@@ -266,18 +266,20 @@ export function OnboardingPage() {
         </div>
 
         {/* Progress bar */}
-        <div className="flex items-center justify-between mb-8 overflow-x-auto no-scrollbar">
+        <div className="flex items-center justify-between mb-2 overflow-x-auto no-scrollbar">
           {steps.map((s, i) => (
             <div key={s.num} className="flex items-center flex-1 last:flex-none min-w-[40px]">
               <div className="flex flex-col items-center">
-                <div className={'w-8 h-8 rounded-full flex items-center justify-center transition-all ' + (step >= s.num ? 'bg-[#ff7a00] text-[#0f172a]' : 'bg-white border border-[#0f172a]/15 text-[#64748b]/40')}>
+                <div className={'w-8 h-8 rounded-full flex items-center justify-center transition-all ' + (step >= s.num ? 'bg-[#ff7a00] text-white' : 'bg-white border border-[#0f172a]/15 text-[#64748b]/40')}>
                   {step > s.num ? <Check className="w-4 h-4" /> : <s.icon className="w-3.5 h-3.5" />}
                 </div>
+                <span className={'hidden sm:block text-[10px] font-semibold mt-1.5 whitespace-nowrap ' + (step >= s.num ? 'text-[#3d1f00]' : 'text-[#94a3b8]')}>{s.label}</span>
               </div>
               {i < steps.length - 1 && <div className={'h-0.5 flex-1 mx-1 rounded ' + (step > s.num ? 'bg-[#ff7a00]' : 'bg-[#0f172a]/10')} />}
             </div>
           ))}
         </div>
+        <p className="text-center text-xs text-[#94a3b8] mb-8 sm:hidden">{steps.find((s) => s.num === step)?.label}</p>
 
         <div className="card p-6 sm:p-8 animate-fade-up">
           {/* Step 1: Account */}
@@ -374,6 +376,14 @@ export function OnboardingPage() {
                 <UploadField label={t.onboarding.idFront} value={form.idFront} onChange={(v) => setForm({ ...form, idFront: v })} />
                 <UploadField label={t.onboarding.idBack} value={form.idBack} onChange={(v) => setForm({ ...form, idBack: v })} />
                 <UploadField label={locale === 'fr' ? 'Selfie de vérification' : 'Selfie verification'} value={form.selfie} onChange={(v) => setForm({ ...form, selfie: v })} />
+              </div>
+              <div className="mt-4 p-3 rounded-xl bg-[#3d1f00]/5 flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-[#3d1f00] mt-0.5 shrink-0" />
+                <p className="text-xs text-[#64748b]">
+                  {locale === 'fr'
+                    ? 'Vos documents sont stockés de façon privée et sécurisée, uniquement consultés par notre équipe de vérification pour valider votre identité. Ils ne sont jamais partagés avec des tiers ni visibles publiquement.'
+                    : 'Your documents are stored privately and securely, viewed only by our verification team to confirm your identity. They are never shared with third parties or made public.'}
+                </p>
               </div>
             </div>
           )}
@@ -496,7 +506,7 @@ export function OnboardingPage() {
                 <SummaryRow label={t.onboarding.country} value={countries.find((c) => c.id === form.countryId)?.name || '—'} />
                 <SummaryRow label={t.onboarding.companyName} value={form.businessName} />
                 <SummaryRow label={locale === 'fr' ? 'Boutique' : 'Store'} value={form.storeName} />
-                <SummaryRow label={locale === 'fr' ? 'Paiements' : 'Payments'} value={form.selectedPayments.join(', ')} />
+                <SummaryRow label={locale === 'fr' ? 'Paiements' : 'Payments'} value={form.selectedPayments.map((id) => PAYMENT_METHODS.find((pm) => pm.id === id)?.label || id).join(', ') || '—'} />
                 <SummaryRow label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName || form.mobileMoney || '—'} />
               </div>
               <div className="mt-5 p-4 rounded-xl bg-[#ff7a00]/10 flex items-start gap-3">
