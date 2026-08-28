@@ -646,6 +646,20 @@ export async function fetchSellers(opts?: { countryId?: string; limit?: number }
 // Real distinct city list for a country — sourced from approved sellers'
 // own city field (no separate cities master table exists), used to power
 // the "Shop by Location" city picker.
+// Real counts for trust-building UI (auth page, etc.) — never a made-up number.
+export async function fetchPlatformStats(): Promise<{ sellers: number; products: number; countries: number }> {
+  const [sellersRes, productsRes, countriesRes] = await Promise.all([
+    supabase.from('sellers').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+    supabase.from('products').select('id', { count: 'exact', head: true }).eq('approval_status', 'approved').eq('is_active', true),
+    supabase.from('countries').select('id', { count: 'exact', head: true }).eq('is_active', true),
+  ]);
+  return {
+    sellers: sellersRes.count || 0,
+    products: productsRes.count || 0,
+    countries: countriesRes.count || 0,
+  };
+}
+
 export async function fetchCitiesForCountry(countryId: string): Promise<string[]> {
   const { data, error } = await supabase.from('sellers').select('city').eq('country_id', countryId).eq('status', 'approved').not('city', 'is', null);
   if (error || !data) { console.error('fetchCitiesForCountry:', error?.message); return []; }
