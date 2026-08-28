@@ -21,6 +21,7 @@ import { SellLandingPage } from '@/pages/SellLandingPage';
 import { TrustSafetyPage } from '@/pages/TrustSafetyPage';
 import { InfoPage, type InfoKey } from '@/pages/InfoPage';
 import { CustomerServicePage } from '@/pages/CustomerServicePage';
+import { AffiliatePage } from '@/pages/AffiliatePage';
 import { CookiesBanner } from '@/components/CookiesBanner';
 
 function Router() {
@@ -48,6 +49,7 @@ function Router() {
       case 'trust-safety': return <TrustSafetyPage />;
       case 'info': return <InfoPage pageKey={(params.k as InfoKey) || 'about'} />;
       case 'customer-service': return <CustomerServicePage />;
+      case 'affiliate': return <AffiliatePage />;
       default: return <HomePage />;
     }
   };

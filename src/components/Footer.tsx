@@ -36,6 +36,7 @@ export function Footer() {
   ];
   const marketingLinks: FooterLink[] = [
     { label: t.nav.becomeSeller, page: 'sell' },
+    { label: locale === 'fr' ? "Programme d'affiliation" : 'Affiliate Program', page: 'affiliate' },
     { label: locale === 'fr' ? 'À propos' : 'About Us', page: 'info', params: { k: 'about' } },
     { label: locale === 'fr' ? "Conditions d'utilisation" : 'Terms & Conditions', page: 'info', params: { k: 'terms' } },
     { label: locale === 'fr' ? 'Confidentialité' : 'Privacy Policy', page: 'info', params: { k: 'privacy' } },

@@ -98,6 +98,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
   const [page, setPage] = useState('home');
   const [params, setParams] = useState<Record<string, string>>({});
+
+  // Capture ?ref=CODE on first load (referral link from an affiliate) and
+  // remember it for up to 30 days — attributed only once, at seller signup.
+  useEffect(() => {
+    const urlRef = new URLSearchParams(window.location.search).get('ref');
+    if (urlRef) {
+      localStorage.setItem('zando-referral-code', urlRef.toUpperCase());
+      localStorage.setItem('zando-referral-captured-at', Date.now().toString());
+    }
+  }, []);
   const [cart, setCart] = useState<{ productId: string; qty: number; variation?: string }[]>(() => {
     const saved = localStorage.getItem('zando-cart');
     return saved ? JSON.parse(saved) : [];

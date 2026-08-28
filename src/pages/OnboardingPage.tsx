@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
 import { UploadCloud, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Wallet, Sparkles, CheckCircle } from 'lucide-react';
-import { uploadSellerAsset, uploadSellerKycDocument, createSellerDocument } from '@/lib/db';
+import { uploadSellerAsset, uploadSellerKycDocument, createSellerDocument, resolveAffiliateCode, recordAffiliateReferral } from '@/lib/db';
 
 type PaymentMethod = {
   id: string;
@@ -134,6 +134,19 @@ export function OnboardingPage() {
       if (sellerError) { setError(sellerError.message); setSubmitting(false); return; }
 
       const sellerId = sellerData.id;
+
+      // Attribute the referral, if this signup came through a valid
+      // ?ref=CODE link captured within the last 30 days.
+      const referralCode = localStorage.getItem('zando-referral-code');
+      const capturedAt = localStorage.getItem('zando-referral-captured-at');
+      if (referralCode && capturedAt && Date.now() - parseInt(capturedAt) < 30 * 24 * 3600 * 1000) {
+        const affiliateId = await resolveAffiliateCode(referralCode);
+        if (affiliateId) {
+          await recordAffiliateReferral(affiliateId, sellerId);
+          localStorage.removeItem('zando-referral-code');
+          localStorage.removeItem('zando-referral-captured-at');
+        }
+      }
 
       // Real uploads now that we have an authenticated user + sellerId to own the files.
       setUploadingDocs(true);

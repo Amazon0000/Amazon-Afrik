@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
 
@@ -127,6 +127,7 @@ export function AdminPage() {
     { id: 'ads', label: t.admin.ads, icon: Megaphone },
     { id: 'disputes', label: t.admin.disputes, icon: AlertTriangle },
     { id: 'revenue', label: locale === 'fr' ? 'Revenus Zando' : 'Zando Revenue', icon: DollarSign, superOnly: true },
+    { id: 'affiliates', label: locale === 'fr' ? 'Affiliés' : 'Affiliates', icon: UserPlus, superOnly: true },
     { id: 'geography', label: t.admin.geography, icon: Globe, superOnly: true },
     { id: 'staff', label: t.admin.staff, icon: Users, superOnly: true },
     { id: 'plans', label: t.admin.plans, icon: CreditCard, superOnly: true },
@@ -487,6 +488,17 @@ export function AdminPage() {
               </div>
             )}
 
+            {tab === 'affiliates' && isSuperAdmin && (
+              <div className="animate-fade-up">
+                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Programme d\u2019affiliation' : 'Affiliate Program'}</h2>
+                <div className="card p-5 mb-4 bg-[#ff7a00]/5 flex items-center gap-3">
+                  <UserPlus className="w-5 h-5 text-[#ff7a00]" />
+                  <p className="text-sm text-[#0f172a]">{locale === 'fr' ? "Les affiliés touchent une commission sur les abonnements des vendeurs qu'ils réfèrent — payée par Zando sur ses propres revenus, jamais prélevée sur les ventes." : 'Affiliates earn a commission on referred sellers\u2019 subscriptions — paid by Zando out of its own revenue, never deducted from sales.'}</p>
+                </div>
+                <AffiliatesTab />
+              </div>
+            )}
+
             {tab === 'geography' && isSuperAdmin && (
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.geography}</h2>
@@ -804,6 +816,67 @@ function RevenueTab() {
     </div>
   );
 }
+
+function AffiliatesTab() {
+  const { locale, showToast, user } = useApp();
+  const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  useEffect(() => {
+    (async () => { setAffiliates(await fetchAllAffiliates()); setLoading(false); })();
+  }, []);
+
+  const act = async (id: string, status: 'approved' | 'rejected' | 'suspended', reason?: string) => {
+    const ok = await updateAffiliateStatus(id, status, user?.email || 'admin', reason);
+    if (ok) {
+      setAffiliates(affiliates.map((a) => a.id === id ? { ...a, status, rejection_reason: reason || null } : a));
+      showToast(locale === 'fr' ? 'Statut mis à jour' : 'Status updated');
+      setRejectingId(null);
+      setRejectReason('');
+    } else {
+      showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+    }
+  };
+
+  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  return (
+    <div className="space-y-2">
+      {affiliates.length === 0 ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Aucune candidature affilié.' : 'No affiliate applications.'}</div>
+      ) : affiliates.map((a) => (
+        <div key={a.id} className="card p-4 bg-white">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[#0f172a]">{a.full_name} <span className="text-xs text-[#64748b] font-normal">({a.email})</span></p>
+              <p className="text-xs text-[#64748b] mt-0.5 font-mono">{a.referral_code} · {a.commission_rate}% · ${a.total_earned.toFixed(2)} {locale === 'fr' ? 'gagné' : 'earned'}</p>
+              {a.audience_description && <p className="text-xs text-[#64748b] mt-1 line-clamp-2">{a.audience_description}</p>}
+            </div>
+            <Badge color={a.status === 'approved' ? '#3d1f00' : a.status === 'pending' ? '#e06c00' : '#dc2626'}>{a.status}</Badge>
+            {a.status === 'pending' && (
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => act(a.id, 'approved')} className="px-3 py-1.5 rounded-full bg-[#3d1f00]/10 text-[#3d1f00] text-xs font-semibold hover:bg-[#3d1f00]/20">{locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+                <button onClick={() => setRejectingId(rejectingId === a.id ? null : a.id)} className="px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100">{locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
+              </div>
+            )}
+            {a.status === 'approved' && (
+              <button onClick={() => act(a.id, 'suspended')} className="px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold shrink-0">{locale === 'fr' ? 'Suspendre' : 'Suspend'}</button>
+            )}
+          </div>
+          {rejectingId === a.id && (
+            <div className="mt-3 flex gap-2">
+              <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder={locale === 'fr' ? 'Motif du rejet' : 'Rejection reason'} className="input-field text-xs py-1.5 flex-1" />
+              <button onClick={() => act(a.id, 'rejected', rejectReason)} className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-semibold">{locale === 'fr' ? 'Confirmer' : 'Confirm'}</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
 function AdvertisingDashboardTab() {
   const { locale } = useApp();

@@ -60,6 +60,20 @@ export type Product = {
   countries?: Country;
 };
 
+export type Affiliate = {
+  id: string; user_id: string; referral_code: string; full_name: string; email: string;
+  audience_description: string | null; status: 'pending' | 'approved' | 'rejected' | 'suspended';
+  commission_rate: number; payout_provider: string | null; payout_account_identifier: string | null;
+  total_earned: number; total_paid: number; reviewed_by: string | null; reviewed_at: string | null;
+  rejection_reason: string | null; created_at: string;
+};
+
+export type AffiliateReferral = {
+  id: string; affiliate_id: string; referred_seller_id: string; status: 'signed_up' | 'converted';
+  commission_amount: number; created_at: string; converted_at: string | null;
+  sellers?: { business_name: string; plan: string };
+};
+
 export type Coupon = {
   id: string; seller_id: string; code: string; discount_type: 'percent' | 'fixed';
   discount_value: number; min_order_amount: number; usage_limit: number | null;
@@ -751,6 +765,81 @@ export async function deactivateCoupon(couponId: string): Promise<boolean> {
   return true;
 }
 
+// ============ Affiliate program ============
+
+function generateReferralCode(name: string): string {
+  const base = name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 6) || 'ZANDO';
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${base}${suffix}`;
+}
+
+export async function applyForAffiliate(opts: { userId: string; fullName: string; email: string; audienceDescription?: string }): Promise<string | null> {
+  // Retry on the rare code collision — UNIQUE constraint on referral_code.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, error } = await supabase.from('affiliates').insert({
+      user_id: opts.userId,
+      full_name: opts.fullName,
+      email: opts.email,
+      audience_description: opts.audienceDescription || null,
+      referral_code: generateReferralCode(opts.fullName),
+    }).select('id').single();
+    if (!error && data) return data.id;
+    if (error && !error.message.includes('duplicate key')) { console.error('applyForAffiliate:', error.message); return null; }
+  }
+  return null;
+}
+
+export async function fetchMyAffiliateAccount(userId: string): Promise<Affiliate | null> {
+  const { data, error } = await supabase.from('affiliates').select('*').eq('user_id', userId).maybeSingle();
+  if (error) { console.error('fetchMyAffiliateAccount:', error.message); return null; }
+  return data;
+}
+
+export async function fetchAffiliateReferrals(affiliateId: string): Promise<AffiliateReferral[]> {
+  const { data, error } = await supabase.from('affiliate_referrals').select('*, sellers(business_name, plan)').eq('affiliate_id', affiliateId).order('created_at', { ascending: false });
+  if (error) { console.error('fetchAffiliateReferrals:', error.message); return []; }
+  return data || [];
+}
+
+export async function updateAffiliatePayoutDetails(affiliateId: string, provider: string, accountIdentifier: string): Promise<boolean> {
+  const { error } = await supabase.from('affiliates').update({ payout_provider: provider, payout_account_identifier: accountIdentifier }).eq('id', affiliateId);
+  if (error) { console.error('updateAffiliatePayoutDetails:', error.message); return false; }
+  return true;
+}
+
+// Resolves a ?ref= code to an affiliate id at signup — real server-side
+// check, never trusts a code the client claims is valid.
+export async function resolveAffiliateCode(code: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('resolve_affiliate_code', { p_code: code });
+  if (error) { console.error('resolveAffiliateCode:', error.message); return null; }
+  return data as string | null;
+}
+
+export async function fetchAllAffiliates(): Promise<Affiliate[]> {
+  const { data, error } = await supabase.from('affiliates').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('fetchAllAffiliates:', error.message); return []; }
+  return data || [];
+}
+
+export async function updateAffiliateStatus(affiliateId: string, status: 'approved' | 'rejected' | 'suspended', reviewerEmail: string, rejectionReason?: string): Promise<boolean> {
+  const { error } = await supabase.from('affiliates').update({
+    status, reviewed_by: reviewerEmail, reviewed_at: new Date().toISOString(),
+    rejection_reason: status === 'rejected' ? (rejectionReason || null) : null,
+  }).eq('id', affiliateId);
+  if (error) { console.error('updateAffiliateStatus:', error.message); return false; }
+  return true;
+}
+
+// Called once, right after a new seller row is created, if they arrived
+// via a valid ?ref= link. Links the seller to the affiliate (permanently
+// — sellers.referred_by_affiliate_id) and opens the referral tracking row.
+export async function recordAffiliateReferral(affiliateId: string, sellerId: string): Promise<boolean> {
+  await supabase.from('sellers').update({ referred_by_affiliate_id: affiliateId }).eq('id', sellerId);
+  const { error } = await supabase.from('affiliate_referrals').insert({ affiliate_id: affiliateId, referred_seller_id: sellerId });
+  if (error) { console.error('recordAffiliateReferral:', error.message); return false; }
+  return true;
+}
+
 // Server-side authoritative check — never trust a client-computed discount.
 export async function validateCoupon(code: string, sellerId: string, subtotal: number): Promise<CouponValidation> {
   const { data, error } = await supabase.rpc('validate_coupon', { p_code: code, p_seller_id: sellerId, p_subtotal: subtotal });
@@ -1329,6 +1418,10 @@ export async function updateSellerPlan(sellerId: string, plan: 'starter' | 'prem
   if (dbError) { console.error('updateSellerPlan:', dbError.message); return false; }
   const { error: authError } = await supabase.auth.updateUser({ data: { seller_plan: plan } });
   if (authError) { console.error('updateSellerPlan (auth):', authError.message); }
+  if (plan !== 'starter') {
+    const planPrice = plan === 'premium' ? 29 : 79; // must match PLAN_PRICE_USD
+    await supabase.rpc('record_affiliate_conversion', { p_seller_id: sellerId, p_plan_price: planPrice });
+  }
   return true;
 }
 

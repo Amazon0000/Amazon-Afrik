@@ -252,6 +252,7 @@ export function Header() {
           <div className="hidden lg:flex items-center gap-1 h-full shrink-0">
             <button onClick={openLocationPanel} className="flex items-center gap-1.5 px-3 h-full hover:bg-white/10 transition-colors"><MapPin className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Acheter par lieu' : 'Shop by Location'}</button>
             <button onClick={() => go('ads')} className="px-3 h-full hover:bg-white/10 transition-colors">{t.nav.ads}</button>
+            <button onClick={() => go('affiliate')} className="px-3 h-full hover:bg-white/10 transition-colors">{locale === 'fr' ? 'Affiliation' : 'Affiliate'}</button>
             <button onClick={() => go('sell')} className="px-3 h-full font-bold text-[#ff9633] hover:bg-white/10 transition-colors">{t.nav.becomeSeller}</button>
           </div>
         </div>
