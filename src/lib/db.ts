@@ -516,11 +516,16 @@ export async function fetchProducts(opts?: {
   sponsored?: boolean; limit?: number; search?: string;
   sort?: string; minPrice?: number; maxPrice?: number;
   approvalStatus?: 'pending' | 'approved' | 'rejected' | 'all';
+  cityName?: string;
 }): Promise<Product[]> {
   try {
+    // Products have no city of their own — city lives on the seller. When
+    // filtering by city, switch the sellers embed to an inner join so
+    // PostgREST can filter on sellers.city directly.
+    const sellersEmbed = opts?.cityName ? 'sellers!inner(*)' : 'sellers(*)';
     let query = supabase.from('products').select(`
       *, product_images(*), product_variants(*), product_specifications(*),
-      reviews(*), sellers(*), categories(*), brands(*), countries(*)
+      reviews(*), ${sellersEmbed}, categories(*), brands(*), countries(*)
     `).eq('is_active', true);
 
     if (opts?.approvalStatus && opts.approvalStatus !== 'all') {
@@ -536,6 +541,7 @@ export async function fetchProducts(opts?: {
     if (opts?.search) query = query.or(`name.ilike.%${opts.search}%,description.ilike.%${opts.search}%`);
     if (opts?.minPrice !== undefined) query = query.gte('price', opts.minPrice);
     if (opts?.maxPrice !== undefined) query = query.lte('price', opts.maxPrice);
+    if (opts?.cityName) query = query.eq('sellers.city', opts.cityName);
 
     if (opts?.sort === 'newest') query = query.order('created_at', { ascending: false });
     else if (opts?.sort === 'priceLow') query = query.order('price', { ascending: true });
@@ -621,6 +627,16 @@ export async function fetchSellers(opts?: { countryId?: string; limit?: number }
   } catch {
     return MOCK_SELLERS;
   }
+}
+
+// Real distinct city list for a country — sourced from approved sellers'
+// own city field (no separate cities master table exists), used to power
+// the "Shop by Location" city picker.
+export async function fetchCitiesForCountry(countryId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('sellers').select('city').eq('country_id', countryId).eq('status', 'approved').not('city', 'is', null);
+  if (error || !data) { console.error('fetchCitiesForCountry:', error?.message); return []; }
+  const cities = Array.from(new Set((data as { city: string | null }[]).map((s) => s.city).filter(Boolean))) as string[];
+  return cities.sort();
 }
 
 export async function fetchSellerBySlug(slug: string): Promise<Seller | null> {

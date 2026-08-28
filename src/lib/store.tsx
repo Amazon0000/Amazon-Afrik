@@ -6,6 +6,7 @@ import type { Country, Currency, Category, Product } from '@/lib/db';
 type GeoSelection = {
   countryId: string;
   cityId?: string;
+  cityName?: string;
 };
 
 type User = {

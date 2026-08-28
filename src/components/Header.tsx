@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart, Bell, ShoppingBasket } from 'lucide-react';
+import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart, Bell, ShoppingBasket, Check, Loader2 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
-import { searchSuggestions, fetchNotifications, fetchUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, type AppNotification } from '@/lib/db';
+import { searchSuggestions, fetchNotifications, fetchUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, fetchCitiesForCountry, type AppNotification } from '@/lib/db';
 
 const MEGA_CATEGORIES = [
   { label: "Today's Deals", key: 'deals' },
@@ -41,9 +41,13 @@ const MEGA_CATEGORIES = [
 ];
 
 export function Header() {
-  const { t, locale, setLocale, navigate, user, logout, cart, cartCount, updateCartQty, removeFromCart, geo, countries, products, categories, wishlist } = useApp();
+  const { t, locale, setLocale, navigate, user, logout, cart, cartCount, updateCartQty, removeFromCart, geo, setGeo, countries, products, categories, wishlist } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationRegion, setLocationRegion] = useState<string>('all');
+  const [locationCities, setLocationCities] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
@@ -67,6 +71,23 @@ export function Header() {
   };
 
   const go = (p: string, params?: Record<string, string>) => { navigate(p, params); setMobileOpen(false); setMegaOpen(false); setCartDrawerOpen(false); };
+
+  const openLocationPanel = () => {
+    setLocationOpen(true);
+    if (geo.countryId) {
+      setLoadingCities(true);
+      fetchCitiesForCountry(geo.countryId).then((cities) => { setLocationCities(cities); setLoadingCities(false); });
+    }
+  };
+
+  const selectLocationCountry = (countryId: string) => {
+    setGeo({ countryId, cityId: undefined, cityName: undefined });
+    setLoadingCities(true);
+    fetchCitiesForCountry(countryId).then((cities) => { setLocationCities(cities); setLoadingCities(false); });
+  };
+
+  const regions = Array.from(new Set(countries.map((c) => c.region).filter(Boolean))).sort();
+  const filteredCountries = locationRegion === 'all' ? countries : countries.filter((c) => c.region === locationRegion);
 
   const handleMegaNav = (item: typeof MEGA_CATEGORIES[0]) => {
     if (item.key === 'sell') { navigate('sell'); setMegaOpen(false); return; }
@@ -112,8 +133,8 @@ export function Header() {
           <div className="hidden sm:block text-white/80 truncate text-center flex-1">
             {locale === 'fr' ? 'Livraison directe par le vendeur, partout dans le monde — 0% commission Zando' : 'Direct seller delivery, worldwide — 0% Zando commission'}
           </div>
-          <button onClick={() => go('account')} className="hidden sm:flex items-center gap-1 font-bold hover:opacity-80 transition-opacity shrink-0">
-            <MapPin className="w-3.5 h-3.5" /> {currentCountry?.flag} {currentCountry?.name} <ChevronDown className="w-3 h-3 opacity-70" />
+          <button onClick={openLocationPanel} className="hidden sm:flex items-center gap-1 font-bold hover:opacity-80 transition-opacity shrink-0">
+            <MapPin className="w-3.5 h-3.5" /> {currentCountry?.flag} {geo.cityName ? `${geo.cityName}, ` : ''}{currentCountry?.name} <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
         </div>
       </div>
@@ -229,12 +250,60 @@ export function Header() {
             <button onClick={() => go(user ? 'account' : 'login', user ? { tab: 'orders' } : undefined)} className="px-3 h-full whitespace-nowrap hover:bg-white/10 transition-colors shrink-0">{locale === 'fr' ? 'Racheter' : 'Buy Again'}</button>
           </div>
           <div className="hidden lg:flex items-center gap-1 h-full shrink-0">
-            <button onClick={() => go('account')} className="flex items-center gap-1.5 px-3 h-full hover:bg-white/10 transition-colors"><MapPin className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Localisation' : 'Set Location'}</button>
+            <button onClick={openLocationPanel} className="flex items-center gap-1.5 px-3 h-full hover:bg-white/10 transition-colors"><MapPin className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Acheter par lieu' : 'Shop by Location'}</button>
             <button onClick={() => go('ads')} className="px-3 h-full hover:bg-white/10 transition-colors">{t.nav.ads}</button>
             <button onClick={() => go('sell')} className="px-3 h-full font-bold text-[#ff9633] hover:bg-white/10 transition-colors">{t.nav.becomeSeller}</button>
           </div>
         </div>
       </div>
+
+      {/* Shop by Location panel: region -> country -> city */}
+      {locationOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setLocationOpen(false)} />
+          <div className="fixed left-1/2 top-20 -translate-x-1/2 z-50 w-[92vw] max-w-2xl bg-white rounded-2xl shadow-2xl animate-fade-up overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#e2e8f0]">
+              <h3 className="font-display text-lg font-bold text-[#0f172a] flex items-center gap-2"><MapPin className="w-5 h-5 text-[#3d1f00]" /> {locale === 'fr' ? 'Acheter par lieu' : 'Shop by Location'}</h3>
+              <button onClick={() => setLocationOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#f3f3f3]"><X className="w-4 h-4 text-[#64748b]" /></button>
+            </div>
+
+            <div className="grid sm:grid-cols-3 max-h-[65vh]">
+              {/* Region column */}
+              <div className="border-r border-[#e2e8f0] overflow-y-auto py-2">
+                <p className="px-4 py-1.5 text-[10px] font-bold uppercase text-[#94a3b8]">{locale === 'fr' ? 'Région' : 'Region'}</p>
+                <button onClick={() => setLocationRegion('all')} className={`w-full text-left px-4 py-2 text-sm ${locationRegion === 'all' ? 'bg-[#3d1f00]/5 text-[#3d1f00] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>{locale === 'fr' ? 'Toutes les régions' : 'All regions'}</button>
+                {regions.map((r) => (
+                  <button key={r} onClick={() => setLocationRegion(r)} className={`w-full text-left px-4 py-2 text-sm ${locationRegion === r ? 'bg-[#3d1f00]/5 text-[#3d1f00] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>{r}</button>
+                ))}
+              </div>
+
+              {/* Country column */}
+              <div className="border-r border-[#e2e8f0] overflow-y-auto py-2">
+                <p className="px-4 py-1.5 text-[10px] font-bold uppercase text-[#94a3b8]">{locale === 'fr' ? 'Pays' : 'Country'}</p>
+                {filteredCountries.map((c) => (
+                  <button key={c.id} onClick={() => selectLocationCountry(c.id)} className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${geo.countryId === c.id ? 'bg-[#3d1f00]/5 text-[#3d1f00] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>
+                    <span>{c.flag}</span> <span className="truncate">{c.name}</span>
+                    {geo.countryId === c.id && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
+                  </button>
+                ))}
+              </div>
+
+              {/* City column */}
+              <div className="overflow-y-auto py-2">
+                <p className="px-4 py-1.5 text-[10px] font-bold uppercase text-[#94a3b8]">{locale === 'fr' ? 'Ville' : 'City'}</p>
+                <button onClick={() => { setGeo({ cityId: undefined, cityName: undefined }); setLocationOpen(false); go('catalog'); }} className={`w-full text-left px-4 py-2 text-sm ${!geo.cityName ? 'bg-[#3d1f00]/5 text-[#3d1f00] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>{locale === 'fr' ? 'Toutes les villes' : 'All cities'}</button>
+                {loadingCities ? (
+                  <div className="flex items-center justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-[#94a3b8]" /></div>
+                ) : locationCities.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-[#94a3b8]">{locale === 'fr' ? 'Aucun vendeur listé ici pour le moment' : 'No sellers listed here yet'}</p>
+                ) : locationCities.map((city) => (
+                  <button key={city} onClick={() => { setGeo({ cityName: city }); setLocationOpen(false); go('catalog'); }} className={`w-full text-left px-4 py-2 text-sm ${geo.cityName === city ? 'bg-[#3d1f00]/5 text-[#3d1f00] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>{city}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Mega full-width dropdown menu */}
       {megaOpen && (

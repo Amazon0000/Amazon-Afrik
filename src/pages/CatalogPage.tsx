@@ -3,7 +3,7 @@ import { fetchProducts, fetchSponsoredProducts } from '@/lib/db';
 import type { Product } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { EmptyState } from '@/components/ui';
-import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronDown, MapPin } from 'lucide-react';
 
 export function CatalogPage() {
   const { t, params, geo, setGeo, locale, categories, countries } = useApp();
@@ -34,6 +34,7 @@ export function CatalogPage() {
             sort: sortBy,
             minPrice: priceMin ? parseFloat(priceMin) : undefined,
             maxPrice: priceMax ? parseFloat(priceMax) : undefined,
+            cityName: geo.cityName || undefined,
             limit: 50,
           }),
           // Placement 'search_results' — source de vérité = campagne active
@@ -48,7 +49,7 @@ export function CatalogPage() {
         setLoading(false);
       }
     })();
-  }, [geo.countryId, categoryFilter, sortBy, showOtherCountries, params.q, priceMin, priceMax]);
+  }, [geo.countryId, geo.cityName, categoryFilter, sortBy, showOtherCountries, params.q, priceMin, priceMax]);
 
   const filtered = useMemo(() => {
     let result = products;
@@ -201,6 +202,11 @@ export function CatalogPage() {
               <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none">{countries.find((c) => c.id === geo.countryId)?.flag || '🌐'}</span>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#64748b] pointer-events-none" />
             </div>
+            {geo.cityName && (
+              <button onClick={() => setGeo({ cityName: undefined })} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-[#3d1f00]/10 text-[#3d1f00] font-semibold">
+                <MapPin className="w-3.5 h-3.5" /> {geo.cityName} <X className="w-3 h-3" />
+              </button>
+            )}
             <div className="relative">
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="appearance-none pl-3 pr-8 py-2 text-sm rounded-lg border border-[#0f172a]/15 bg-white text-[#0f172a] focus:outline-none focus:border-[#ff7a00] cursor-pointer">
                 <option value="popular">{t.catalog.sortPopular}</option>
