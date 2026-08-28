@@ -4,12 +4,13 @@ import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile } from
 import type { Product, Address, Order } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2 } from 'lucide-react';
 
 export function AccountPage() {
-  const { t, locale, user, navigate, wishlist, showToast, countries, params } = useApp();
+  const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
   const [tab, setTab] = useState((params.tab as string) || 'profile');
   const [showAddrForm, setShowAddrForm] = useState(false);
+  const [buyingAgain, setBuyingAgain] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
@@ -64,6 +65,30 @@ export function AccountPage() {
   ];
 
   const statusColors: Record<string, string> = { pending: '#64748b', confirmed: '#0f172a', preparing: '#ff7a00', inTransit: '#3b82f6', delivered: '#ff7a00', cancelled: '#ef4444' };
+
+  // Real "Buy Again": re-checks the product still exists, is active, and
+  // has stock before adding to cart — never silently adds something that's
+  // gone or sold out.
+  const buyAgain = async (item: { product_id: string | null; qty: number; product_name: string }) => {
+    if (!item.product_id) {
+      showToast(locale === 'fr' ? 'Ce produit n\u2019est plus disponible' : 'This product is no longer available', 'error');
+      return;
+    }
+    setBuyingAgain(item.product_id);
+    const product = await fetchProductById(item.product_id);
+    setBuyingAgain(null);
+    if (!product || !product.is_active) {
+      showToast(locale === 'fr' ? `"${item.product_name}" n\u2019est plus disponible` : `"${item.product_name}" is no longer available`, 'error');
+      return;
+    }
+    if (product.stock === 0) {
+      showToast(locale === 'fr' ? `"${product.name}" est en rupture de stock` : `"${product.name}" is out of stock`, 'error');
+      return;
+    }
+    const qty = Math.min(item.qty, product.stock);
+    addToCart(product.id, qty);
+    showToast(locale === 'fr' ? `${product.name} ajouté au panier` : `${product.name} added to cart`);
+  };
 
   return (
     <div className="motif-bg min-h-screen">
@@ -120,6 +145,10 @@ export function AccountPage() {
                             {item.image_url && <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />}
                             <span className="text-sm text-[#0f172a] flex-1">{item.product_name} x{item.qty}</span>
                             <span className="text-sm font-bold text-[#0f172a]">${item.price * item.qty}</span>
+                            <button onClick={() => buyAgain(item)} disabled={buyingAgain === item.product_id} className="flex items-center gap-1 text-xs font-semibold text-[#3d1f00] border border-[#3d1f00]/20 rounded-full px-3 py-1.5 hover:bg-[#3d1f00]/5 disabled:opacity-50 shrink-0">
+                              {buyingAgain === item.product_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                              {locale === 'fr' ? 'Racheter' : 'Buy again'}
+                            </button>
                           </div>
                         ))}
                         <div className="flex items-center justify-between pt-3 border-t border-[#ff7a00]/10">

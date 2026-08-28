@@ -68,6 +68,17 @@ export type Affiliate = {
   rejection_reason: string | null; created_at: string;
 };
 
+export type ProductAnswer = {
+  id: string; question_id: string; user_id: string; author_name: string;
+  is_seller_answer: boolean; answer: string; created_at: string;
+};
+
+export type ProductQuestion = {
+  id: string; product_id: string; user_id: string; author_name: string;
+  question: string; created_at: string;
+  product_answers?: ProductAnswer[];
+};
+
 export type AffiliateReferral = {
   id: string; affiliate_id: string; referred_seller_id: string; status: 'signed_up' | 'converted';
   commission_amount: number; created_at: string; converted_at: string | null;
@@ -1118,6 +1129,41 @@ export async function createOrder(opts: {
   await supabase.from('order_items').insert(itemRows);
 
   return order.id;
+}
+
+export async function fetchProductQuestions(productId: string): Promise<ProductQuestion[]> {
+  const { data, error } = await supabase
+    .from('product_questions')
+    .select('*, product_answers(*)')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchProductQuestions:', error.message); return []; }
+  return (data || []).map((q: ProductQuestion) => ({ ...q, product_answers: (q.product_answers || []).sort((a: ProductAnswer, b: ProductAnswer) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) }));
+}
+
+export async function askProductQuestion(opts: { productId: string; userId: string; authorName: string; question: string }): Promise<string | null> {
+  const { data, error } = await supabase.from('product_questions').insert({
+    product_id: opts.productId, user_id: opts.userId, author_name: opts.authorName, question: opts.question,
+  }).select('id').single();
+  if (error || !data) { console.error('askProductQuestion:', error?.message); return null; }
+  return data.id;
+}
+
+// is_seller_answer is only ever honored server-side if the caller actually
+// owns the seller account for this product — see the migration's RLS.
+export async function answerProductQuestion(opts: { questionId: string; userId: string; authorName: string; answer: string; isSellerAnswer: boolean }): Promise<string | null> {
+  const { data, error } = await supabase.from('product_answers').insert({
+    question_id: opts.questionId, user_id: opts.userId, author_name: opts.authorName,
+    answer: opts.answer, is_seller_answer: opts.isSellerAnswer,
+  }).select('id').single();
+  if (error || !data) { console.error('answerProductQuestion:', error?.message); return null; }
+  return data.id;
+}
+
+export async function deleteProductQuestion(questionId: string): Promise<boolean> {
+  const { error } = await supabase.from('product_questions').delete().eq('id', questionId);
+  if (error) { console.error('deleteProductQuestion:', error.message); return false; }
+  return true;
 }
 
 export async function createReview(opts: {

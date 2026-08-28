@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchProducts, createReview, fetchProductFlashDeal, fetchSponsoredProducts } from '@/lib/db';
-import type { Product, FlashDeal } from '@/lib/db';
+import { fetchProductById, fetchProducts, createReview, fetchProductFlashDeal, fetchSponsoredProducts, fetchProductQuestions, askProductQuestion, answerProductQuestion } from '@/lib/db';
+import type { Product, FlashDeal, ProductQuestion } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
 import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame, Store } from 'lucide-react';
@@ -18,6 +18,11 @@ export function ProductPage() {
   const [zoom, setZoom] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [flashDeal, setFlashDeal] = useState<FlashDeal | null>(null);
+  const [questions, setQuestions] = useState<ProductQuestion[]>([]);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [askingQuestion, setAskingQuestion] = useState(false);
+  const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
 
   // Custom review submission states to ensure it's fully real & functional
   const [newReviewRating, setNewReviewRating] = useState(5);
@@ -31,6 +36,7 @@ export function ProductPage() {
         const p = await fetchProductById(params.id);
         setProduct(p);
         setFlashDeal(p ? await fetchProductFlashDeal(p.id) : null);
+        setQuestions(p ? await fetchProductQuestions(p.id) : []);
         if (p) {
           const rel = await fetchProducts({ sellerId: p.seller_id, limit: 5 });
           setRelated(rel.filter((r) => r.id !== p.id).slice(0, 4));
@@ -80,6 +86,40 @@ export function ProductPage() {
   const handleBuyNow = () => {
     addToCart(product.id, qty, Object.values(selectedVariants).join('-'));
     navigate('cart');
+  };
+
+  const submitQuestion = async () => {
+    if (!user) { navigate('login'); return; }
+    if (!newQuestion.trim()) return;
+    setAskingQuestion(true);
+    const id = await askProductQuestion({ productId: product.id, userId: user.id, authorName: user.fullName, question: newQuestion.trim() });
+    setAskingQuestion(false);
+    if (id) {
+      setQuestions([{ id, product_id: product.id, user_id: user.id, author_name: user.fullName, question: newQuestion.trim(), created_at: new Date().toISOString(), product_answers: [] }, ...questions]);
+      setNewQuestion('');
+      showToast(locale === 'fr' ? 'Question publiée' : 'Question posted');
+    } else {
+      showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+    }
+  };
+
+  const submitAnswer = async (questionId: string) => {
+    if (!user) { navigate('login'); return; }
+    const text = (answerDrafts[questionId] || '').trim();
+    if (!text) return;
+    setAnsweringId(questionId);
+    const isSeller = user.role === 'seller' && user.sellerId === product.seller_id;
+    const id = await answerProductQuestion({ questionId, userId: user.id, authorName: user.fullName, answer: text, isSellerAnswer: isSeller });
+    setAnsweringId(null);
+    if (id) {
+      setQuestions(questions.map((q) => q.id === questionId
+        ? { ...q, product_answers: [...(q.product_answers || []), { id, question_id: questionId, user_id: user.id, author_name: user.fullName, is_seller_answer: isSeller, answer: text, created_at: new Date().toISOString() }] }
+        : q));
+      setAnswerDrafts({ ...answerDrafts, [questionId]: '' });
+      showToast(locale === 'fr' ? 'Réponse publiée' : 'Answer posted');
+    } else {
+      showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+    }
   };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -575,6 +615,62 @@ export function ProductPage() {
             )}
           </div>
 
+        </div>
+
+        {/* Q&A */}
+        <div className="mt-12 border-t border-gray-200 pt-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-1">{locale === 'fr' ? 'Questions & réponses' : 'Questions & Answers'}</h2>
+          <p className="text-xs text-gray-500 mb-5">{locale === 'fr' ? 'Posez une question au vendeur ou à d\u2019autres acheteurs.' : 'Ask the seller or other buyers a question.'}</p>
+
+          <div className="flex gap-2 mb-6 max-w-2xl">
+            <input
+              value={newQuestion}
+              onChange={(e) => setNewQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submitQuestion()}
+              placeholder={user ? (locale === 'fr' ? 'Posez votre question...' : 'Ask your question...') : (locale === 'fr' ? 'Connectez-vous pour poser une question' : 'Sign in to ask a question')}
+              className="input-field flex-1"
+            />
+            <button onClick={submitQuestion} disabled={askingQuestion || !newQuestion.trim()} className="btn-cocoa px-5 py-2 rounded-full text-sm font-semibold shrink-0 disabled:opacity-50">
+              {locale === 'fr' ? 'Publier' : 'Post'}
+            </button>
+          </div>
+
+          {questions.length === 0 ? (
+            <p className="text-sm text-gray-500 italic">{locale === 'fr' ? 'Aucune question pour le moment. Soyez le premier à demander !' : 'No questions yet. Be the first to ask!'}</p>
+          ) : (
+            <div className="space-y-5 max-w-2xl">
+              {questions.map((q) => (
+                <div key={q.id} className="border-b border-gray-100 pb-5">
+                  <p className="text-sm font-semibold text-gray-900">Q: {q.question}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{q.author_name} · {new Date(q.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}</p>
+
+                  {(q.product_answers || []).map((a) => (
+                    <div key={a.id} className="mt-2.5 pl-4 border-l-2 border-gray-100">
+                      <p className="text-sm text-gray-700 flex items-start gap-1.5">
+                        <span className="font-semibold shrink-0">R:</span>
+                        <span>{a.answer}</span>
+                        {a.is_seller_answer && <span className="shrink-0 text-[9px] font-bold uppercase bg-[#3d1f00]/10 text-[#3d1f00] px-1.5 py-0.5 rounded">{locale === 'fr' ? 'Vendeur' : 'Seller'}</span>}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{a.author_name} · {new Date(a.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}</p>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2 mt-2.5 pl-4">
+                    <input
+                      value={answerDrafts[q.id] || ''}
+                      onChange={(e) => setAnswerDrafts({ ...answerDrafts, [q.id]: e.target.value })}
+                      onKeyDown={(e) => e.key === 'Enter' && submitAnswer(q.id)}
+                      placeholder={locale === 'fr' ? 'Répondre...' : 'Answer...'}
+                      className="input-field text-xs py-1.5 flex-1"
+                    />
+                    <button onClick={() => submitAnswer(q.id)} disabled={answeringId === q.id || !(answerDrafts[q.id] || '').trim()} className="text-xs font-semibold text-[#3d1f00] hover:underline shrink-0 disabled:opacity-50 px-2">
+                      {locale === 'fr' ? 'Répondre' : 'Reply'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Related Items recommendation shelf */}
