@@ -1,5 +1,54 @@
 # Déploiement du module Advertising / Sponsored Products
 
+## État réel au 28/08/2026 — IMPORTANT
+
+Ce module a été **réellement déployé et vérifié** sur le projet Supabase de
+production (`tysbzwgzeyqtzluvdria`, "Amazon0000's Project") via le
+connecteur MCP Supabase officiel (accès réel, pas simulé) :
+
+- Toutes les migrations du module (016 à 025 + 020-021-023 du travail
+  parallèle) ont été **réellement appliquées** à cette base.
+- Un test de bout en bout a été exécuté avec de vraies données (vendeur,
+  produit, campagne active/payée), confirmant que `get_active_sponsored_products()`
+  fonctionne pour un visiteur anonyme tout en gardant `ad_campaigns`
+  totalement inaccessible en lecture directe pour ce même rôle — puis les
+  données de test ont été nettoyées.
+- Les Security et Performance Advisors Supabase ont été lancés ; les
+  avertissements sur mon périmètre (search_path mutable, RLS non optimisée)
+  ont été corrigés et re-vérifiés comme résolus.
+- **Découverte critique** : l'historique de migrations réellement appliqué à
+  cette base divergeait des fichiers Git au-delà de la migration 012 (trois
+  migrations `013_marketplace_aggregator`, `014_seller_product_visibility`,
+  `015_super_admin_access` existent en prod sans fichier Git correspondant).
+  Plusieurs fonctionnalités étaient donc cassées en silence en production :
+  `flash_deals` (le code appelait cette table, seule `flash_sales`, sans
+  rapport, existait), `contact_messages` (table absente + RLS trop
+  permissive dans la version Git d'origine), `coupons`, l'expansion pays
+  globale, et la conversion de devises (bug de convention inversée pour
+  les devises non-africaines). Tout cela a été corrigé et appliqué
+  réellement, pas seulement écrit dans le dépôt.
+- Les fichiers de migration Git ont été renommés/complétés pour que leurs
+  timestamps correspondent exactement aux versions réellement enregistrées
+  par Supabase (`supabase migration list`), afin qu'un futur `supabase db
+  push` reste cohérent et idempotent plutôt que de rejouer ou dupliquer du
+  contenu déjà en place.
+- Note de résidu : quelques anciens fichiers Git (`013_seller_kyc_storage`,
+  `014_flash_deals` original, `015_contact_messages` original,
+  `016_strict_data_isolation`, `020_fix_sponsored_products_security_definer`)
+  correspondent à du contenu déjà superseded/appliqué différemment sur cette
+  base précise. Ils restent dans le dépôt (tous idempotents — `IF NOT
+  EXISTS` / `DROP POLICY IF EXISTS` partout — donc sans danger à rejouer)
+  mais leur statut d'application "telle quelle" sur ce projet spécifique est
+  incertain ; la réalité de production fait foi via les fichiers timestampés
+  `2026082803xxxx` et `2026082808xxxx`.
+
+Ce qui reste **non déployé** (hors de portée de l'accès MCP Supabase, qui ne
+couvre pas les Edge Functions/secrets) : les 7 Edge Functions elles-mêmes,
+les secrets de paiement, les webhooks côté provider, et le cron
+d'expiration. La suite de ce document reste le guide pour cette partie.
+
+---
+
 Ce guide part du principe que vous lancez ces commandes depuis une machine
 (ou un CI) qui a un accès réseau normal à Supabase, Stripe, Flutterwave et
 PayUnit — l'environnement dans lequel ce code a été écrit ne l'a pas
