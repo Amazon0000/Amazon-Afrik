@@ -149,22 +149,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   }, []);
 
-  // Auth state
+  // Auth state — pour les vendeurs, sellerId/sellerPlan/sellerStatus
+  // viennent de la VRAIE table `sellers`, jamais des métadonnées
+  // auth.users (qui ne contiennent que ce qui était connu au moment du
+  // signUp() et ne sont jamais mises à jour ensuite — ex: seller_id n'y
+  // est jamais écrit). Bug critique corrigé : avant ce correctif, sellerId
+  // redevenait undefined à chaque connexion/rafraîchissement de page (même
+  // pour un vendeur déjà approuvé), ce qui cassait la création de produit
+  // (retombait sur user.id, une clé étrangère invalide côté `sellers`).
   useEffect(() => {
     const { data: subscription } = supabase.auth.onAuthStateChange((event: string, session: { user?: { id: string; email?: string; user_metadata?: Record<string, unknown> } } | null) => {
       if (session?.user) {
         const u = session.user;
         const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
         const fullName = asString(meta.full_name) || asString(meta.name) || asString(u.email?.split('@')[0]) || 'User';
-        setUserState({
-          id: u.id,
-          email: u.email || '',
-          fullName,
-          role: asUserRole(meta.role) || 'customer',
-          sellerId: asString(meta.seller_id) || undefined,
-          sellerPlan: asSellerPlan(meta.seller_plan),
-          sellerStatus: asSellerStatus(meta.seller_status),
-        });
+        const role = asUserRole(meta.role) || 'customer';
+
+        if (role === 'seller') {
+          supabase.from('sellers').select('id, plan, status').eq('user_id', u.id).maybeSingle().then(({ data: sellerRow }: { data: { id: string; plan: string; status: string } | null }) => {
+            setUserState({
+              id: u.id,
+              email: u.email || '',
+              fullName,
+              role,
+              sellerId: sellerRow?.id,
+              sellerPlan: asSellerPlan(sellerRow?.plan) || asSellerPlan(meta.seller_plan),
+              sellerStatus: asSellerStatus(sellerRow?.status) || asSellerStatus(meta.seller_status),
+            });
+          });
+        } else {
+          setUserState({
+            id: u.id,
+            email: u.email || '',
+            fullName,
+            role,
+            sellerId: undefined,
+            sellerPlan: asSellerPlan(meta.seller_plan),
+            sellerStatus: asSellerStatus(meta.seller_status),
+          });
+        }
       } else if (event !== 'INITIAL_SESSION') {
         setUserState(null);
       }

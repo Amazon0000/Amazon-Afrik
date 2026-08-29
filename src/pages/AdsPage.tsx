@@ -32,7 +32,7 @@ export function AdsPage() {
   const [selectedProvider, setSelectedProvider] = useState<'stripe' | 'flutterwave' | 'payunit'>('stripe');
   const [submitting, setSubmitting] = useState(false);
 
-  const sellerId = user?.sellerId || user?.id || '';
+  const sellerId = user?.sellerId || '';
 
   const reload = async () => {
     if (!sellerId) { setLoading(false); return; }

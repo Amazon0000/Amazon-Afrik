@@ -112,7 +112,11 @@ export function SellerCenterPage() {
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const sellerId = user?.sellerId || user?.id || 'tmp';
+    if (!user?.sellerId) {
+      showToast(locale === 'fr' ? 'Boutique introuvable — reconnectez-vous' : 'Store not found — please log in again', 'error');
+      return;
+    }
+    const sellerId = user.sellerId;
     setUploading(true);
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
@@ -136,7 +140,7 @@ export function SellerCenterPage() {
       showToast(locale === 'fr' ? 'Ajoutez au moins une image' : 'Add at least one image');
       return;
     }
-    const sellerId = user?.sellerId || user?.id;
+    const sellerId = user?.sellerId;
     if (!sellerId) {
       showToast(locale === 'fr' ? 'Vendeur introuvable' : 'Seller not found');
       return;
@@ -366,7 +370,7 @@ export function SellerCenterPage() {
                             <input type="number" min={1} value={newDeal.stockLimit} onChange={(e) => setNewDeal({ ...newDeal, stockLimit: e.target.value })} className="input-field text-xs py-1.5" placeholder={locale === 'fr' ? 'Illimité' : 'Unlimited'} />
                           </div>
                           <button onClick={async () => {
-                            const sellerId = user?.sellerId || user?.id;
+                            const sellerId = user?.sellerId;
                             if (!sellerId) return;
                             const discount = Math.max(1, Math.min(90, parseInt(newDeal.discountPercent) || 20));
                             const hours = Math.max(1, Math.min(168, parseInt(newDeal.durationHours) || 24));
@@ -555,7 +559,7 @@ export function SellerCenterPage() {
                     </div>
                     <div className="flex gap-2">
                       <button onClick={async () => {
-                        const sellerId = user?.sellerId || user?.id;
+                        const sellerId = user?.sellerId;
                         if (!sellerId) return;
                         if (!newCoupon.code.trim()) { showToast(locale === 'fr' ? 'Code requis' : 'Code required', 'error'); return; }
                         const id = await createCoupon({
@@ -674,7 +678,7 @@ export function SellerCenterPage() {
                       </div>
                       <div className="flex gap-2">
                         <button onClick={async () => {
-                          const sellerId = user?.sellerId || user?.id;
+                          const sellerId = user?.sellerId;
                           if (!sellerId) return;
                           if (!newPayment.providerName.trim()) { showToast(locale === 'fr' ? 'Nom du fournisseur requis' : 'Provider name required', 'error'); return; }
                           const id = await addSellerPaymentMethod({
@@ -753,7 +757,7 @@ export function SellerCenterPage() {
                       <button
                         disabled={plan === p || changingPlan}
                         onClick={async () => {
-                          const sellerId = user?.sellerId || user?.id;
+                          const sellerId = user?.sellerId;
                           if (!sellerId || !user) return;
                           setChangingPlan(true);
                           const ok = await updateSellerPlan(sellerId, p);
