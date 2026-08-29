@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag } from 'lucide-react';
 
 // Major global payment service providers, with strong African + worldwide
 // coverage — sellers pick their own PSP here; Zando never touches the
@@ -93,9 +93,13 @@ export function SellerCenterPage() {
   const plan = user?.sellerPlan || 'starter';
   const planColor = plan === 'enterprise' ? '#ff7a00' : plan === 'premium' ? '#ff7a00' : '#64748b';
 
-  const totalRevenue = products.reduce((sum, p) => sum + p.price * (p.total_reviews || 1), 0);
+  // Real revenue: sum of the seller's own orders, not a proxy formula.
+  const completedOrders = orders.filter((o) => o.status !== 'cancelled');
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
   const avgRating = products.length > 0 ? products.reduce((sum, p) => sum + p.rating, 0) / products.length : 0;
   const totalReviews = products.reduce((sum, p) => sum + p.total_reviews, 0);
+  const totalOrders = orders.length;
+  const activeProducts = products.filter((p) => p.approval_status === 'approved' && p.is_active).length;
   const lowStock = products.filter((p) => p.stock > 0 && p.stock < 5);
   const outOfStock = products.filter((p) => p.stock === 0);
 
@@ -443,24 +447,31 @@ export function SellerCenterPage() {
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.analytics}</h1>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard label={locale === 'fr' ? 'Ventes' : 'Sales'} value={totalReviews.toString()} icon={DollarSign} trend="+18%" />
-                  <StatCard label={locale === 'fr' ? 'Conversion' : 'Conversion'} value="4.2%" icon={TrendingUp} />
-                  <StatCard label={locale === 'fr' ? 'Visiteurs' : 'Visitors'} value="12.4K" icon={Users} />
-                  <StatCard label={locale === 'fr' ? 'Trafic' : 'Traffic'} value="89K" icon={BarChart3} />
+                  <StatCard label={locale === 'fr' ? 'Revenus' : 'Revenue'} value={`$${totalRevenue.toFixed(0)}`} icon={DollarSign} />
+                  <StatCard label={locale === 'fr' ? 'Commandes' : 'Orders'} value={totalOrders.toString()} icon={ShoppingCart} />
+                  <StatCard label={locale === 'fr' ? 'Note moyenne' : 'Avg rating'} value={avgRating.toFixed(1)} icon={Star} />
+                  <StatCard label={locale === 'fr' ? 'Produits actifs' : 'Active products'} value={activeProducts.toString()} icon={Package} />
                 </div>
                 <div className="card p-6 bg-white">
                   <h3 className="font-semibold text-[#0f172a] mb-4">{locale === 'fr' ? 'Ventes par produit' : 'Sales by product'}</h3>
                   <div className="space-y-3">
-                    {products.slice(0, 6).map((p) => {
-                      const maxReviews = Math.max(...products.map((x) => x.total_reviews), 1);
-                      const pct = (p.total_reviews / maxReviews) * 100;
-                      return (
+                    {(() => {
+                      const qtyByProduct: Record<string, number> = {};
+                      completedOrders.forEach((o) => o.order_items?.forEach((it) => {
+                        if (it.product_id) qtyByProduct[it.product_id] = (qtyByProduct[it.product_id] || 0) + it.qty;
+                      }));
+                      const ranked = products.map((p) => ({ p, qty: qtyByProduct[p.id] || 0 })).sort((a, b) => b.qty - a.qty).slice(0, 6);
+                      const maxQty = Math.max(...ranked.map((r) => r.qty), 1);
+                      if (ranked.every((r) => r.qty === 0)) {
+                        return <p className="text-sm text-[#64748b] text-center py-4">{locale === 'fr' ? 'Aucune vente pour le moment.' : 'No sales yet.'}</p>;
+                      }
+                      return ranked.map(({ p, qty }) => (
                         <div key={p.id}>
-                          <div className="flex items-center justify-between mb-1"><span className="text-sm text-[#0f172a]">{p.name}</span><span className="text-xs text-[#64748b]">{p.total_reviews}</span></div>
-                          <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#ff7a00] to-[#e06c00]" style={{ width: `${pct}%` }} /></div>
+                          <div className="flex items-center justify-between mb-1"><span className="text-sm text-[#0f172a]">{p.name}</span><span className="text-xs text-[#64748b]">{qty} {locale === 'fr' ? 'vendu(s)' : 'sold'}</span></div>
+                          <div className="h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#ff7a00] to-[#e06c00]" style={{ width: `${(qty / maxQty) * 100}%` }} /></div>
                         </div>
-                      );
-                    })}
+                      ));
+                    })()}
                   </div>
                 </div>
               </div>
