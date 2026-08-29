@@ -44,6 +44,7 @@ export function OnboardingPage() {
   });
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [emailConfirmationPending, setEmailConfirmationPending] = useState(false);
 
   const steps = [
     { num: 1, label: locale === 'fr' ? 'Compte' : 'Account', icon: User },
@@ -92,6 +93,33 @@ export function OnboardingPage() {
             seller_plan: form.plan,
             seller_status: 'pending',
             phone: form.phone,
+            // Toutes les données vendeur transitent par les métadonnées
+            // d'inscription — un trigger côté base (handle_new_seller_signup,
+            // SECURITY DEFINER) crée la ligne `sellers` dès que le compte
+            // auth.users existe, indépendamment de toute session active.
+            // Ancien bug corrigé : l'INSERT direct qui suivait ici échouait
+            // systématiquement (colonnes inexistantes) et, même corrigé,
+            // aurait échoué pour tout compte nécessitant une confirmation
+            // d'email (aucune session active à ce moment-là).
+            business_name: form.businessName,
+            business_type: form.businessType,
+            registration_number: form.registrationNumber,
+            vat_number: form.vatNumber || null,
+            business_address: form.businessAddress || null,
+            country_id: form.countryId || null,
+            store_slug: form.storeSlug,
+            store_desc: form.storeDesc || null,
+            warehouse_address: form.warehouseAddress || null,
+            shipping_zone: form.shippingZone || null,
+            bank_name: form.bankName || null,
+            iban: form.iban || null,
+            swift: form.swift || null,
+            mobile_money: form.mobileMoney || null,
+            ship_national: String(form.shipNational),
+            ship_international: String(form.shipInternational),
+            ship_express: String(form.shipExpress),
+            ship_local: String(form.shipLocal),
+            ship_pickup: String(form.shipPickup),
           },
         },
       });
@@ -101,37 +129,41 @@ export function OnboardingPage() {
       const userId = signUpData.user?.id;
       if (!userId) { setError(locale === 'fr' ? 'Erreur: pas de user ID' : 'Error: no user ID'); setSubmitting(false); return; }
 
-      const { data: sellerData, error: sellerError } = await supabase.from('sellers').insert({
-        user_id: userId,
-        business_name: form.businessName,
-        business_type: form.businessType,
-        registration_number: form.registrationNumber,
-        vat_number: form.vatNumber || null,
-        business_address: form.businessAddress || null,
-        country_id: form.countryId || null,
-        store_name: form.storeName,
-        store_slug: form.storeSlug,
-        store_description: form.storeDesc || null,
-        warehouse_address: form.warehouseAddress || null,
-        shipping_zone: form.shippingZone || null,
-        bank_name: form.bankName || null,
-        iban: form.iban || null,
-        swift: form.swift || null,
-        mobile_money: form.mobileMoney || null,
-        ship_national: form.shipNational,
-        ship_international: form.shipInternational,
-        ship_express: form.shipExpress,
-        ship_local: form.shipLocal,
-        ship_pickup: form.shipPickup,
-        plan: form.plan,
-        plan_selected: form.plan,
-        subscription_status: 'trial',
-        trial_starts_at: new Date().toISOString(),
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'pending',
-      }).select('id').single();
+      // Si la confirmation d'email est activée sur ce projet, signUp() ne
+      // renvoie AUCUNE session active tant que l'email n'est pas confirmé.
+      // Dans ce cas, impossible de relire la ligne sellers (RLS) ni
+      // d'uploader les documents KYC/logo/bannière maintenant — le trigger
+      // handle_new_seller_signup a déjà créé la boutique avec toutes les
+      // infos business/bancaires/livraison, mais les fichiers devront être
+      // complétés après la première connexion confirmée. On l'annonce
+      // clairement plutôt que d'échouer silencieusement ou d'afficher un
+      // faux succès complet.
+      if (!signUpData.session) {
+        setEmailConfirmationPending(true);
+        setSubmitted(true);
+        setSubmitting(false);
+        return;
+      }
 
-      if (sellerError) { setError(sellerError.message); setSubmitting(false); return; }
+      // Le trigger handle_new_seller_signup a créé la ligne `sellers` dans la
+      // même transaction que l'INSERT auth.users — elle est donc déjà
+      // disponible ici. On la relit pour récupérer son id (généré côté
+      // base) et confirmer que la création a bien eu lieu.
+      const { data: sellerData, error: sellerError } = await supabase
+        .from('sellers')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (sellerError || !sellerData) {
+        setError(
+          locale === 'fr'
+            ? "Compte créé, mais la boutique n'a pas pu être initialisée. Contactez le support."
+            : 'Account created, but the store could not be initialized. Please contact support.'
+        );
+        setSubmitting(false);
+        return;
+      }
 
       const sellerId = sellerData.id;
 
@@ -208,6 +240,22 @@ export function OnboardingPage() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#ff7a00]/15 flex items-center justify-center pulse-gold">
             <CheckCircle className="w-8 h-8 text-[#ff7a00]" />
           </div>
+          {emailConfirmationPending ? (
+            <>
+              <h2 className="font-display text-2xl font-bold text-[#0f172a] mb-2">
+                {locale === 'fr' ? 'Confirmez votre email' : 'Confirm your email'}
+              </h2>
+              <p className="text-sm text-[#64748b] mb-4">
+                {locale === 'fr'
+                  ? `Un email de confirmation a été envoyé à ${form.email}. Votre boutique "${form.businessName}" est déjà créée (en attente de validation) — connectez-vous après confirmation pour terminer l'ajout de vos documents et de votre logo.`
+                  : `A confirmation email was sent to ${form.email}. Your store "${form.businessName}" has already been created (pending review) — log in after confirming to finish uploading your documents and logo.`}
+              </p>
+              <button onClick={() => navigate('login')} className="btn-gold px-6 py-3 rounded-lg text-sm font-semibold w-full">
+                {locale === 'fr' ? 'Aller à la connexion' : 'Go to Login'}
+              </button>
+            </>
+          ) : (
+          <>
           <h2 className="font-display text-2xl font-bold text-[#0f172a] mb-2">
             {locale === 'fr' ? 'Bienvenue sur Zando !' : 'Welcome to Zando!'}
           </h2>
@@ -230,6 +278,8 @@ export function OnboardingPage() {
           <button onClick={() => navigate('seller-center')} className="w-full btn-gold py-3 rounded-xl font-semibold">
             {t.nav.sellerCenter}
           </button>
+          </>
+          )}
         </div>
       </div>
     );
