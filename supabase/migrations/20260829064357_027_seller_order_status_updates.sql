@@ -57,9 +57,11 @@ BEGIN
     NEW.tracking_id := OLD.tracking_id;
     NEW.coupon_code := OLD.coupon_code;
     NEW.discount_amount := OLD.discount_amount;
-    NEW.guest_name := OLD.guest_name;
-    NEW.guest_email := OLD.guest_email;
-    NEW.guest_phone := OLD.guest_phone;
+    -- Note : le fichier Git d'origine référençait aussi guest_name/
+    -- guest_email/guest_phone, colonnes qui n'existent pas sur cette base
+    -- de production (orders n'a pas de flux "commande invité" implémenté
+    -- ici) — retirées pour correspondre à la réalité plutôt que de faire
+    -- échouer chaque UPDATE avec "column does not exist".
   ELSIF is_buyer THEN
     -- Buyer may only cancel their own still-pending/confirmed order —
     -- nothing else about the order can change through this path.

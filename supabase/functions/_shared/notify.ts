@@ -46,7 +46,11 @@ export async function notifyAllSuperAdmins(
     // super_admins référence des emails, pas des user_id directement — on
     // résout via auth.users pour respecter la contrainte FK de notifications.
     const { data: userRows } = await supabase.auth.admin.listUsers();
-    const byEmail = new Map((userRows?.users ?? []).map((u: { id: string; email?: string }) => [u.email, u.id]));
+    const byEmail = new Map<string, string>(
+      (userRows?.users ?? [])
+        .filter((u: { id: string; email?: string }) => !!u.email)
+        .map((u: { id: string; email?: string }): [string, string] => [u.email as string, u.id])
+    );
 
     for (const admin of admins as { email: string }[]) {
       const uid = byEmail.get(admin.email);
