@@ -5,12 +5,9 @@ import { useState } from 'react';
 // stock photography: avoids copyright/hotlink-reliability risk entirely
 // while still delivering a real "shopping" visual, not a placeholder.
 //
-// VIDÉO RÉELLE : renseignez AUTH_VISUAL_VIDEO_URL avec une vraie vidéo
-// hébergée (Supabase Storage, Cloudinary, Mux, votre CDN...) pour
-// remplacer l'illustration statique par une vidéo en arrière-plan. Tant
-// que cette valeur est vide, le composant reste l'illustration SVG
-// ci-dessous — jamais de lecteur vidéo cassé avec une URL inventée.
-const AUTH_VISUAL_VIDEO_URL = '';
+// Real video (Pexels License — free for commercial use, no attribution
+// required): https://www.pexels.com/license/.
+const AUTH_VISUAL_VIDEO_URL = 'https://videos.pexels.com/video-files/8937981/8937981-hd_1920_1080_30fps.mp4';
 
 export function AuthVisual() {
   const [videoFailed, setVideoFailed] = useState(false);

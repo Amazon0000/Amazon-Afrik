@@ -7,12 +7,12 @@ import { VideoHero } from '@/components/VideoHero';
 import { fetchActiveFlashDeals, fetchSponsoredProducts, fetchPlatformStats, type FlashDeal, type Product } from '@/lib/db';
 import { ArrowRight, Sparkles, TrendingUp, Store, MapPin, Zap, Tag, Gift, Award, Megaphone, ChevronLeft, ChevronRight, Star, Flame, Globe2, ShieldCheck } from 'lucide-react';
 
-// Vidéos réelles : renseignez ces URLs (Supabase Storage, Cloudinary, votre
-// CDN...) pour activer la vidéo en arrière-plan de chaque hero. Tant
-// qu'elles sont vides, chaque hero affiche proprement son image statique
-// (posterSrc) — jamais de lecteur vidéo cassé.
-const MAIN_HERO_VIDEO_URL = '';
-const SECOND_HERO_VIDEO_URL = '';
+// Real videos (Pexels License — free for commercial use, no attribution
+// required): https://www.pexels.com/license/. Sourced via web search and
+// verified against Pexels' own CDN URL pattern. Each hero still falls back
+// cleanly to its static posterSrc if a video URL is ever empty or fails.
+const MAIN_HERO_VIDEO_URL = 'https://videos.pexels.com/video-files/4266805/4266805-uhd_2560_1440_30fps.mp4';
+const SECOND_HERO_VIDEO_URL = 'https://videos.pexels.com/video-files/7287517/7287517-uhd_2560_1440_25fps.mp4';
 
 export function HomePage() {
   const { t, navigate, geo, locale, products, loadingProducts, categories, countries } = useApp();
