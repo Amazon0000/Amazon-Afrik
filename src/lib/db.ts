@@ -900,6 +900,18 @@ export async function fetchSellerOrders(sellerId: string): Promise<Order[]> {
   return data || [];
 }
 
+export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
+  const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+  if (error) { console.error('updateOrderStatus:', error.message); return false; }
+  return true;
+}
+
+export async function cancelOwnOrder(orderId: string): Promise<boolean> {
+  const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
+  if (error) { console.error('cancelOwnOrder:', error.message); return false; }
+  return true;
+}
+
 // Real, derived notification feed — no separate notifications table; built
 // from actual order status so nothing shown is fabricated.
 export type NotificationItem = { id: string; text: string; date: string; status: string };
@@ -1172,20 +1184,24 @@ export async function createReview(opts: {
   authorName: string;
   rating: number;
   comment: string;
-}): Promise<boolean> {
+}): Promise<{ ok: boolean; reason?: 'duplicate' | 'error' }> {
+  // is_verified is computed server-side by a trigger (real purchase check)
+  // — never sent from here, and never trusted from the client.
   const { error } = await supabase.from('reviews').insert({
     product_id: opts.productId,
     user_id: opts.userId,
     author_name: opts.authorName,
     rating: opts.rating,
     comment: opts.comment,
-    is_verified: true,
   });
   if (error) {
     console.error('createReview error:', error.message);
-    return false;
+    if (error.message.includes('duplicate key') || error.message.includes('reviews_product_user_unique')) {
+      return { ok: false, reason: 'duplicate' };
+    }
+    return { ok: false, reason: 'error' };
   }
-  return true;
+  return { ok: true };
 }
 
 export async function createAdCampaign(opts: {

@@ -125,14 +125,14 @@ export function ProductPage() {
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      showToast(locale === 'fr' ? 'Vezillez vous connecter pour laisser un avis.' : 'Please login to write a review.', 'error');
+      showToast(locale === 'fr' ? 'Veuillez vous connecter pour laisser un avis.' : 'Please login to write a review.', 'error');
       navigate('login');
       return;
     }
     if (!newReviewComment.trim()) return;
 
     setSubmittingReview(true);
-    const ok = await createReview({
+    const result = await createReview({
       productId: product.id,
       userId: user.id,
       authorName: user.fullName,
@@ -141,12 +141,14 @@ export function ProductPage() {
     });
 
     setSubmittingReview(false);
-    if (ok) {
+    if (result.ok) {
       showToast(locale === 'fr' ? 'Avis publié avec succès !' : 'Review published successfully!');
       setNewReviewComment('');
       // Reload product to show the newly added review
       const p = await fetchProductById(product.id);
       setProduct(p);
+    } else if (result.reason === 'duplicate') {
+      showToast(locale === 'fr' ? 'Vous avez déjà laissé un avis pour ce produit.' : 'You\u2019ve already reviewed this product.', 'error');
     } else {
       showToast(locale === 'fr' ? 'Erreur lors de la publication' : 'Error publishing review', 'error');
     }

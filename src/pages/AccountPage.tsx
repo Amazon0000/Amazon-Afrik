@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder } from '@/lib/db';
 import type { Product, Address, Order } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2 } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle } from 'lucide-react';
 
 export function AccountPage() {
   const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
   const [tab, setTab] = useState((params.tab as string) || 'profile');
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [buyingAgain, setBuyingAgain] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
@@ -90,6 +91,18 @@ export function AccountPage() {
     showToast(locale === 'fr' ? `${product.name} ajouté au panier` : `${product.name} added to cart`);
   };
 
+  const cancelOrder = async (orderId: string) => {
+    setCancellingId(orderId);
+    const ok = await cancelOwnOrder(orderId);
+    setCancellingId(null);
+    if (ok) {
+      setOrders(orders.map((o) => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+      showToast(locale === 'fr' ? 'Commande annulée' : 'Order cancelled');
+    } else {
+      showToast(locale === 'fr' ? 'Erreur lors de l\u2019annulation' : 'Error cancelling order', 'error');
+    }
+  };
+
   return (
     <div className="motif-bg min-h-screen">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -153,7 +166,14 @@ export function AccountPage() {
                         ))}
                         <div className="flex items-center justify-between pt-3 border-t border-[#ff7a00]/10">
                           <span className="font-bold text-[#0f172a]">{t.cart.total}: ${order.total.toFixed(2)}</span>
-                          <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#ff7a00] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
+                          <div className="flex items-center gap-3">
+                            {['pending', 'confirmed'].includes(order.status) && (
+                              <button onClick={() => cancelOrder(order.id)} disabled={cancellingId === order.id} className="flex items-center gap-1 text-sm font-semibold text-red-500 hover:underline disabled:opacity-50">
+                                {cancellingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />} {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                              </button>
+                            )}
+                            <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#ff7a00] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
+                          </div>
                         </div>
                       </div>
                     ))}

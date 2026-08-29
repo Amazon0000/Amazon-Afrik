@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Users, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag } from 'lucide-react';
@@ -397,16 +397,43 @@ export function SellerCenterPage() {
                   <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><ShoppingCart className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune commande pour le moment.' : 'No orders yet.'}</div>
                 ) : (
                   <div className="card overflow-hidden bg-white">
-                    {orders.map((o, i) => (
-                      <div key={o.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-[#0f172a]">{o.order_items?.[0]?.product_name || 'Order'}</p>
-                          <p className="text-xs text-[#64748b]">{o.tracking_id || o.id.slice(0, 8)} • {new Date(o.created_at).toLocaleDateString()}</p>
+                    {orders.map((o, i) => {
+                      const nextStatus: Record<string, string> = { confirmed: 'preparing', preparing: 'inTransit', inTransit: 'delivered' };
+                      const nextLabel: Record<string, string> = {
+                        confirmed: locale === 'fr' ? 'Marquer en préparation' : 'Mark preparing',
+                        preparing: locale === 'fr' ? 'Marquer expédiée' : 'Mark shipped',
+                        inTransit: locale === 'fr' ? 'Marquer livrée' : 'Mark delivered',
+                      };
+                      const canAdvance = !!nextStatus[o.status];
+                      const canCancel = ['confirmed', 'preparing'].includes(o.status);
+                      return (
+                        <div key={o.id} className={`flex flex-wrap items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
+                          <div className="flex-1 min-w-[140px]">
+                            <p className="text-sm font-semibold text-[#0f172a]">{o.order_items?.[0]?.product_name || 'Order'}</p>
+                            <p className="text-xs text-[#64748b]">{o.tracking_id || o.id.slice(0, 8)} • {new Date(o.created_at).toLocaleDateString()}</p>
+                          </div>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase rounded-full" style={{ background: `${statusColors[o.status]}15`, color: statusColors[o.status] }}>{t.delivery[o.status as 'pending' | 'confirmed' | 'preparing' | 'inTransit' | 'delivered' | 'cancelled']}</span>
+                          <span className="font-bold text-[#0f172a]">${o.total.toFixed(0)}</span>
+                          {(canAdvance || canCancel) && (
+                            <div className="flex gap-1.5 w-full sm:w-auto">
+                              {canAdvance && (
+                                <button onClick={async () => {
+                                  const ok = await updateOrderStatus(o.id, nextStatus[o.status] as Order['status']);
+                                  if (ok) { setOrders(orders.map(x => x.id === o.id ? { ...x, status: nextStatus[o.status] as Order['status'] } : x)); showToast(locale === 'fr' ? 'Statut mis à jour' : 'Status updated'); }
+                                  else showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+                                }} className="btn-cocoa px-3 py-1.5 rounded-full text-xs font-semibold">{nextLabel[o.status]}</button>
+                              )}
+                              {canCancel && (
+                                <button onClick={async () => {
+                                  const ok = await updateOrderStatus(o.id, 'cancelled');
+                                  if (ok) { setOrders(orders.map(x => x.id === o.id ? { ...x, status: 'cancelled' } : x)); showToast(locale === 'fr' ? 'Commande annulée' : 'Order cancelled'); }
+                                }} className="px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <span className="px-2 py-1 text-[10px] font-bold uppercase rounded-full" style={{ background: `${statusColors[o.status]}15`, color: statusColors[o.status] }}>{t.delivery[o.status as 'pending' | 'confirmed' | 'preparing' | 'inTransit' | 'delivered' | 'cancelled']}</span>
-                        <span className="font-bold text-[#0f172a]">${o.total.toFixed(0)}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
