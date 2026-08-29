@@ -24,9 +24,12 @@ function AuthLayout({ children, locale }: { children: React.ReactNode; locale: '
       </div>
 
       {/* Visual side — desktop only */}
-      <div className="hidden lg:block lg:w-[46%] relative">
+      <div className="hidden lg:block lg:w-[46%] relative overflow-hidden">
+        {/* Vidéo réelle si AUTH_VISUAL_VIDEO_URL est renseignée (voir
+            AuthVisual.tsx) ; repli propre sur l'illustration SVG sinon —
+            jamais de lecteur vidéo cassé. */}
         <AuthVisual />
-        <div className="absolute inset-0 flex flex-col justify-end p-12 text-white">
+        <div className="absolute inset-0 flex flex-col justify-end p-12 text-white bg-gradient-to-t from-black/50 via-transparent to-transparent">
           <h2 className="font-display text-3xl font-bold leading-tight mb-3">
             {locale === 'fr' ? 'La marketplace premium mondiale.' : 'The world\u2019s premium marketplace.'}
           </h2>

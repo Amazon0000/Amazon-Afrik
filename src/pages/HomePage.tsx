@@ -2,13 +2,23 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
-import { fetchActiveFlashDeals, fetchSponsoredProducts, type FlashDeal, type Product } from '@/lib/db';
-import { ArrowRight, Sparkles, TrendingUp, Store, MapPin, Zap, Tag, Gift, Award, Megaphone, ChevronLeft, ChevronRight, Star, Flame } from 'lucide-react';
+import { CountryCarousel } from '@/components/CountryCarousel';
+import { VideoHero } from '@/components/VideoHero';
+import { fetchActiveFlashDeals, fetchSponsoredProducts, fetchPlatformStats, type FlashDeal, type Product } from '@/lib/db';
+import { ArrowRight, Sparkles, TrendingUp, Store, MapPin, Zap, Tag, Gift, Award, Megaphone, ChevronLeft, ChevronRight, Star, Flame, Globe2, ShieldCheck } from 'lucide-react';
+
+// Vidéos réelles : renseignez ces URLs (Supabase Storage, Cloudinary, votre
+// CDN...) pour activer la vidéo en arrière-plan de chaque hero. Tant
+// qu'elles sont vides, chaque hero affiche proprement son image statique
+// (posterSrc) — jamais de lecteur vidéo cassé.
+const MAIN_HERO_VIDEO_URL = '';
+const SECOND_HERO_VIDEO_URL = '';
 
 export function HomePage() {
   const { t, navigate, geo, locale, products, loadingProducts, categories, countries } = useApp();
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
   const [paidSponsored, setPaidSponsored] = useState<Product[]>([]);
+  const [platformStats, setPlatformStats] = useState<{ sellers: number; products: number; countries: number } | null>(null);
 
   useEffect(() => {
     fetchActiveFlashDeals().then(setFlashDeals);
@@ -17,6 +27,7 @@ export function HomePage() {
     // n'est conservé que comme repli pour les données de démo/seed sans
     // campagne réelle associée.
     fetchSponsoredProducts('homepage').then(setPaidSponsored);
+    fetchPlatformStats().then(setPlatformStats);
   }, []);
 
   const sponsored = paidSponsored.length > 0 ? paidSponsored : products.filter((p) => p.is_sponsored);
@@ -55,6 +66,60 @@ export function HomePage() {
 
   return (
     <div className="bg-[#eaeded] min-h-screen pb-12 font-sans">
+      {/* ============ HERO PRINCIPAL (marketplace mondiale) ============ */}
+      <VideoHero
+        videoSrc={MAIN_HERO_VIDEO_URL}
+        posterSrc="https://images.pexels.com/photos/4498362/pexels-photo-4498362.jpeg?auto=compress&cs=tinysrgb&w=1600"
+        heightClassName="h-[480px] sm:h-[560px] lg:h-[640px]"
+      >
+        <div className="w-full grid lg:grid-cols-[1fr_360px] gap-8 items-end pb-10 sm:pb-16">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-full pl-1.5 pr-4 py-1.5 mb-6">
+              <div className="flex -space-x-2">
+                {countries.filter((c) => c.is_active).slice(0, 5).map((c) => (
+                  <span key={c.id} className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-xs border border-white/50">{c.flag}</span>
+                ))}
+              </div>
+              <span className="text-xs font-semibold text-white">
+                {platformStats ? `${locale === 'fr' ? 'De' : 'From'} ${platformStats.countries}+ ${locale === 'fr' ? 'pays vers vous' : 'countries to you'}` : (locale === 'fr' ? 'Vendeurs du monde entier' : 'Sellers from around the world')}
+              </span>
+            </div>
+
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-[1.05] mb-5">
+              {locale === 'fr' ? (
+                <>Le meilleur du monde,<br />livré chez vous.</>
+              ) : (
+                <>The World's Best —<br />Delivered to Your Doorstep.</>
+              )}
+            </h1>
+            <p className="text-sm sm:text-lg text-white/85 max-w-lg mb-8">
+              {locale === 'fr'
+                ? "Zando connecte des vendeurs vérifiés partout dans le monde — d'Afrique et d'ailleurs — à des acheteurs partout dans le monde. Paiement direct au vendeur, 0% de commission sur vos ventes."
+                : 'Zando connects verified sellers from around the world — across Africa and beyond — with buyers everywhere. Direct payment to sellers, 0% commission on your sales.'}
+            </p>
+            <button onClick={() => navigate('catalog')} className="btn-gold px-7 py-3.5 rounded-full text-sm font-bold inline-flex items-center gap-2">
+              {locale === 'fr' ? 'Explorer les produits' : 'Explore Products'} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <button onClick={() => navigate('catalog')} className="hidden lg:flex bg-white rounded-2xl p-5 items-center gap-4 shadow-2xl text-left hover:-translate-y-1 transition-transform">
+            <div className="w-16 h-16 rounded-xl bg-[#ff7a00]/10 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-7 h-7 text-[#ff7a00]" />
+            </div>
+            <div>
+              <p className="font-display font-bold text-[#0f172a]">{locale === 'fr' ? 'Voir tous les produits' : 'See All Products'}</p>
+              <p className="text-xs text-[#64748b] mt-0.5">
+                {locale === 'fr' ? 'Épicerie, mode, beauté et plus, de vendeurs vérifiés.' : 'Groceries, fashion, beauty & more from verified sellers.'}
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-[#ff7a00] shrink-0 ml-auto" />
+          </button>
+        </div>
+      </VideoHero>
+
+      {/* ============ CARROUSEL DE PAYS (données réelles) ============ */}
+      <CountryCarousel />
+
       {/* Hero Banner Carousel (Amazon style: full width fading down) */}
       <section className="relative w-full bg-[#eaeded] h-[220px] sm:h-[350px] md:h-[420px] lg:h-[550px] overflow-hidden select-none">
         {heroSlides.map((p, i) => (
@@ -377,6 +442,38 @@ export function HomePage() {
         </section>
 
       </div>
+
+      {/* ============ SECOND HERO : vendre partout dans le monde ============ */}
+      <VideoHero
+        videoSrc={SECOND_HERO_VIDEO_URL}
+        posterSrc="https://images.pexels.com/photos/4483610/pexels-photo-4483610.jpeg?auto=compress&cs=tinysrgb&w=1600"
+        overlayClassName="bg-gradient-to-t from-black/75 via-black/40 to-black/10"
+        heightClassName="h-[380px] sm:h-[460px] lg:h-[520px]"
+      >
+        <div className="w-full flex flex-col items-start max-w-2xl">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ff7a00] text-black text-[11px] font-black uppercase tracking-wide mb-4">
+            <Globe2 className="w-3 h-3" /> {locale === 'fr' ? 'Pour les vendeurs' : 'For sellers'}
+          </span>
+          <h2 className="font-display text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4">
+            {locale === 'fr'
+              ? 'Vendez à des acheteurs partout dans le monde.'
+              : 'Sell to buyers anywhere in the world.'}
+          </h2>
+          <p className="text-sm sm:text-base text-white/85 mb-7 max-w-xl">
+            {locale === 'fr'
+              ? "Ouvrez votre boutique, gardez 100% de vos ventes — payées directement sur votre propre compte — et touchez des acheteurs dans plus de 90 pays. Zando ne vit que de vos options publicitaires et de votre abonnement, jamais d'une commission sur vos ventes."
+              : 'Open your store, keep 100% of your sales — paid directly to your own account — and reach buyers in 90+ countries. Zando earns only from optional advertising and subscriptions, never a cut of your sales.'}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button onClick={() => navigate('onboarding')} className="btn-gold px-6 py-3 rounded-full text-sm font-bold inline-flex items-center gap-2">
+              {locale === 'fr' ? 'Devenir vendeur' : 'Become a Seller'} <ArrowRight className="w-4 h-4" />
+            </button>
+            <button onClick={() => navigate('sell')} className="px-6 py-3 rounded-full text-sm font-bold border border-white/30 text-white hover:bg-white/10 transition-colors">
+              {locale === 'fr' ? 'En savoir plus' : 'Learn More'}
+            </button>
+          </div>
+        </div>
+      </VideoHero>
     </div>
   );
 }

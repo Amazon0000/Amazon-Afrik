@@ -1,8 +1,35 @@
+import { useState } from 'react';
+
 // Original SVG illustration (shopping bags, boxes, price tag) in the
 // brand palette — used as the AuthPage's visual side panel. No external
 // stock photography: avoids copyright/hotlink-reliability risk entirely
 // while still delivering a real "shopping" visual, not a placeholder.
+//
+// VIDÉO RÉELLE : renseignez AUTH_VISUAL_VIDEO_URL avec une vraie vidéo
+// hébergée (Supabase Storage, Cloudinary, Mux, votre CDN...) pour
+// remplacer l'illustration statique par une vidéo en arrière-plan. Tant
+// que cette valeur est vide, le composant reste l'illustration SVG
+// ci-dessous — jamais de lecteur vidéo cassé avec une URL inventée.
+const AUTH_VISUAL_VIDEO_URL = '';
+
 export function AuthVisual() {
+  const [videoFailed, setVideoFailed] = useState(false);
+  const showVideo = !!AUTH_VISUAL_VIDEO_URL && !videoFailed;
+
+  if (showVideo) {
+    return (
+      <video
+        className="w-full h-full object-cover"
+        src={AUTH_VISUAL_VIDEO_URL}
+        autoPlay
+        muted
+        loop
+        playsInline
+        onError={() => setVideoFailed(true)}
+      />
+    );
+  }
+
   return (
     <svg viewBox="0 0 600 800" className="w-full h-full" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
