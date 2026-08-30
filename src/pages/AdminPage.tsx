@@ -5,20 +5,7 @@ import { supabase } from '@/lib/supabase';
 import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { CountryFlag } from '@/components/CountryFlag';
-import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
-
-type StaffRole = {
-  id: string; name: string; description: string;
-  permissions: { module: string; read: boolean; write: boolean; delete: boolean }[];
-  members: number;
-};
-
-const initialRoles: StaffRole[] = [
-  { id: 'r1', name: 'Support', description: 'Customer support agents', permissions: [{ module: 'sellers', read: true, write: false, delete: false }, { module: 'products', read: true, write: false, delete: false }, { module: 'disputes', read: true, write: true, delete: false }], members: 8 },
-  { id: 'r2', name: 'KYC Verifier', description: 'Verify seller documents', permissions: [{ module: 'sellers', read: true, write: true, delete: false }, { module: 'kyc', read: true, write: true, delete: false }], members: 4 },
-  { id: 'r3', name: 'Product Moderator', description: 'Moderate product listings', permissions: [{ module: 'products', read: true, write: true, delete: true }, { module: 'sellers', read: true, write: false, delete: false }], members: 3 },
-  { id: 'r4', name: 'Ads Manager', description: 'Manage ad slots and campaigns', permissions: [{ module: 'ads', read: true, write: true, delete: true }, { module: 'analytics', read: true, write: false, delete: false }], members: 2 },
-];
+import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
 
 function ProductApprovalCard({ product, categories, locale, onApprove, onReject }: {
   product: Product;
@@ -61,9 +48,6 @@ function ProductApprovalCard({ product, categories, locale, onApprove, onReject 
 export function AdminPage() {
   const { t, locale, user, navigate, showToast } = useApp();
   const [tab, setTab] = useState('overview');
-  const [roles, setRoles] = useState<StaffRole[]>(initialRoles);
-  const [showRoleForm, setShowRoleForm] = useState(false);
-  const [editingRole, setEditingRole] = useState<StaffRole | null>(null);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
@@ -130,8 +114,7 @@ export function AdminPage() {
     { id: 'revenue', label: locale === 'fr' ? 'Revenus Zando' : 'Zando Revenue', icon: DollarSign, superOnly: true },
     { id: 'affiliates', label: locale === 'fr' ? 'Affiliés' : 'Affiliates', icon: UserPlus, superOnly: true },
     { id: 'geography', label: t.admin.geography, icon: Globe, superOnly: true },
-    { id: 'staff', label: t.admin.staff, icon: Users, superOnly: true },
-    { id: 'plans', label: t.admin.plans, icon: CreditCard, superOnly: true },
+        { id: 'plans', label: t.admin.plans, icon: CreditCard, superOnly: true },
     { id: 'adv-dashboard', label: locale === 'fr' ? 'Publicité — Dashboard' : 'Advertising — Dashboard', icon: Megaphone, superOnly: true },
     { id: 'adv-campaigns', label: locale === 'fr' ? 'Publicité — Campagnes' : 'Advertising — Campaigns', icon: Megaphone, superOnly: true },
     { id: 'adv-plans', label: locale === 'fr' ? 'Publicité — Formules' : 'Advertising — Plans', icon: CreditCard, superOnly: true },
@@ -404,13 +387,18 @@ export function AdminPage() {
             {tab === 'kyc' && (
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.kyc}</h2>
+                <p className="text-sm text-[#64748b] mb-4">
+                  {locale === 'fr' ? "Vendeurs en attente d'approbation de compte. Voir l'onglet Documents pour vérifier leurs pièces d'identité." : "Sellers awaiting account approval. See the Documents tab to verify their identity documents."}
+                </p>
                 <div className="space-y-3">
-                  {sellers.slice(0, 5).map((s) => (
+                  {sellers.filter((s) => s.status === 'pending').length === 0 ? (
+                    <div className="card p-6 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Aucun vendeur en attente.' : 'No pending sellers.'}</div>
+                  ) : sellers.filter((s) => s.status === 'pending').map((s) => (
                     <div key={s.id} className="card p-5 flex items-center gap-4 bg-white">
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#f7f8fa]"><img src={s.store_logo_url || ''} alt="" className="w-full h-full object-cover" /></div>
-                      <div className="flex-1"><p className="font-semibold text-[#0f172a]">{s.business_name}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Documents vérifiés' : 'Documents verified'}</p></div>
+                      <div className="flex-1"><p className="font-semibold text-[#0f172a]">{s.business_name}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'En attente de vérification' : 'Awaiting verification'}</p></div>
                       <div className="flex gap-2">
-                        <button onClick={async () => { await updateSellerStatus(s.id, 'active'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuvé' : 'Seller approved'); }} className="px-3 py-2 rounded-lg bg-[#ff7a00]/15 text-[#e06c00] text-xs font-semibold flex items-center gap-1 hover:bg-[#ff7a00]/25"><CheckCircle className="w-4 h-4" /> {t.onboarding.approved}</button>
+                        <button onClick={async () => { await updateSellerStatus(s.id, 'approved'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuvé' : 'Seller approved'); }} className="px-3 py-2 rounded-lg bg-[#ff7a00]/15 text-[#e06c00] text-xs font-semibold flex items-center gap-1 hover:bg-[#ff7a00]/25"><CheckCircle className="w-4 h-4" /> {t.onboarding.approved}</button>
                         <button onClick={async () => { await updateSellerStatus(s.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.reject', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'rejected' as const } : x)); showToast(locale === 'fr' ? 'Vendeur rejeté' : 'Seller rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {t.onboarding.rejected}</button>
                       </div>
                     </div>
@@ -517,51 +505,6 @@ export function AdminPage() {
               </div>
             )}
 
-            {tab === 'staff' && isSuperAdmin && (
-              <div className="animate-fade-up">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-xl font-bold text-[#0f172a]">{t.admin.staff}</h2>
-                  <button onClick={() => { setEditingRole(null); setShowRoleForm(!showRoleForm); }} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {locale === 'fr' ? 'Nouveau rôle' : 'New role'}</button>
-                </div>
-                {showRoleForm && (
-                  <div className="card p-5 mb-4 animate-fade-up bg-white">
-                    <input defaultValue={editingRole?.name || ''} placeholder={locale === 'fr' ? 'Nom du rôle' : 'Role name'} className="input-field mb-3" />
-                    <input defaultValue={editingRole?.description || ''} placeholder={locale === 'fr' ? 'Description' : 'Description'} className="input-field mb-4" />
-                    <div className="space-y-2 mb-4">
-                      {['sellers', 'products', 'kyc', 'ads', 'disputes', 'analytics'].map((m) => {
-                        const existing = editingRole?.permissions.find(p => p.module === m);
-                        return (
-                        <div key={m} className="flex items-center gap-4 p-2 rounded-lg bg-[#f7f8fa]">
-                          <span className="text-sm font-medium text-[#0f172a] flex-1">{m}</span>
-                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.read} className="accent-[#ff7a00]" /> {locale === 'fr' ? 'Lecture' : 'Read'}</label>
-                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.write} className="accent-[#ff7a00]" /> {locale === 'fr' ? 'Écriture' : 'Write'}</label>
-                          <label className="flex items-center gap-1 text-xs text-[#64748b]"><input type="checkbox" defaultChecked={existing?.delete} className="accent-[#ff7a00]" /> {locale === 'fr' ? 'Suppression' : 'Delete'}</label>
-                        </div>
-                        );
-                      })}
-                    </div>
-                    <button onClick={() => { setShowRoleForm(false); setEditingRole(null); showToast(editingRole ? (locale === 'fr' ? 'Rôle mis à jour' : 'Role updated') : (locale === 'fr' ? 'Rôle créé' : 'Role created')); }} className="btn-green px-5 py-2 rounded-lg text-sm font-semibold">{editingRole ? (locale === 'fr' ? 'Mettre à jour' : 'Update') : t.common.save}</button>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  {roles.map((r) => (
-                    <div key={r.id} className="card p-5 bg-white">
-                      <div className="flex items-center justify-between mb-3">
-                        <div><h3 className="font-semibold text-[#0f172a]">{r.name}</h3><p className="text-xs text-[#64748b]">{r.description}</p></div>
-                        <div className="flex items-center gap-2">
-                          <Badge color="#ff7a00">{r.members} {locale === 'fr' ? 'membres' : 'members'}</Badge>
-                          <button onClick={() => { setEditingRole(r); setShowRoleForm(true); }} className="p-2 rounded-lg hover:bg-[#f7f8fa]"><Edit className="w-4 h-4 text-[#64748b]" /></button>
-                          <button onClick={() => setRoles(roles.filter((x) => x.id !== r.id))} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {r.permissions.map((p) => (<span key={p.module} className="px-2.5 py-1 text-xs rounded-full bg-[#f7f8fa] text-[#0f172a]">{p.module} • {[p.read && 'R', p.write && 'W', p.delete && 'D'].filter(Boolean).join('/')}</span>))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {tab === 'analytics' && (
               <div className="animate-fade-up space-y-6">
