@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
 import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon } from '@/lib/db';
+import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download } from 'lucide-react';
 
 // Major global payment service providers, with strong African + worldwide
 // coverage — sellers pick their own PSP here; Zando never touches the
@@ -788,8 +789,32 @@ export function SellerCenterPage() {
 
             {tab === 'invoices' && (
               <div className="animate-fade-up">
-                <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-6">{locale === 'fr' ? 'Factures' : 'Invoices'}</h1>
-                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><FileText className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune facture.' : 'No invoices.'}</div>
+                <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Factures' : 'Invoices'}</h1>
+                <p className="text-sm text-[#64748b] mb-6">
+                  {locale === 'fr' ? 'Une facture PDF réelle par commande, générée à partir de vos vraies données.' : 'A real PDF invoice per order, generated from your actual data.'}
+                </p>
+                {orders.length === 0 ? (
+                  <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><FileText className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune facture.' : 'No invoices.'}</div>
+                ) : (
+                  <div className="space-y-2">
+                    {orders.map((o) => (
+                      <div key={o.id} className="card p-4 bg-white flex flex-wrap items-center gap-3">
+                        <FileText className="w-4 h-4 text-[#ff7a00] shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-[#0f172a]">{o.tracking_id || o.id.slice(0, 8).toUpperCase()}</p>
+                          <p className="text-xs text-[#64748b]">{new Date(o.created_at).toLocaleDateString()} • {o.currency_code} {o.total.toFixed(2)}</p>
+                        </div>
+                        <Badge color={o.status === 'cancelled' ? '#ef4444' : '#22c55e'}>{o.status}</Badge>
+                        <button
+                          onClick={() => generateInvoicePdf(o, { sellerName: user?.fullName, locale })}
+                          className="px-3 py-1.5 rounded-lg bg-[#ff7a00]/10 text-[#ff7a00] text-xs font-semibold flex items-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5" /> PDF
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
