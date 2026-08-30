@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder } from '@/lib/db';
-import type { Product, Address, Order } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests } from '@/lib/db';
+import type { Product, Address, Order, ReturnRequest } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
+import { generateInvoicePdf } from '@/lib/invoice';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download } from 'lucide-react';
 
 export function AccountPage() {
   const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
@@ -14,6 +15,9 @@ export function AccountPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
+  const [returningOrderId, setReturningOrderId] = useState<string | null>(null);
+  const [returnReason, setReturnReason] = useState('');
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
   const [addrForm, setAddrForm] = useState({ label: '', fullName: user?.fullName || '', phone: '', street: '', countryId: '', city: '' });
   const [profileForm, setProfileForm] = useState({ fullName: user?.fullName || '', phone: '' });
@@ -21,9 +25,10 @@ export function AccountPage() {
   useEffect(() => {
     if (!user) { navigate('login'); return; }
     (async () => {
-      const [addr, ords] = await Promise.all([fetchAddresses(user.id), fetchOrders(user.id)]);
+      const [addr, ords, rets] = await Promise.all([fetchAddresses(user.id), fetchOrders(user.id), fetchBuyerReturnRequests(user.id)]);
       setAddresses(addr);
       setOrders(ords);
+      setReturnRequests(rets);
       const prods: Product[] = [];
       for (const id of wishlist) {
         const p = await fetchProductById(id);
@@ -172,9 +177,50 @@ export function AccountPage() {
                                 {cancellingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />} {locale === 'fr' ? 'Annuler' : 'Cancel'}
                               </button>
                             )}
+                            {order.status === 'delivered' && !returnRequests.some((r) => r.order_id === order.id) && (
+                              <button onClick={() => setReturningOrderId(returningOrderId === order.id ? null : order.id)} className="flex items-center gap-1 text-sm font-semibold text-[#0f172a] hover:underline">
+                                <RotateCcw className="w-4 h-4" /> {locale === 'fr' ? 'Demander un retour' : 'Request return'}
+                              </button>
+                            )}
+                            {returnRequests.some((r) => r.order_id === order.id) && (
+                              <span className="text-xs font-semibold text-[#64748b]">
+                                {locale === 'fr' ? 'Retour' : 'Return'}: {returnRequests.find((r) => r.order_id === order.id)?.status}
+                              </span>
+                            )}
+                            <button onClick={() => generateInvoicePdf(order, { locale })} className="flex items-center gap-1 text-sm font-semibold text-[#64748b] hover:text-[#0f172a]">
+                              <Download className="w-4 h-4" /> {locale === 'fr' ? 'Facture' : 'Invoice'}
+                            </button>
                             <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#ff7a00] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
                           </div>
                         </div>
+                        {returningOrderId === order.id && (
+                          <div className="mt-3 pt-3 border-t border-[#ff7a00]/10 space-y-2">
+                            <textarea
+                              value={returnReason}
+                              onChange={(e) => setReturnReason(e.target.value)}
+                              placeholder={locale === 'fr' ? 'Pourquoi souhaitez-vous retourner cette commande ?' : 'Why do you want to return this order?'}
+                              className="input-field text-sm w-full"
+                              rows={2}
+                            />
+                            <button
+                              onClick={async () => {
+                                if (!returnReason.trim() || !user) return;
+                                const ok = await createReturnRequest({ orderId: order.id, userId: user.id, sellerId: order.seller_id!, reason: returnReason });
+                                if (ok) {
+                                  showToast(locale === 'fr' ? 'Demande de retour envoyée' : 'Return request sent');
+                                  setReturnRequests((prev) => [...prev, { id: 'tmp', order_id: order.id, user_id: user.id, seller_id: order.seller_id!, reason: returnReason, details: null, status: 'requested', seller_response: null, created_at: new Date().toISOString() }]);
+                                  setReturningOrderId(null);
+                                  setReturnReason('');
+                                } else {
+                                  showToast(locale === 'fr' ? 'Erreur lors de la demande' : 'Error requesting return', 'error');
+                                }
+                              }}
+                              className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold"
+                            >
+                              {locale === 'fr' ? 'Envoyer la demande' : 'Send request'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

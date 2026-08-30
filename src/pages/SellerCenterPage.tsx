@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download } from 'lucide-react';
@@ -34,6 +34,8 @@ export function SellerCenterPage() {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returns, setReturns] = useState<ReturnRequest[]>([]);
+  const [respondingReturnId, setRespondingReturnId] = useState<string | null>(null);
   const [ads, setAds] = useState<AdCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [newProduct, setNewProduct] = useState<NewProduct>(emptyProduct);
@@ -54,17 +56,19 @@ export function SellerCenterPage() {
 
   useEffect(() => {
     (async () => {
-      if (!user?.sellerId && !user?.id) { setLoading(false); return; }
+      if (!user?.sellerId) { setLoading(false); return; }
       try {
-        const sellerId = user.sellerId || user.id;
-        const [prods, ords, adCamp] = await Promise.all([
+        const sellerId = user.sellerId;
+        const [prods, ords, adCamp, rets] = await Promise.all([
           fetchProducts({ sellerId, limit: 50, approvalStatus: 'all' }),
           fetchSellerOrders(sellerId),
           fetchSellerCampaignsDetailed(sellerId),
+          fetchSellerReturnRequests(sellerId),
         ]);
         setProducts(prods);
         setOrders(ords.slice(0, 10));
         setAds(adCamp);
+        setReturns(rets);
         const pms = await fetchSellerPaymentMethods(sellerId);
         setPaymentMethods(pms);
         setFlashDeals(await fetchSellerFlashDeals(sellerId));
@@ -820,8 +824,53 @@ export function SellerCenterPage() {
 
             {tab === 'returns' && (
               <div className="animate-fade-up">
-                <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-6">{t.seller.returns}</h1>
-                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><RotateCcw className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun retour en cours.' : 'No returns in progress.'}</div>
+                <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-2">{t.seller.returns}</h1>
+                <p className="text-sm text-[#64748b] mb-6">
+                  {locale === 'fr' ? 'Demandes de retour réelles de vos acheteurs.' : "Real return requests from your buyers."}
+                </p>
+                {returns.length === 0 ? (
+                  <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><RotateCcw className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun retour en cours.' : 'No returns in progress.'}</div>
+                ) : (
+                  <div className="space-y-3">
+                    {returns.map((r) => (
+                      <div key={r.id} className="card p-5 bg-white">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-semibold text-[#0f172a]">{locale === 'fr' ? 'Commande' : 'Order'} {r.orders?.tracking_id || r.order_id.slice(0, 8).toUpperCase()}</p>
+                          <Badge color={r.status === 'requested' ? '#d97706' : r.status === 'rejected' ? '#ef4444' : r.status === 'approved' ? '#0284c7' : '#22c55e'}>{r.status}</Badge>
+                        </div>
+                        <p className="text-sm text-[#0f172a] mb-1"><span className="font-medium">{locale === 'fr' ? 'Motif' : 'Reason'}:</span> {r.reason}</p>
+                        {r.details && <p className="text-xs text-[#64748b] mb-3">{r.details}</p>}
+                        {r.seller_response && (
+                          <p className="text-xs text-[#64748b] bg-[#f7f8fa] rounded-lg p-2 mb-3">
+                            {locale === 'fr' ? 'Votre réponse' : 'Your response'}: {r.seller_response}
+                          </p>
+                        )}
+                        {r.status === 'requested' && (
+                          respondingReturnId === r.id ? (
+                            <ReturnResponseForm
+                              locale={locale}
+                              onSubmit={async (status, response) => {
+                                const ok = await respondToReturnRequest(r.id, status, response);
+                                if (ok) {
+                                  showToast(locale === 'fr' ? 'Réponse envoyée' : 'Response sent');
+                                  setReturns((prev) => prev.map((x) => x.id === r.id ? { ...x, status, seller_response: response } : x));
+                                  setRespondingReturnId(null);
+                                } else {
+                                  showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+                                }
+                              }}
+                              onCancel={() => setRespondingReturnId(null)}
+                            />
+                          ) : (
+                            <button onClick={() => setRespondingReturnId(r.id)} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold">
+                              {locale === 'fr' ? 'Répondre' : 'Respond'}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -858,6 +907,31 @@ export function SellerCenterPage() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ReturnResponseForm({ locale, onSubmit, onCancel }: {
+  locale: 'fr' | 'en';
+  onSubmit: (status: 'approved' | 'rejected' | 'refunded', response: string) => void;
+  onCancel: () => void;
+}) {
+  const [response, setResponse] = useState('');
+  return (
+    <div className="border-t border-[#f0f4f8] pt-3 mt-1 space-y-2">
+      <textarea
+        value={response}
+        onChange={(e) => setResponse(e.target.value)}
+        placeholder={locale === 'fr' ? 'Message pour l\'acheteur (optionnel)' : 'Message for the buyer (optional)'}
+        className="input-field text-sm w-full"
+        rows={2}
+      />
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => onSubmit('approved', response)} className="px-4 py-2 rounded-lg bg-sky-100 text-sky-700 text-xs font-semibold">{locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+        <button onClick={() => onSubmit('refunded', response)} className="px-4 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold">{locale === 'fr' ? 'Rembourser' : 'Refund'}</button>
+        <button onClick={() => onSubmit('rejected', response)} className="px-4 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Refuser' : 'Reject'}</button>
+        <button onClick={onCancel} className="px-4 py-2 rounded-lg text-xs font-semibold text-[#64748b]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
       </div>
     </div>
   );

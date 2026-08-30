@@ -1734,3 +1734,50 @@ export async function fetchAllAdvertisingPayments(): Promise<AdvertisingPayment[
   if (error) { console.error('fetchAllAdvertisingPayments:', error.message); return []; }
   return data || [];
 }
+
+// ============ RETOURS (module réel, remplace l'onglet décoratif) ============
+export type ReturnRequest = {
+  id: string; order_id: string; user_id: string; seller_id: string;
+  reason: string; details: string | null;
+  status: 'requested' | 'approved' | 'rejected' | 'refunded' | 'completed';
+  seller_response: string | null;
+  created_at: string; updated_at?: string;
+  orders?: Order;
+};
+
+export async function createReturnRequest(opts: { orderId: string; userId: string; sellerId: string; reason: string; details?: string }): Promise<boolean> {
+  const { error } = await supabase.from('return_requests').insert({
+    order_id: opts.orderId, user_id: opts.userId, seller_id: opts.sellerId,
+    reason: opts.reason, details: opts.details || null,
+  });
+  if (error) { console.error('createReturnRequest:', error.message); return false; }
+  return true;
+}
+
+export async function fetchBuyerReturnRequests(userId: string): Promise<ReturnRequest[]> {
+  const { data, error } = await supabase
+    .from('return_requests')
+    .select('*, orders(*)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchBuyerReturnRequests:', error.message); return []; }
+  return data || [];
+}
+
+export async function fetchSellerReturnRequests(sellerId: string): Promise<ReturnRequest[]> {
+  const { data, error } = await supabase
+    .from('return_requests')
+    .select('*, orders(*)')
+    .eq('seller_id', sellerId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchSellerReturnRequests:', error.message); return []; }
+  return data || [];
+}
+
+export async function respondToReturnRequest(id: string, status: 'approved' | 'rejected' | 'refunded' | 'completed', sellerResponse?: string): Promise<boolean> {
+  const { error } = await supabase.from('return_requests').update({
+    status, seller_response: sellerResponse || null, updated_at: new Date().toISOString(),
+  }).eq('id', id);
+  if (error) { console.error('respondToReturnRequest:', error.message); return false; }
+  return true;
+}
