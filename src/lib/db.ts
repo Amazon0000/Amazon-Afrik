@@ -1391,6 +1391,16 @@ export async function updateSellerDocument(
   return true;
 }
 
+export async function fetchAllSellerDocumentsAdmin(): Promise<(SellerDocument & { sellers?: Seller })[]> {
+  const { data, error } = await supabase
+    .from('seller_documents')
+    .select('*, sellers(*)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) { console.error('fetchAllSellerDocumentsAdmin:', error.message); return []; }
+  return (data || []) as (SellerDocument & { sellers?: Seller })[];
+}
+
 export async function updateComplianceReport(
   reportId: string,
   status: string,

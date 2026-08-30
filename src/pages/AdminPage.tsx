@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { CountryFlag } from '@/components/CountryFlag';
-import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
+import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
 
 type StaffRole = {
   id: string; name: string; description: string;
@@ -649,23 +649,7 @@ export function AdminPage() {
             {tab === 'adv-plans' && isSuperAdmin && <AdvertisingPlansTab />}
             {tab === 'adv-payments' && isSuperAdmin && <AdvertisingPaymentsTab />}
 
-            {tab === 'documents' && (
-              <div className="animate-fade-up">
-                <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.documents}</h2>
-                <div className="card p-5 bg-white">
-                  <div className="flex items-center gap-2 mb-4"><Search className="w-4 h-4 text-[#64748b]" /><input placeholder={locale === 'fr' ? 'Rechercher documents...' : 'Search documents...'} className="flex-1 text-sm bg-transparent focus:outline-none text-[#0f172a]" /></div>
-                  <div className="space-y-2">
-                    {sellers.slice(0, 5).map((s) => (
-                      <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#f7f8fa]">
-                        <FileText className="w-5 h-5 text-[#ff7a00]" />
-                        <span className="text-sm text-[#0f172a] flex-1">{s.business_name} — {locale === 'fr' ? 'Documents KYC' : 'KYC Documents'}</span>
-                        <Badge color="#ff7a00">{t.onboarding.approved}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            {tab === 'documents' && <SellerDocumentsTab locale={locale} />}
 
             {tab === 'settings' && isSuperAdmin && (
               <div className="animate-fade-up">
@@ -1138,6 +1122,84 @@ function AdvertisingPaymentsTab() {
                 <p className="text-xs text-[#64748b]">{p.provider} • {p.currency_code} {p.amount} • {new Date(p.created_at).toLocaleString()}</p>
               </div>
               <Badge color={p.status === 'paid' ? '#ff7a00' : p.status === 'failed' ? '#ef4444' : '#64748b'}>{p.status}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SellerDocumentsTab({ locale }: { locale: 'fr' | 'en' }) {
+  const { showToast } = useApp();
+  const [docs, setDocs] = useState<(SellerDocument & { sellers?: Seller })[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('pending');
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  const load = async () => {
+    setLoading(true);
+    setDocs(await fetchAllSellerDocumentsAdmin());
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleView = async (doc: SellerDocument) => {
+    if (signedUrls[doc.id]) { window.open(signedUrls[doc.id], '_blank'); return; }
+    const url = await getSellerKycDocumentUrl(doc.file_url);
+    if (url) {
+      setSignedUrls((prev) => ({ ...prev, [doc.id]: url }));
+      window.open(url, '_blank');
+    } else {
+      showToast(locale === 'fr' ? 'Impossible de charger le document' : 'Could not load document', 'error');
+    }
+  };
+
+  const handleDecision = async (docId: string, status: 'approved' | 'rejected') => {
+    const ok = await updateSellerDocument(docId, { status });
+    if (ok) {
+      showToast(status === 'approved' ? (locale === 'fr' ? 'Document approuvé' : 'Document approved') : (locale === 'fr' ? 'Document rejeté' : 'Document rejected'));
+      setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, status } : d));
+    } else {
+      showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+    }
+  };
+
+  const filtered = statusFilter === 'all' ? docs : docs.filter((d) => d.status === statusFilter);
+
+  return (
+    <div className="animate-fade-up">
+      <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Documents KYC vendeurs' : 'Seller KYC Documents'}</h2>
+      <div className="flex gap-2 mb-4">
+        {['pending', 'approved', 'rejected', 'all'].map((s) => (
+          <button key={s} onClick={() => setStatusFilter(s)} className={'px-3 py-1.5 rounded-full text-xs font-semibold ' + (statusFilter === s ? 'bg-[#ff7a00] text-white' : 'bg-white text-[#64748b] border border-[#e2e8f0]')}>
+            {s}
+          </button>
+        ))}
+      </div>
+      {loading ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>
+      ) : filtered.length === 0 ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white"><FileText className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun document.' : 'No documents.'}</div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((d) => (
+            <div key={d.id} className="card p-4 bg-white flex flex-wrap items-center gap-3">
+              <FileText className="w-5 h-5 text-[#ff7a00] shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#0f172a]">{d.sellers?.business_name || d.seller_id}</p>
+                <p className="text-xs text-[#64748b]">{d.doc_type} • {new Date(d.created_at).toLocaleDateString()}</p>
+              </div>
+              <Badge color={d.status === 'approved' ? '#22c55e' : d.status === 'rejected' ? '#ef4444' : '#d97706'}>{d.status}</Badge>
+              <button onClick={() => handleView(d)} className="px-3 py-1.5 rounded-lg bg-[#f7f8fa] text-[#0f172a] text-xs font-semibold flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Voir' : 'View'}
+              </button>
+              {d.status === 'pending' && (
+                <>
+                  <button onClick={() => handleDecision(d.id, 'approved')} className="px-3 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold">{locale === 'fr' ? 'Approuver' : 'Approve'}</button>
+                  <button onClick={() => handleDecision(d.id, 'rejected')} className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
+                </>
+              )}
             </div>
           ))}
         </div>
