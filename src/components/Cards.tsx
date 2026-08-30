@@ -1,6 +1,7 @@
 import { Star, MapPin, Heart } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import type { Product, Seller } from '@/lib/db';
+import { CountryFlag } from './CountryFlag';
 
 export function ProductCard({ product, sponsored }: { product: Product; sponsored?: boolean }) {
   const { t, navigate, wishlist, toggleWishlist, showToast } = useApp();
@@ -87,8 +88,8 @@ export function ProductCard({ product, sponsored }: { product: Product; sponsore
               ({product.total_reviews})
             </span>
             {country && (
-              <span className="text-[11px] text-gray-400 ml-auto" title={country.name}>
-                {country.flag}
+              <span className="ml-auto" title={country.name}>
+                <CountryFlag countryId={country.id} size={14} />
               </span>
             )}
           </div>

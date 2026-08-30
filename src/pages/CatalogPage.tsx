@@ -3,7 +3,8 @@ import { fetchProducts, fetchSponsoredProducts } from '@/lib/db';
 import type { Product } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { EmptyState } from '@/components/ui';
-import { SlidersHorizontal, X, ChevronDown, MapPin } from 'lucide-react';
+import { CountryFlag } from '@/components/CountryFlag';
+import { SlidersHorizontal, X, ChevronDown, MapPin, Globe2 } from 'lucide-react';
 
 export function CatalogPage() {
   const { t, params, geo, setGeo, locale, categories, countries } = useApp();
@@ -197,9 +198,12 @@ export function CatalogPage() {
             <div className="relative">
               <select value={showOtherCountries ? 'all' : geo.countryId} onChange={(e) => { if (e.target.value === 'all') setShowOtherCountries(true); else { setShowOtherCountries(false); setGeo({ countryId: e.target.value }); } }} className="appearance-none pl-7 pr-7 py-1.5 text-xs rounded-lg border border-[#0f172a]/10 bg-[#f7f8fa] text-[#64748b] focus:outline-none focus:border-[#ff7a00] cursor-pointer">
                 <option value="all">{locale === 'fr' ? 'Tous les pays' : 'All countries'}</option>
+                {/* Native <select><option> can't render an <img>, only text. */}
                 {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
               </select>
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none">{countries.find((c) => c.id === geo.countryId)?.flag || '🌐'}</span>
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                {geo.countryId && !showOtherCountries ? <CountryFlag countryId={geo.countryId} size={14} /> : <Globe2 className="w-3.5 h-3.5 text-[#64748b]" />}
+              </span>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#64748b] pointer-events-none" />
             </div>
             {geo.cityName && (

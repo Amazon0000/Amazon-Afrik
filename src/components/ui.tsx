@@ -1,6 +1,7 @@
 import { Star, MapPin, BadgeCheck, Crown, Award } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { useState, useEffect } from 'react';
+import { CountryFlag } from './CountryFlag';
 
 export function Countdown({ endsAt, className = '' }: { endsAt: string; className?: string }) {
   const [remaining, setRemaining] = useState(() => new Date(endsAt).getTime() - Date.now());
@@ -42,7 +43,7 @@ export function CountryTag({ countryId, cityName }: { countryId: string; cityNam
   return (
     <span className="inline-flex items-center gap-1 text-xs text-[#64748b]">
       <MapPin className="w-3 h-3" />
-      {country?.flag} {cityName ? `${cityName}, ` : ''}{country?.name}
+      {country && <CountryFlag countryId={country.id} size={14} />} {cityName ? `${cityName}, ` : ''}{country?.name}
     </span>
   );
 }

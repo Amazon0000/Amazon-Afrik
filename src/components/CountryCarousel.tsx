@@ -58,10 +58,10 @@ export function CountryCarousel() {
             title={c.name}
           >
             <div className={
-              'w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center text-3xl sm:text-[32px] border-2 transition-all bg-white shadow-sm ' +
+              'w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full border-2 transition-all bg-white shadow-sm overflow-hidden ' +
               (geo.countryId === c.id ? 'border-[#ff7a00] ring-2 ring-[#ff7a00]/20' : 'border-[#e2e8f0] group-hover:border-[#ff7a00]/50')
             }>
-              {c.flag}
+              <img src={`https://hatscripts.github.io/circle-flags/flags/${c.id.toLowerCase()}.svg`} alt={c.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
             <span className="text-[11px] font-medium text-[#64748b] group-hover:text-[#0f172a] max-w-[76px] truncate text-center">
               {c.name}

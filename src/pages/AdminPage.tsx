@@ -4,6 +4,7 @@ import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCa
 import { supabase } from '@/lib/supabase';
 import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
+import { CountryFlag } from '@/components/CountryFlag';
 import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, Edit, Search, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
 
 type StaffRole = {
@@ -506,7 +507,7 @@ export function AdminPage() {
                   {countries.map((c) => (
                     <div key={c.id} className="card p-4 bg-white">
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl">{c.flag}</span>
+                        <CountryFlag countryId={c.id} size={32} />
                         <div className="flex-1"><p className="font-semibold text-[#0f172a] text-sm">{c.name}</p><p className="text-xs text-[#64748b]">{c.currency_code} • {c.phone_code}</p></div>
                         <Badge color={c.is_active ? '#ff7a00' : '#64748b'}>{c.is_active ? (locale === 'fr' ? 'Actif' : 'Active') : (locale === 'fr' ? 'Inactif' : 'Inactive')}</Badge>
                       </div>
@@ -612,7 +613,7 @@ export function AdminPage() {
                       const pct = products.length > 0 ? (count / products.length) * 100 : 0;
                       return (
                         <div key={c.id} className="flex items-center gap-3">
-                          <span className="text-lg">{c.flag}</span>
+                          <CountryFlag countryId={c.id} size={20} />
                           <span className="text-xs text-[#0f172a] w-24 truncate">{c.name}</span>
                           <div className="flex-1 h-2 rounded-full bg-[#f7f8fa] overflow-hidden"><div className="h-full rounded-full bg-[#ff7a00]" style={{ width: `${pct}%` }} /></div>
                           <span className="text-xs text-[#64748b] w-8 text-right">{count}</span>
@@ -713,7 +714,7 @@ export function AdminPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Pays actifs' : 'Active countries'}</label>
-                        <div className="flex flex-wrap gap-1">{countries.slice(0, 15).map((c) => <span key={c.id} className="text-lg">{c.flag}</span>)}<span className="text-xs text-[#64748b]">+{countries.length - 15}</span></div>
+                        <div className="flex flex-wrap gap-1">{countries.slice(0, 15).map((c) => <CountryFlag key={c.id} countryId={c.id} size={20} />)}<span className="text-xs text-[#64748b]">+{countries.length - 15}</span></div>
                       </div>
                     </div>
                   </div>

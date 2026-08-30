@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Menu, X, Search, ShoppingBag, Globe, ChevronDown, User as UserIcon, Store, Shield, LayoutDashboard, LogOut, Package, MapPin, ChevronRight, Headphones, Trash2, ShoppingCart, Heart, Bell, ShoppingBasket, Check, Loader2 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Logo } from './Logo';
+import { CountryFlag } from './CountryFlag';
 import { searchSuggestions, fetchNotifications, fetchUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, fetchCitiesForCountry, type AppNotification } from '@/lib/db';
 
 const MEGA_CATEGORIES = [
@@ -134,7 +135,7 @@ export function Header() {
             {locale === 'fr' ? 'Livraison directe par le vendeur, partout dans le monde — 0% commission Zando' : 'Direct seller delivery, worldwide — 0% Zando commission'}
           </div>
           <button onClick={openLocationPanel} className="hidden sm:flex items-center gap-1 font-bold hover:opacity-80 transition-opacity shrink-0">
-            <MapPin className="w-3.5 h-3.5" /> {currentCountry?.flag} {geo.cityName ? `${geo.cityName}, ` : ''}{currentCountry?.name} <ChevronDown className="w-3 h-3 opacity-70" />
+            <MapPin className="w-3.5 h-3.5" /> {currentCountry && <CountryFlag countryId={currentCountry.id} size={16} />} {geo.cityName ? `${geo.cityName}, ` : ''}{currentCountry?.name} <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
         </div>
       </div>
@@ -283,7 +284,7 @@ export function Header() {
                 <p className="px-4 py-1.5 text-[10px] font-bold uppercase text-[#94a3b8]">{locale === 'fr' ? 'Pays' : 'Country'}</p>
                 {filteredCountries.map((c) => (
                   <button key={c.id} onClick={() => selectLocationCountry(c.id)} className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${geo.countryId === c.id ? 'bg-[#3d1f00]/5 text-[#3d1f00] font-semibold' : 'text-[#0f172a] hover:bg-[#f7f8fa]'}`}>
-                    <span>{c.flag}</span> <span className="truncate">{c.name}</span>
+                    <CountryFlag countryId={c.id} size={16} /> <span className="truncate">{c.name}</span>
                     {geo.countryId === c.id && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
                   </button>
                 ))}

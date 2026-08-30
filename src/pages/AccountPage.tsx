@@ -197,6 +197,7 @@ export function AccountPage() {
                     <div className="grid sm:grid-cols-2 gap-3">
                       <select value={addrForm.countryId} onChange={(e) => setAddrForm({ ...addrForm, countryId: e.target.value })} className="input-field text-sm">
                         <option value="">{t.account.selectCountry}</option>
+                        {/* Native <select><option> can't render an <img>, only text — emoji flag is the only option here. */}
                         {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
                       </select>
                       <input placeholder={t.account.selectCity} value={addrForm.city} onChange={(e) => setAddrForm({ ...addrForm, city: e.target.value })} className="input-field text-sm" />

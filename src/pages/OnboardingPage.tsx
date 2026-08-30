@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Logo } from '@/components/Logo';
+import { CountryFlag } from '@/components/CountryFlag';
 import { supabase } from '@/lib/supabase';
 import { UploadCloud, Check, ChevronRight, ChevronLeft, ShieldCheck, Building2, MapPin, FileCheck, Store, Banknote, CreditCard, Truck, User, Phone, Mail, Lock, Wallet, Sparkles, CheckCircle } from 'lucide-react';
 import { uploadSellerAsset, uploadSellerKycDocument, createSellerDocument, resolveAffiliateCode, recordAffiliateReferral } from '@/lib/db';
@@ -364,8 +365,8 @@ export function OnboardingPage() {
                   {countries.map((c) => (
                     <button key={c.id} onClick={() => setForm({ ...form, countryId: c.id })}
                       className={'p-3 rounded-xl border-2 text-left transition-all ' + (form.countryId === c.id ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#0f172a]/10 hover:border-[#ff7a00]/50')}>
-                      <span className="text-2xl mr-1">{c.flag}</span>
-                      <span className="text-sm font-medium text-[#0f172a]">{c.name}</span>
+                      <CountryFlag countryId={c.id} size={22} className="mr-1.5 align-middle" />
+                      <span className="text-sm font-medium text-[#0f172a] align-middle">{c.name}</span>
                     </button>
                   ))}
                 </div>

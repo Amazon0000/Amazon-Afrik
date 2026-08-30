@@ -4,6 +4,7 @@ import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
 import { CountryCarousel } from '@/components/CountryCarousel';
 import { VideoHero } from '@/components/VideoHero';
+import { CountryFlag } from '@/components/CountryFlag';
 import { fetchActiveFlashDeals, fetchSponsoredProducts, fetchPlatformStats, type FlashDeal, type Product } from '@/lib/db';
 import { ArrowRight, Sparkles, TrendingUp, Store, MapPin, Zap, Tag, Gift, Award, Megaphone, ChevronLeft, ChevronRight, Star, Flame, Globe2, ShieldCheck } from 'lucide-react';
 
@@ -77,7 +78,7 @@ export function HomePage() {
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-full pl-1.5 pr-4 py-1.5 mb-6">
               <div className="flex -space-x-2">
                 {countries.filter((c) => c.is_active).slice(0, 5).map((c) => (
-                  <span key={c.id} className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-xs border border-white/50">{c.flag}</span>
+                  <span key={c.id} className="w-6 h-6 rounded-full overflow-hidden border border-white/50"><CountryFlag countryId={c.id} size={24} /></span>
                 ))}
               </div>
               <span className="text-xs font-semibold text-white">
@@ -394,8 +395,8 @@ export function HomePage() {
             <div className="flex items-center justify-between mb-3.5 border-b border-gray-200 pb-2">
               <div>
                 <h2 className="text-[20px] font-black text-gray-900">{t.home.productsNearYou}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {countries.find((c) => c.id === geo.countryId)?.flag} {countries.find((c) => c.id === geo.countryId)?.name}
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5">
+                  {geo.countryId && <CountryFlag countryId={geo.countryId} size={14} />} {countries.find((c) => c.id === geo.countryId)?.name}
                 </p>
               </div>
               <button onClick={() => navigate('sellers')} className="text-xs font-bold text-[#007185] hover:text-[#c45500] hover:underline">

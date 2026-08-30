@@ -4,6 +4,7 @@ import { fetchProductById, fetchProducts, createReview, fetchProductFlashDeal, f
 import type { Product, FlashDeal, ProductQuestion } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
+import { CountryFlag } from '@/components/CountryFlag';
 import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame, Store } from 'lucide-react';
 
 export function ProductPage() {
@@ -356,8 +357,8 @@ export function ProductPage() {
               <div className="flex items-start gap-1.5 text-xs text-gray-700 pt-2 border-t border-gray-100">
                 <MapPin className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-medium text-[#007185]">
-                    {locale === 'fr' ? 'Livraison vers' : 'Deliver to'} {country?.flag} {country?.name}
+                  <span className="font-medium text-[#007185] inline-flex items-center gap-1">
+                    {locale === 'fr' ? 'Livraison vers' : 'Deliver to'} {country && <CountryFlag countryId={country.id} size={14} />} {country?.name}
                   </span>
                 </div>
               </div>
