@@ -1791,3 +1791,60 @@ export async function respondToReturnRequest(id: string, status: 'approved' | 'r
   if (error) { console.error('respondToReturnRequest:', error.message); return false; }
   return true;
 }
+
+// ============ STAFF / RÔLES (réel, remplace le module retiré) ============
+export type StaffPermission = { module: string; read: boolean; write: boolean; delete: boolean };
+export type StaffRoleDb = {
+  id: string; name: string; description: string | null;
+  permissions: StaffPermission[]; created_at: string;
+};
+export type StaffMember = {
+  id: string; user_id: string; role_id: string; added_by: string | null; created_at: string;
+  staff_roles?: StaffRoleDb;
+  email?: string;
+};
+
+export async function fetchStaffRoles(): Promise<StaffRoleDb[]> {
+  const { data, error } = await supabase.from('staff_roles').select('*').order('created_at');
+  if (error) { console.error('fetchStaffRoles:', error.message); return []; }
+  return (data || []) as StaffRoleDb[];
+}
+
+export async function createStaffRole(name: string, description: string, permissions: StaffPermission[]): Promise<string | null> {
+  const { data, error } = await supabase.from('staff_roles').insert({ name, description, permissions }).select('id').single();
+  if (error) { console.error('createStaffRole:', error.message); return null; }
+  return data.id;
+}
+
+export async function updateStaffRole(id: string, updates: { name?: string; description?: string; permissions?: StaffPermission[] }): Promise<boolean> {
+  const { error } = await supabase.from('staff_roles').update(updates).eq('id', id);
+  if (error) { console.error('updateStaffRole:', error.message); return false; }
+  return true;
+}
+
+export async function deleteStaffRole(id: string): Promise<boolean> {
+  const { error } = await supabase.from('staff_roles').delete().eq('id', id);
+  if (error) { console.error('deleteStaffRole:', error.message); return false; }
+  return true;
+}
+
+export async function fetchStaffMembers(): Promise<StaffMember[]> {
+  const { data, error } = await supabase.from('staff_members').select('*, staff_roles(*)').order('created_at', { ascending: false });
+  if (error) { console.error('fetchStaffMembers:', error.message); return []; }
+  return (data || []) as StaffMember[];
+}
+
+// Ajoute un membre staff en le retrouvant par email (via une fonction
+// SECURITY DEFINER — le frontend n'a pas accès à auth.users directement).
+export async function addStaffMemberByEmail(email: string, roleId: string): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('add_staff_member_by_email', { p_email: email, p_role_id: roleId });
+  if (error) return { ok: false, error: error.message };
+  if (data && typeof data === 'object' && 'error' in data) return { ok: false, error: (data as { error: string }).error };
+  return { ok: true };
+}
+
+export async function removeStaffMember(id: string): Promise<boolean> {
+  const { error } = await supabase.from('staff_members').delete().eq('id', id);
+  if (error) { console.error('removeStaffMember:', error.message); return false; }
+  return true;
+}

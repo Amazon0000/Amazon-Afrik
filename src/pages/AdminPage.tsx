@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument, StaffRoleDb, StaffMember, StaffPermission } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { CountryFlag } from '@/components/CountryFlag';
 import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
@@ -123,6 +123,7 @@ export function AdminPage() {
     { id: 'documents', label: t.admin.documents, icon: FileText },
     { id: 'trust-safety', label: locale === 'fr' ? 'Conformité' : 'Trust & Safety', icon: ShieldCheck, superOnly: true },
     { id: 'super-admins', label: locale === 'fr' ? 'Super Admins' : 'Super Admins', icon: Crown, superOnly: true },
+    { id: 'staff', label: t.admin.staff, icon: Users, superOnly: true },
     { id: 'settings', label: t.admin.settings, icon: Settings, superOnly: true },
   ];
 
@@ -593,6 +594,8 @@ export function AdminPage() {
             {tab === 'adv-payments' && isSuperAdmin && <AdvertisingPaymentsTab />}
 
             {tab === 'documents' && <SellerDocumentsTab locale={locale} />}
+
+            {tab === 'staff' && <StaffTab locale={locale} />}
 
             {tab === 'settings' && isSuperAdmin && (
               <div className="animate-fade-up">
@@ -1147,6 +1150,181 @@ function SellerDocumentsTab({ locale }: { locale: 'fr' | 'en' }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const AVAILABLE_MODULES = ['sellers', 'products', 'disputes', 'kyc', 'ads', 'coupons', 'affiliates'];
+
+function StaffTab({ locale }: { locale: 'fr' | 'en' }) {
+  const { showToast } = useApp();
+  const [roles, setRoles] = useState<StaffRoleDb[]>([]);
+  const [members, setMembers] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showRoleForm, setShowRoleForm] = useState(false);
+  const [editingRole, setEditingRole] = useState<StaffRoleDb | null>(null);
+  const [roleName, setRoleName] = useState('');
+  const [roleDesc, setRoleDesc] = useState('');
+  const [rolePerms, setRolePerms] = useState<StaffPermission[]>([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRoleId, setInviteRoleId] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    const [r, m] = await Promise.all([fetchStaffRoles(), fetchStaffMembers()]);
+    setRoles(r);
+    setMembers(m);
+    if (r.length > 0 && !inviteRoleId) setInviteRoleId(r[0].id);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const openNewRoleForm = () => {
+    setEditingRole(null);
+    setRoleName('');
+    setRoleDesc('');
+    setRolePerms(AVAILABLE_MODULES.map((m) => ({ module: m, read: false, write: false, delete: false })));
+    setShowRoleForm(true);
+  };
+
+  const openEditRoleForm = (role: StaffRoleDb) => {
+    setEditingRole(role);
+    setRoleName(role.name);
+    setRoleDesc(role.description || '');
+    setRolePerms(AVAILABLE_MODULES.map((m) => role.permissions.find((p) => p.module === m) || { module: m, read: false, write: false, delete: false }));
+    setShowRoleForm(true);
+  };
+
+  const togglePerm = (module: string, key: 'read' | 'write' | 'delete') => {
+    setRolePerms((prev) => prev.map((p) => p.module === module ? { ...p, [key]: !p[key] } : p));
+  };
+
+  const saveRole = async () => {
+    if (!roleName.trim()) { showToast(locale === 'fr' ? 'Nom requis' : 'Name required', 'error'); return; }
+    const activePerms = rolePerms.filter((p) => p.read || p.write || p.delete);
+    if (editingRole) {
+      const ok = await updateStaffRole(editingRole.id, { name: roleName, description: roleDesc, permissions: activePerms });
+      if (ok) { showToast(locale === 'fr' ? 'Rôle mis à jour' : 'Role updated'); setShowRoleForm(false); load(); }
+      else showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+    } else {
+      const id = await createStaffRole(roleName, roleDesc, activePerms);
+      if (id) { showToast(locale === 'fr' ? 'Rôle créé' : 'Role created'); setShowRoleForm(false); load(); }
+      else showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+    }
+  };
+
+  const handleDeleteRole = async (id: string) => {
+    const membersUsingRole = members.filter((m) => m.role_id === id).length;
+    if (membersUsingRole > 0) {
+      showToast(locale === 'fr' ? `${membersUsingRole} membre(s) utilisent ce rôle — retirez-les d'abord` : `${membersUsingRole} member(s) use this role — remove them first`, 'error');
+      return;
+    }
+    const ok = await deleteStaffRole(id);
+    if (ok) { showToast(locale === 'fr' ? 'Rôle supprimé' : 'Role deleted'); load(); }
+  };
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !inviteRoleId) return;
+    const result = await addStaffMemberByEmail(inviteEmail.trim(), inviteRoleId);
+    if (result.ok) {
+      showToast(locale === 'fr' ? 'Membre ajouté' : 'Member added');
+      setInviteEmail('');
+      load();
+    } else {
+      showToast(result.error || (locale === 'fr' ? 'Erreur' : 'Error'), 'error');
+    }
+  };
+
+  const handleRemoveMember = async (id: string) => {
+    const ok = await removeStaffMember(id);
+    if (ok) { showToast(locale === 'fr' ? 'Membre retiré' : 'Member removed'); load(); }
+  };
+
+  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  return (
+    <div className="animate-fade-up space-y-8">
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Rôles Staff' : 'Staff Roles'}</h2>
+          <button onClick={openNewRoleForm} className="btn-green px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"><Plus className="w-4 h-4" /> {locale === 'fr' ? 'Nouveau rôle' : 'New role'}</button>
+        </div>
+
+        {showRoleForm && (
+          <div className="card p-5 bg-white mb-4 space-y-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <input value={roleName} onChange={(e) => setRoleName(e.target.value)} placeholder={locale === 'fr' ? 'Nom du rôle' : 'Role name'} className="input-field" />
+              <input value={roleDesc} onChange={(e) => setRoleDesc(e.target.value)} placeholder={locale === 'fr' ? 'Description' : 'Description'} className="input-field" />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="text-left text-xs text-[#64748b] uppercase"><th className="py-2">{locale === 'fr' ? 'Module' : 'Module'}</th><th>{locale === 'fr' ? 'Lecture' : 'Read'}</th><th>{locale === 'fr' ? 'Écriture' : 'Write'}</th><th>{locale === 'fr' ? 'Suppression' : 'Delete'}</th></tr></thead>
+                <tbody>
+                  {rolePerms.map((p) => (
+                    <tr key={p.module} className="border-t border-[#f0f4f8]">
+                      <td className="py-2 font-medium text-[#0f172a]">{p.module}</td>
+                      {(['read', 'write', 'delete'] as const).map((k) => (
+                        <td key={k}><input type="checkbox" checked={p[k]} onChange={() => togglePerm(p.module, k)} className="w-4 h-4 accent-[#ff7a00]" /></td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={saveRole} className="btn-gold px-5 py-2 rounded-lg text-sm font-semibold">{locale === 'fr' ? 'Enregistrer' : 'Save'}</button>
+              <button onClick={() => setShowRoleForm(false)} className="px-5 py-2 rounded-lg text-sm font-semibold text-[#64748b]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+            </div>
+          </div>
+        )}
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          {roles.map((r) => (
+            <div key={r.id} className="card p-5 bg-white">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="font-display font-bold text-[#0f172a]">{r.name}</p>
+                  <p className="text-xs text-[#64748b]">{r.description}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => openEditRoleForm(r)} className="p-2 rounded-lg hover:bg-[#f7f8fa]"><FileText className="w-4 h-4 text-[#64748b]" /></button>
+                  <button onClick={() => handleDeleteRole(r.id)} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                </div>
+              </div>
+              <p className="text-xs text-[#64748b] mb-2">{members.filter((m) => m.role_id === r.id).length} {locale === 'fr' ? 'membre(s)' : 'member(s)'}</p>
+              <div className="flex flex-wrap gap-2">
+                {r.permissions.map((p) => (<span key={p.module} className="px-2.5 py-1 text-xs rounded-full bg-[#f7f8fa] text-[#0f172a]">{p.module} • {[p.read && 'R', p.write && 'W', p.delete && 'D'].filter(Boolean).join('/')}</span>))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Membres de l\'équipe' : 'Team Members'}</h2>
+        <div className="card p-4 bg-white mb-4 flex flex-wrap gap-2 items-center">
+          <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder={locale === 'fr' ? 'Email du membre (compte existant)' : "Member's email (existing account)"} className="input-field flex-1 min-w-[220px]" />
+          <select value={inviteRoleId} onChange={(e) => setInviteRoleId(e.target.value)} className="input-field w-auto">
+            {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+          <button onClick={handleInvite} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Ajouter' : 'Add'}</button>
+        </div>
+        {members.length === 0 ? (
+          <div className="card p-6 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Aucun membre staff.' : 'No staff members.'}</div>
+        ) : (
+          <div className="space-y-2">
+            {members.map((m) => (
+              <div key={m.id} className="card p-4 bg-white flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#0f172a]">{m.staff_roles?.name}</p>
+                  <p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Ajouté le' : 'Added on'} {new Date(m.created_at).toLocaleDateString()}</p>
+                </div>
+                <button onClick={() => handleRemoveMember(m.id)} className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Retirer' : 'Remove'}</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
