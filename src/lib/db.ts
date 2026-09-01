@@ -1848,3 +1848,69 @@ export async function removeStaffMember(id: string): Promise<boolean> {
   if (error) { console.error('removeStaffMember:', error.message); return false; }
   return true;
 }
+
+// ============ MESSAGERIE ACHETEUR-VENDEUR (modèle Amazon) ============
+export type Message = {
+  id: string; conversation_id: string; sender_id: string;
+  sender_role: 'buyer' | 'seller'; body: string; created_at: string;
+};
+export type Conversation = {
+  id: string; order_id: string; buyer_id: string; seller_id: string;
+  subject: string | null; last_message_at: string;
+  buyer_unread_count: number; seller_unread_count: number; created_at: string;
+  orders?: Order; sellers?: Seller; messages?: Message[];
+};
+
+export async function fetchBuyerConversations(userId: string): Promise<Conversation[]> {
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('*, orders(*), sellers(*)')
+    .eq('buyer_id', userId)
+    .order('last_message_at', { ascending: false });
+  if (error) { console.error('fetchBuyerConversations:', error.message); return []; }
+  return data || [];
+}
+
+export async function fetchSellerConversations(sellerId: string): Promise<Conversation[]> {
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('*, orders(*)')
+    .eq('seller_id', sellerId)
+    .order('last_message_at', { ascending: false });
+  if (error) { console.error('fetchSellerConversations:', error.message); return []; }
+  return data || [];
+}
+
+export async function fetchConversationMessages(conversationId: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+  if (error) { console.error('fetchConversationMessages:', error.message); return []; }
+  return data || [];
+}
+
+// Trouve ou crée la conversation liée à une commande (une seule par commande, comme Amazon).
+export async function getOrCreateConversation(opts: { orderId: string; buyerId: string; sellerId: string; subject?: string }): Promise<string | null> {
+  const { data: existing } = await supabase.from('conversations').select('id').eq('order_id', opts.orderId).maybeSingle();
+  if (existing) return existing.id;
+  const { data, error } = await supabase.from('conversations').insert({
+    order_id: opts.orderId, buyer_id: opts.buyerId, seller_id: opts.sellerId, subject: opts.subject || null,
+  }).select('id').single();
+  if (error) { console.error('getOrCreateConversation:', error.message); return null; }
+  return data.id;
+}
+
+export async function sendMessage(opts: { conversationId: string; senderId: string; senderRole: 'buyer' | 'seller'; body: string }): Promise<boolean> {
+  const { error } = await supabase.from('messages').insert({
+    conversation_id: opts.conversationId, sender_id: opts.senderId, sender_role: opts.senderRole, body: opts.body,
+  });
+  if (error) { console.error('sendMessage:', error.message); return false; }
+  return true;
+}
+
+export async function markConversationRead(conversationId: string, asRole: 'buyer' | 'seller'): Promise<void> {
+  const field = asRole === 'buyer' ? 'buyer_unread_count' : 'seller_unread_count';
+  await supabase.from('conversations').update({ [field]: 0 }).eq('id', conversationId);
+}

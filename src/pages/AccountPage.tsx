@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests } from '@/lib/db';
-import type { Product, Address, Order, ReturnRequest } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests, getOrCreateConversation, fetchConversationMessages, sendMessage, markConversationRead } from '@/lib/db';
+import type { Product, Address, Order, ReturnRequest, Message } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon } from 'lucide-react';
 
 export function AccountPage() {
   const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
@@ -16,6 +16,10 @@ export function AccountPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
+  const [messagingOrderId, setMessagingOrderId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationMessages, setConversationMessages] = useState<Message[]>([]);
+  const [newMessageBody, setNewMessageBody] = useState('');
   const [returningOrderId, setReturningOrderId] = useState<string | null>(null);
   const [returnReason, setReturnReason] = useState('');
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
@@ -108,6 +112,26 @@ export function AccountPage() {
     }
   };
 
+  const openConversationForOrder = async (order: Order) => {
+    if (!user || !order.seller_id) return;
+    setMessagingOrderId(order.id);
+    const convId = await getOrCreateConversation({ orderId: order.id, buyerId: user.id, sellerId: order.seller_id, subject: `${locale === 'fr' ? 'Commande' : 'Order'} ${order.tracking_id || order.id.slice(0, 8)}` });
+    if (convId) {
+      setConversationId(convId);
+      setConversationMessages(await fetchConversationMessages(convId));
+      await markConversationRead(convId, 'buyer');
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessageBody.trim() || !conversationId || !user) return;
+    const ok = await sendMessage({ conversationId, senderId: user.id, senderRole: 'buyer', body: newMessageBody.trim() });
+    if (ok) {
+      setConversationMessages((prev) => [...prev, { id: 'tmp-' + Date.now(), conversation_id: conversationId, sender_id: user.id, sender_role: 'buyer', body: newMessageBody.trim(), created_at: new Date().toISOString() }]);
+      setNewMessageBody('');
+    }
+  };
+
   return (
     <div className="motif-bg min-h-screen">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -190,9 +214,32 @@ export function AccountPage() {
                             <button onClick={() => generateInvoicePdf(order, { locale })} className="flex items-center gap-1 text-sm font-semibold text-[#64748b] hover:text-[#0f172a]">
                               <Download className="w-4 h-4" /> {locale === 'fr' ? 'Facture' : 'Invoice'}
                             </button>
+                            {order.seller_id && (
+                              <button onClick={() => openConversationForOrder(order)} className="flex items-center gap-1 text-sm font-semibold text-[#64748b] hover:text-[#0f172a]">
+                                <MessageSquareIcon className="w-4 h-4" /> {locale === 'fr' ? 'Contacter le vendeur' : 'Contact seller'}
+                              </button>
+                            )}
                             <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#ff7a00] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
                           </div>
                         </div>
+                        {messagingOrderId === order.id && (
+                          <div className="mt-3 pt-3 border-t border-[#ff7a00]/10">
+                            <div className="max-h-64 overflow-y-auto space-y-2 mb-2 p-2 bg-[#f7f8fa] rounded-lg">
+                              {conversationMessages.length === 0 ? (
+                                <p className="text-xs text-[#64748b] text-center py-4">{locale === 'fr' ? 'Démarrez la conversation avec le vendeur.' : 'Start the conversation with the seller.'}</p>
+                              ) : conversationMessages.map((m) => (
+                                <div key={m.id} className={'max-w-[80%] p-2 rounded-xl text-xs ' + (m.sender_role === 'buyer' ? 'ml-auto bg-[#ff7a00] text-white' : 'bg-white text-[#0f172a]')}>
+                                  {m.body}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <input value={newMessageBody} onChange={(e) => setNewMessageBody(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={locale === 'fr' ? 'Écrire un message...' : 'Type a message...'} className="input-field text-sm flex-1" />
+                              <button onClick={handleSendMessage} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Envoyer' : 'Send'}</button>
+                              <button onClick={() => setMessagingOrderId(null)} className="px-3 py-2 rounded-lg text-xs font-semibold text-[#64748b]">{locale === 'fr' ? 'Fermer' : 'Close'}</button>
+                            </div>
+                          </div>
+                        )}
                         {returningOrderId === order.id && (
                           <div className="mt-3 pt-3 border-t border-[#ff7a00]/10 space-y-2">
                             <textarea

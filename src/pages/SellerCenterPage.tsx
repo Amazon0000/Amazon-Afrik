@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download } from 'lucide-react';
@@ -784,12 +784,7 @@ export function SellerCenterPage() {
               </div>
             )}
 
-            {tab === 'messages' && (
-              <div className="animate-fade-up">
-                <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-6">{locale === 'fr' ? 'Messages' : 'Messages'}</h1>
-                <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><MessageSquare className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun message.' : 'No messages.'}</div>
-              </div>
-            )}
+            {tab === 'messages' && user?.sellerId && <SellerMessagesTab sellerId={user.sellerId} userId={user.id} locale={locale} />}
 
             {tab === 'invoices' && (
               <div className="animate-fade-up">
@@ -933,6 +928,88 @@ function ReturnResponseForm({ locale, onSubmit, onCancel }: {
         <button onClick={() => onSubmit('rejected', response)} className="px-4 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Refuser' : 'Reject'}</button>
         <button onClick={onCancel} className="px-4 py-2 rounded-lg text-xs font-semibold text-[#64748b]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
       </div>
+    </div>
+  );
+}
+
+function SellerMessagesTab({ sellerId, userId, locale }: { sellerId: string; userId: string; locale: 'fr' | 'en' }) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    setConversations(await fetchSellerConversations(sellerId));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [sellerId]);
+
+  const openConversation = async (conv: Conversation) => {
+    setSelectedId(conv.id);
+    setMessages(await fetchConversationMessages(conv.id));
+    if (conv.seller_unread_count > 0) {
+      await markConversationRead(conv.id, 'seller');
+      setConversations((prev) => prev.map((c) => c.id === conv.id ? { ...c, seller_unread_count: 0 } : c));
+    }
+  };
+
+  const handleSend = async () => {
+    if (!newMessage.trim() || !selectedId) return;
+    const ok = await sendMessage({ conversationId: selectedId, senderId: userId, senderRole: 'seller', body: newMessage.trim() });
+    if (ok) {
+      setMessages((prev) => [...prev, { id: 'tmp-' + Date.now(), conversation_id: selectedId, sender_id: userId, sender_role: 'seller', body: newMessage.trim(), created_at: new Date().toISOString() }]);
+      setNewMessage('');
+    }
+  };
+
+  const selected = conversations.find((c) => c.id === selectedId);
+
+  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  return (
+    <div className="animate-fade-up">
+      <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Messages' : 'Messages'}</h1>
+      <p className="text-sm text-[#64748b] mb-6">{locale === 'fr' ? 'Conversations réelles liées à vos commandes.' : 'Real conversations tied to your orders.'}</p>
+      {conversations.length === 0 ? (
+        <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><MessageSquare className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucun message.' : 'No messages.'}</div>
+      ) : (
+        <div className="grid md:grid-cols-[280px_1fr] gap-4 h-[520px]">
+          <div className="card bg-white overflow-y-auto divide-y divide-[#f0f4f8]">
+            {conversations.map((c) => (
+              <button key={c.id} onClick={() => openConversation(c)} className={'w-full text-left p-3 hover:bg-[#f7f8fa] ' + (selectedId === c.id ? 'bg-[#ff7a00]/5' : '')}>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-[#0f172a] truncate">{c.subject || `${locale === 'fr' ? 'Commande' : 'Order'} ${c.orders?.tracking_id || c.order_id.slice(0, 8)}`}</p>
+                  {c.seller_unread_count > 0 && <span className="w-5 h-5 rounded-full bg-[#ff7a00] text-white text-[10px] font-bold flex items-center justify-center shrink-0">{c.seller_unread_count}</span>}
+                </div>
+                <p className="text-xs text-[#64748b]">{new Date(c.last_message_at).toLocaleDateString()}</p>
+              </button>
+            ))}
+          </div>
+          <div className="card bg-white flex flex-col">
+            {!selected ? (
+              <div className="flex-1 flex items-center justify-center text-sm text-[#64748b]">{locale === 'fr' ? 'Sélectionnez une conversation' : 'Select a conversation'}</div>
+            ) : (
+              <>
+                <div className="p-3 border-b border-[#f0f4f8]"><p className="text-sm font-semibold text-[#0f172a]">{selected.subject || (locale === 'fr' ? 'Commande' : 'Order')}</p></div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {messages.map((m) => (
+                    <div key={m.id} className={'max-w-[75%] p-3 rounded-2xl text-sm ' + (m.sender_role === 'seller' ? 'ml-auto bg-[#ff7a00] text-white' : 'bg-[#f7f8fa] text-[#0f172a]')}>
+                      {m.body}
+                      <p className={'text-[10px] mt-1 ' + (m.sender_role === 'seller' ? 'text-white/70' : 'text-[#94a3b8]')}>{new Date(m.created_at).toLocaleTimeString()}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3 border-t border-[#f0f4f8] flex gap-2">
+                  <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder={locale === 'fr' ? 'Écrire un message...' : 'Type a message...'} className="input-field flex-1" />
+                  <button onClick={handleSend} className="btn-gold px-4 py-2 rounded-lg text-sm font-semibold">{locale === 'fr' ? 'Envoyer' : 'Send'}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
