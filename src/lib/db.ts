@@ -1914,3 +1914,21 @@ export async function markConversationRead(conversationId: string, asRole: 'buye
   const field = asRole === 'buyer' ? 'buyer_unread_count' : 'seller_unread_count';
   await supabase.from('conversations').update({ [field]: 0 }).eq('id', conversationId);
 }
+
+// ============ ACCOUNT HEALTH (modèle Amazon Seller Central) ============
+export type SellerAccountHealth = {
+  total_orders: number;
+  order_defect_rate: number;
+  cancellation_rate: number;
+  late_shipment_rate: number;
+  valid_tracking_rate: number;
+  measured_shipments: number;
+  measured_deliveries: number;
+  error?: string;
+};
+
+export async function fetchSellerAccountHealth(sellerId: string): Promise<SellerAccountHealth | null> {
+  const { data, error } = await supabase.rpc('get_seller_account_health', { p_seller_id: sellerId });
+  if (error) { console.error('fetchSellerAccountHealth:', error.message); return null; }
+  return data as SellerAccountHealth;
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download } from 'lucide-react';
@@ -80,6 +80,7 @@ export function SellerCenterPage() {
 
   const navItems = [
     { id: 'dashboard', label: t.seller.dashboard, icon: LayoutDashboard },
+    { id: 'account-health', label: locale === 'fr' ? 'Santé du compte' : 'Account Health', icon: ShieldCheck },
     { id: 'products', label: t.seller.products, icon: Package },
     { id: 'orders', label: t.seller.orders, icon: ShoppingCart },
     { id: 'deliveries', label: t.seller.deliveries, icon: Truck },
@@ -210,6 +211,8 @@ export function SellerCenterPage() {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
+            {tab === 'account-health' && user?.sellerId && <AccountHealthTab sellerId={user.sellerId} locale={locale} />}
+
             {tab === 'dashboard' && (
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.dashboard}</h1>
@@ -1010,6 +1013,75 @@ function SellerMessagesTab({ sellerId, userId, locale }: { sellerId: string; use
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Seuils calqués sur le modèle Amazon Seller Central (Good / At Risk / Below Standard).
+function healthStatus(value: number, thresholds: { atRisk: number; belowStandard: number }): { label: string; color: string } {
+  if (value >= thresholds.belowStandard) return { label: 'Below Standard', color: '#ef4444' };
+  if (value >= thresholds.atRisk) return { label: 'At Risk', color: '#d97706' };
+  return { label: 'Good', color: '#22c55e' };
+}
+
+function AccountHealthTab({ sellerId, locale }: { sellerId: string; locale: 'fr' | 'en' }) {
+  const [health, setHealth] = useState<SellerAccountHealth | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSellerAccountHealth(sellerId).then((h) => { setHealth(h); setLoading(false); });
+  }, [sellerId]);
+
+  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+  if (!health || health.error) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{health?.error || (locale === 'fr' ? 'Indisponible' : 'Unavailable')}</div>;
+
+  const odr = healthStatus(health.order_defect_rate, { atRisk: 1, belowStandard: 2 });
+  const lateShip = healthStatus(health.late_shipment_rate, { atRisk: 4, belowStandard: 10 });
+  const cancel = healthStatus(health.cancellation_rate, { atRisk: 2.5, belowStandard: 5 });
+  const trackingBad = 100 - health.valid_tracking_rate;
+  const tracking = healthStatus(trackingBad, { atRisk: 5, belowStandard: 10 });
+
+  const overallColor = [odr, lateShip, cancel, tracking].some((s) => s.color === '#ef4444') ? '#ef4444'
+    : [odr, lateShip, cancel, tracking].some((s) => s.color === '#d97706') ? '#d97706' : '#22c55e';
+  const overallLabel = overallColor === '#ef4444' ? 'Below Standard' : overallColor === '#d97706' ? 'At Risk' : 'Good';
+
+  const metrics = [
+    { label: locale === 'fr' ? 'Taux de défaut commande (ODR)' : 'Order Defect Rate (ODR)', value: health.order_defect_rate, status: odr, hint: locale === 'fr' ? "Commandes annulées ou retournées, cible < 1%" : 'Cancelled or returned orders, target < 1%' },
+    { label: locale === 'fr' ? "Taux d'expédition tardive" : 'Late Shipment Rate', value: health.late_shipment_rate, status: lateShip, hint: locale === 'fr' ? `Basé sur ${health.measured_shipments} expédition(s) mesurée(s), cible < 4%` : `Based on ${health.measured_shipments} measured shipment(s), target < 4%` },
+    { label: locale === 'fr' ? "Taux d'annulation" : 'Cancellation Rate', value: health.cancellation_rate, status: cancel, hint: locale === 'fr' ? 'Cible < 2.5%' : 'Target < 2.5%' },
+    { label: locale === 'fr' ? 'Taux de suivi valide' : 'Valid Tracking Rate', value: health.valid_tracking_rate, status: tracking, hint: locale === 'fr' ? `Basé sur ${health.measured_deliveries} livraison(s), cible > 95%` : `Based on ${health.measured_deliveries} delivery(ies), target > 95%`, isPositive: true },
+  ];
+
+  return (
+    <div className="animate-fade-up space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Santé du compte' : 'Account Health'}</h1>
+        <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Indicateurs de performance calculés sur vos vraies commandes.' : 'Performance indicators computed from your real orders.'}</p>
+      </div>
+
+      <div className="card p-6 bg-white flex items-center gap-4">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center shrink-0" style={{ background: `${overallColor}18` }}>
+          <ShieldCheck className="w-8 h-8" style={{ color: overallColor }} />
+        </div>
+        <div>
+          <p className="text-xs text-[#64748b] uppercase font-semibold">{locale === 'fr' ? 'Statut global' : 'Overall Status'}</p>
+          <p className="text-xl font-bold" style={{ color: overallColor }}>{overallLabel}</p>
+          <p className="text-xs text-[#64748b] mt-1">{health.total_orders} {locale === 'fr' ? 'commandes au total' : 'total orders'}</p>
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        {metrics.map((m) => (
+          <div key={m.label} className="card p-5 bg-white">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-semibold text-[#0f172a]">{m.label}</p>
+              <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-full" style={{ background: `${m.status.color}18`, color: m.status.color }}>{m.status.label}</span>
+            </div>
+            <p className="text-3xl font-bold" style={{ color: m.status.color }}>{m.value}%</p>
+            <p className="text-xs text-[#64748b] mt-1">{m.hint}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
