@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle } from 'lucide-react';
 
 // Major global payment service providers, with strong African + worldwide
 // coverage — sellers pick their own PSP here; Zando never touches the
@@ -81,6 +81,7 @@ export function SellerCenterPage() {
   const navItems = [
     { id: 'dashboard', label: t.seller.dashboard, icon: LayoutDashboard },
     { id: 'account-health', label: locale === 'fr' ? 'Santé du compte' : 'Account Health', icon: ShieldCheck },
+    { id: 'inventory', label: locale === 'fr' ? 'Inventaire' : 'Inventory', icon: PackageCheck },
     { id: 'products', label: t.seller.products, icon: Package },
     { id: 'orders', label: t.seller.orders, icon: ShoppingCart },
     { id: 'deliveries', label: t.seller.deliveries, icon: Truck },
@@ -211,6 +212,8 @@ export function SellerCenterPage() {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
+            {tab === 'inventory' && user?.sellerId && <InventoryTab sellerId={user.sellerId} locale={locale} />}
+
             {tab === 'account-health' && user?.sellerId && <AccountHealthTab sellerId={user.sellerId} locale={locale} />}
 
             {tab === 'dashboard' && (
@@ -1082,6 +1085,90 @@ function AccountHealthTab({ sellerId, locale }: { sellerId: string; locale: 'fr'
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function InventoryTab({ sellerId, locale }: { sellerId: string; locale: 'fr' | 'en' }) {
+  const { showToast } = useApp();
+  const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [edits, setEdits] = useState<Record<string, { stock?: string; threshold?: string }>>({});
+
+  const load = async () => {
+    setLoading(true);
+    setAlerts(await fetchSellerInventoryAlerts(sellerId));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [sellerId]);
+
+  const handleRestock = async (productId: string) => {
+    const newStock = parseInt(edits[productId]?.stock || '');
+    if (isNaN(newStock) || newStock < 0) { showToast(locale === 'fr' ? 'Quantité invalide' : 'Invalid quantity', 'error'); return; }
+    const ok = await updateProductStock(productId, newStock);
+    if (ok) { showToast(locale === 'fr' ? 'Stock mis à jour' : 'Stock updated'); load(); }
+    else showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+  };
+
+  const handleThresholdSave = async (productId: string) => {
+    const newThreshold = parseInt(edits[productId]?.threshold || '');
+    if (isNaN(newThreshold) || newThreshold < 0) return;
+    const ok = await updateProductLowStockThreshold(productId, newThreshold);
+    if (ok) { showToast(locale === 'fr' ? 'Seuil mis à jour' : 'Threshold updated'); load(); }
+  };
+
+  if (loading) return <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>;
+
+  const outOfStock = alerts.filter((a) => a.alert_level === 'out_of_stock');
+  const lowStock = alerts.filter((a) => a.alert_level === 'low_stock');
+
+  return (
+    <div className="animate-fade-up space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Alertes de réapprovisionnement' : 'Restock Alerts'}</h1>
+        <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Produits en rupture ou sous le seuil configuré, triés par ventes des 30 derniers jours.' : 'Out of stock or below threshold products, sorted by last 30-day sales.'}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard label={locale === 'fr' ? 'Ruptures de stock' : 'Out of Stock'} value={outOfStock.length.toString()} icon={XCircle} color="#ef4444" />
+        <StatCard label={locale === 'fr' ? 'Stock faible' : 'Low Stock'} value={lowStock.length.toString()} icon={AlertTriangle} color="#d97706" />
+      </div>
+
+      {alerts.length === 0 ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white"><PackageCheck className="w-10 h-10 text-green-500/40 mx-auto mb-3" />{locale === 'fr' ? 'Aucune alerte — tous vos stocks sont sains.' : 'No alerts — all your stock levels are healthy.'}</div>
+      ) : (
+        <div className="space-y-2">
+          {alerts.map((a) => (
+            <div key={a.product_id} className="card p-4 bg-white flex flex-wrap items-center gap-3">
+              <img src={a.image_url || ''} className="w-12 h-12 rounded-lg object-cover bg-[#f7f8fa] shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#0f172a] truncate">{a.name}</p>
+                <p className="text-xs text-[#64748b]">{a.units_sold_30d} {locale === 'fr' ? 'vendus (30j)' : 'sold (30d)'} • {locale === 'fr' ? 'seuil' : 'threshold'}: {a.low_stock_threshold}</p>
+              </div>
+              <Badge color={a.alert_level === 'out_of_stock' ? '#ef4444' : '#d97706'}>{a.alert_level === 'out_of_stock' ? (locale === 'fr' ? 'Rupture' : 'Out of stock') : (locale === 'fr' ? 'Stock faible' : 'Low stock')} • {a.stock}</Badge>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-[#64748b]">{locale === 'fr' ? 'Seuil' : 'Threshold'}</span>
+                <input
+                  type="number"
+                  placeholder={String(a.low_stock_threshold)}
+                  value={edits[a.product_id]?.threshold ?? ''}
+                  onChange={(e) => setEdits((prev) => ({ ...prev, [a.product_id]: { ...prev[a.product_id], threshold: e.target.value } }))}
+                  onBlur={() => handleThresholdSave(a.product_id)}
+                  className="input-field w-16 text-xs py-1"
+                />
+              </div>
+              <input
+                type="number"
+                placeholder={locale === 'fr' ? 'Nouveau stock' : 'New stock'}
+                value={edits[a.product_id]?.stock ?? ''}
+                onChange={(e) => setEdits((prev) => ({ ...prev, [a.product_id]: { ...prev[a.product_id], stock: e.target.value } }))}
+                className="input-field w-28 text-sm"
+              />
+              <button onClick={() => handleRestock(a.product_id)} className="btn-gold px-3 py-2 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Réapprovisionner' : 'Restock'}</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

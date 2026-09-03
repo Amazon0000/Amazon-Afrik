@@ -1932,3 +1932,28 @@ export async function fetchSellerAccountHealth(sellerId: string): Promise<Seller
   if (error) { console.error('fetchSellerAccountHealth:', error.message); return null; }
   return data as SellerAccountHealth;
 }
+
+// ============ RESTOCK / INVENTORY ALERTS (modèle Amazon Seller Central) ============
+export type InventoryAlert = {
+  product_id: string; name: string; sku: string | null; stock: number;
+  low_stock_threshold: number; alert_level: 'out_of_stock' | 'low_stock';
+  units_sold_30d: number; image_url: string | null;
+};
+
+export async function fetchSellerInventoryAlerts(sellerId: string): Promise<InventoryAlert[]> {
+  const { data, error } = await supabase.rpc('get_seller_inventory_alerts', { p_seller_id: sellerId });
+  if (error) { console.error('fetchSellerInventoryAlerts:', error.message); return []; }
+  return (data || []) as InventoryAlert[];
+}
+
+export async function updateProductStock(productId: string, stock: number): Promise<boolean> {
+  const { error } = await supabase.from('products').update({ stock }).eq('id', productId);
+  if (error) { console.error('updateProductStock:', error.message); return false; }
+  return true;
+}
+
+export async function updateProductLowStockThreshold(productId: string, threshold: number): Promise<boolean> {
+  const { error } = await supabase.from('products').update({ low_stock_threshold: threshold }).eq('id', productId);
+  if (error) { console.error('updateProductLowStockThreshold:', error.message); return false; }
+  return true;
+}
