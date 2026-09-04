@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember, fetchAdminCaseLog } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument, StaffRoleDb, StaffMember, StaffPermission } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument, StaffRoleDb, StaffMember, StaffPermission, AdminCase } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { CountryFlag } from '@/components/CountryFlag';
 import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
@@ -104,6 +104,7 @@ export function AdminPage() {
 
   const navItems = [
     { id: 'overview', label: t.admin.overview, icon: LayoutDashboard },
+    { id: 'case-log', label: locale === 'fr' ? 'Centre de support' : 'Case Log', icon: AlertTriangle, superOnly: true },
     { id: 'orders', label: locale === 'fr' ? 'Commandes' : 'Orders', icon: ShoppingBag },
     { id: 'sellers', label: t.admin.sellers, icon: Store },
     { id: 'products', label: t.admin.products, icon: Package },
@@ -183,6 +184,8 @@ export function AdminPage() {
                 <span className="text-xs font-semibold text-[#0f172a]">{visibleNav.find((n) => n.id === tab)?.label || tab}</span>
               </div>
             )}
+            {tab === 'case-log' && isSuperAdmin && <CaseLogTab locale={locale} navigate={navigate} />}
+
             {tab === 'overview' && (
               <div className="animate-fade-up space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1325,6 +1328,72 @@ function StaffTab({ locale }: { locale: 'fr' | 'en' }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CaseLogTab({ locale, navigate }: { locale: 'fr' | 'en'; navigate: (page: string, params?: Record<string, string>) => void }) {
+  const [cases, setCases] = useState<AdminCase[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'dispute' | 'return' | 'unanswered_message'>('all');
+
+  useEffect(() => { fetchAdminCaseLog().then((c) => { setCases(c); setLoading(false); }); }, []);
+
+  const filtered = filter === 'all' ? cases : cases.filter((c) => c.case_type === filter);
+  const highUrgencyCount = cases.filter((c) => c.urgency === 'high').length;
+
+  const caseTypeLabel = (t: AdminCase['case_type']) => {
+    if (t === 'dispute') return locale === 'fr' ? 'Litige' : 'Dispute';
+    if (t === 'return') return locale === 'fr' ? 'Retour' : 'Return';
+    return locale === 'fr' ? 'Message sans réponse' : 'Unanswered message';
+  };
+
+  const goToCase = (c: AdminCase) => {
+    if (c.case_type === 'dispute') navigate('admin', { tab: 'disputes' });
+    else if (c.case_type === 'return') navigate('admin', { tab: 'disputes' });
+  };
+
+  return (
+    <div className="animate-fade-up space-y-4">
+      <div>
+        <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">{locale === 'fr' ? 'Centre de support' : 'Case Log'}</h2>
+        <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'File unifiée : litiges, retours en attente, messages vendeur sans réponse.' : 'Unified queue: disputes, pending returns, unanswered seller messages.'}</p>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label={locale === 'fr' ? 'Total cas ouverts' : 'Total open cases'} value={cases.length.toString()} icon={AlertTriangle} color="#d97706" />
+        <StatCard label={locale === 'fr' ? 'Urgents (>48h)' : 'High urgency (>48h)'} value={highUrgencyCount.toString()} icon={Clock} color="#ef4444" />
+        <StatCard label={locale === 'fr' ? 'Litiges' : 'Disputes'} value={cases.filter((c) => c.case_type === 'dispute').length.toString()} icon={ShieldCheck} color="#7c3aed" />
+        <StatCard label={locale === 'fr' ? 'Retours' : 'Returns'} value={cases.filter((c) => c.case_type === 'return').length.toString()} icon={ArrowLeft} color="#0284c7" />
+      </div>
+
+      <div className="flex gap-2">
+        {(['all', 'dispute', 'return', 'unanswered_message'] as const).map((f) => (
+          <button key={f} onClick={() => setFilter(f)} className={'px-3 py-1.5 rounded-full text-xs font-semibold ' + (filter === f ? 'bg-[#ff7a00] text-white' : 'bg-white text-[#64748b] border border-[#e2e8f0]')}>
+            {f === 'all' ? (locale === 'fr' ? 'Tous' : 'All') : caseTypeLabel(f)}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</div>
+      ) : filtered.length === 0 ? (
+        <div className="card p-8 text-center text-sm text-[#64748b] bg-white"><CheckCircle className="w-10 h-10 text-green-500/40 mx-auto mb-3" />{locale === 'fr' ? 'Aucun cas ouvert.' : 'No open cases.'}</div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((c) => (
+            <button key={`${c.case_type}-${c.case_id}`} onClick={() => goToCase(c)} className="w-full text-left card p-4 bg-white flex flex-wrap items-center gap-3 hover:border-[#ff7a00]/40">
+              <Badge color={c.urgency === 'high' ? '#ef4444' : '#94a3b8'}>{c.urgency === 'high' ? (locale === 'fr' ? 'Urgent' : 'High') : (locale === 'fr' ? 'Normal' : 'Normal')}</Badge>
+              <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-full bg-[#f7f8fa] text-[#0f172a]">{caseTypeLabel(c.case_type)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#0f172a] truncate">{c.title}</p>
+                {c.subtitle && <p className="text-xs text-[#64748b] truncate">{c.subtitle}</p>}
+              </div>
+              <p className="text-xs text-[#94a3b8]">{new Date(c.created_at).toLocaleDateString()}</p>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

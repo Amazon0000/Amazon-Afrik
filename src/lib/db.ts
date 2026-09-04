@@ -1957,3 +1957,16 @@ export async function updateProductLowStockThreshold(productId: string, threshol
   if (error) { console.error('updateProductLowStockThreshold:', error.message); return false; }
   return true;
 }
+
+// ============ ADMIN CASE LOG (centre de support unifié) ============
+export type AdminCase = {
+  case_type: 'dispute' | 'return' | 'unanswered_message';
+  case_id: string; title: string; subtitle: string | null;
+  status: string; urgency: 'normal' | 'high'; created_at: string;
+};
+
+export async function fetchAdminCaseLog(): Promise<AdminCase[]> {
+  const { data, error } = await supabase.rpc('get_admin_case_log');
+  if (error) { console.error('fetchAdminCaseLog:', error.message); return []; }
+  return (data || []) as AdminCase[];
+}
