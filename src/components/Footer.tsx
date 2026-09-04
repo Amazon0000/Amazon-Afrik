@@ -2,9 +2,18 @@ import { useApp } from '@/lib/store';
 import { useState } from 'react';
 import { Logo } from './Logo';
 import { submitContactMessage } from '@/lib/db';
-import { Linkedin, Twitter, Instagram, Facebook, ArrowUp, Mail, Phone, Clock, Loader2 } from 'lucide-react';
+import { Linkedin, Instagram, Facebook, Youtube, ArrowUp, Mail, Phone, Clock, Loader2, ExternalLink } from 'lucide-react';
 
 type FooterLink = { label: string; page: string; params?: Record<string, string> };
+
+// TikTok has no dedicated lucide-react icon — inline SVG mark instead.
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6c0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64c0 3.33 2.76 5.7 5.69 5.7c3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z" />
+    </svg>
+  );
+}
 
 export function Footer() {
   const { t, navigate, locale, showToast, user } = useApp();
@@ -38,21 +47,30 @@ export function Footer() {
     { label: t.nav.becomeSeller, page: 'sell' },
     { label: locale === 'fr' ? "Programme d'affiliation" : 'Affiliate Program', page: 'affiliate' },
     { label: locale === 'fr' ? 'À propos' : 'About Us', page: 'info', params: { k: 'about' } },
-    { label: locale === 'fr' ? "Conditions d'utilisation" : 'Terms & Conditions', page: 'info', params: { k: 'terms' } },
-    { label: locale === 'fr' ? 'Confidentialité' : 'Privacy Policy', page: 'info', params: { k: 'privacy' } },
     { label: locale === 'fr' ? 'Support & retours' : 'Support & Feedback', page: 'info', params: { k: 'returns' } },
+    { label: locale === 'fr' ? 'Carrières' : 'Careers', page: 'info', params: { k: 'careers' } },
   ];
   const shoppingLinks: FooterLink[] = [
     { label: locale === 'fr' ? 'Mon panier' : 'My Cart', page: 'cart' },
     { label: locale === 'fr' ? 'Ma liste de souhaits' : 'Wishlist', page: user ? 'account' : 'login', params: user ? { tab: 'wishlist' } : undefined },
     { label: locale === 'fr' ? 'Mes commandes' : 'My Orders', page: user ? 'account' : 'login', params: user ? { tab: 'orders' } : undefined },
   ];
+  // Required legal links for a SaaS/marketplace operating internationally.
+  const legalLinks: FooterLink[] = [
+    { label: locale === 'fr' ? "Conditions d'utilisation" : 'Terms of Use', page: 'info', params: { k: 'terms' } },
+    { label: locale === 'fr' ? 'Politique de confidentialité' : 'Privacy Policy', page: 'info', params: { k: 'privacy' } },
+    { label: locale === 'fr' ? 'Politique de cookies' : 'Cookies Policy', page: 'info', params: { k: 'cookies' } },
+    { label: locale === 'fr' ? 'Politique de remboursement' : 'Refund Policy', page: 'info', params: { k: 'returns' } },
+    { label: locale === 'fr' ? 'Mentions légales' : 'Legal Notice', page: 'info', params: { k: 'legal-notice' } },
+  ];
 
+  // Real, official Zando/Liafrik social accounts.
   const socials = [
-    { icon: Linkedin, url: 'https://linkedin.com' },
-    { icon: Twitter, url: 'https://twitter.com' },
-    { icon: Instagram, url: 'https://instagram.com' },
-    { icon: Facebook, url: 'https://facebook.com' },
+    { icon: TikTokIcon, url: 'https://www.tiktok.com/@liyahgroup?_r=1&_t=ZS-9981XGgaxrE', label: 'TikTok' },
+    { icon: Facebook, url: 'https://www.facebook.com/share/1LMAGqsy3n/?mibextid=wwXIfr', label: 'Facebook' },
+    { icon: Instagram, url: 'https://www.instagram.com/liafrik_tech?igsi=eXBjdTc5NG42Zml4&utm_source=qr', label: 'Instagram' },
+    { icon: Linkedin, url: 'https://www.linkedin.com/company/liafrik/', label: 'LinkedIn' },
+    { icon: Youtube, url: 'https://youtube.com/@liyah-n?si=D-lXwovYubw3sdaf', label: 'YouTube' },
   ];
 
   return (
@@ -79,7 +97,7 @@ export function Footer() {
         </div>
 
         {/* Link columns */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 pt-8 border-t border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-8 pt-8 border-t border-white/10">
           <div>
             <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">{locale === 'fr' ? 'Liens rapides' : 'Quick Links'}</h4>
             <ul className="space-y-2">
@@ -105,6 +123,14 @@ export function Footer() {
             </ul>
           </div>
           <div>
+            <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">{locale === 'fr' ? 'Légal' : 'Legal'}</h4>
+            <ul className="space-y-2">
+              {legalLinks.map((l) => (
+                <li key={l.label}><button onClick={() => navigate(l.page, l.params)} className="text-sm text-white/80 hover:text-[#ff7a00] transition-colors text-left">{l.label}</button></li>
+              ))}
+            </ul>
+          </div>
+          <div>
             <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">{locale === 'fr' ? 'Nous contacter' : 'Contact Us On'}</h4>
             <div className="space-y-3 text-sm text-white/80">
               <div>
@@ -122,12 +148,19 @@ export function Footer() {
             </div>
           </div>
         </div>
+
+        {/* Operated-by line */}
+        <div className="pt-6 mt-2 border-t border-white/10">
+          <a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-[#ff7a00] transition-colors">
+            {locale === 'fr' ? 'Zando est opéré par Liafrik' : 'Zando is operated by Liafrik'} <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
       </div>
 
       {/* Vertical social sidebar, orange, right edge */}
       <div className="hidden sm:flex flex-col absolute top-6 right-0 bottom-6 w-14 bg-[#ff7a00] rounded-l-2xl items-center py-4 gap-3">
         {socials.map((s, i) => (
-          <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-black flex items-center justify-center hover:bg-black/70 transition-colors">
+          <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" title={s.label} className="w-9 h-9 rounded-full bg-black flex items-center justify-center hover:bg-black/70 transition-colors">
             <s.icon className="w-4 h-4 text-white" />
           </a>
         ))}

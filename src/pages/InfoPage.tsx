@@ -496,7 +496,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Zando est une marketplace opérée par Liafrik, spécialisée dans le commerce électronique mondial.</p>
               </Section>
               <Section title="Éditeur">
-                <p><strong>Liafrik</strong></p>
+                <p><strong><a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="text-[#ff7a00] font-semibold hover:underline">Liafrik</a></strong></p>
                 <p>E-mail : <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a></p>
                 <p>Service client : <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a></p>
                 <p>Support technique : <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
@@ -514,7 +514,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Zando is a marketplace operated by Liafrik, specializing in global e-commerce.</p>
               </Section>
               <Section title="Publisher">
-                <p><strong>Liafrik</strong></p>
+                <p><strong><a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="text-[#ff7a00] font-semibold hover:underline">Liafrik</a></strong></p>
                 <p>Email: <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a></p>
                 <p>Customer service: <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a></p>
                 <p>Technical support: <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
