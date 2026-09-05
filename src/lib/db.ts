@@ -32,6 +32,7 @@ export type Seller = {
   store_logo_url: string | null; store_banner_url: string | null;
   description: string | null; country_id: string | null; city: string | null;
   phone: string | null; plan: 'starter' | 'premium' | 'enterprise';
+  plan_expires_at: string | null;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   business_type: string | null; rating: number; total_reviews: number;
   total_products: number; joined_year: number | null; is_official: boolean;
@@ -274,11 +275,11 @@ const MOCK_CATEGORIES: Category[] = [
 ];
 
 const MOCK_SELLERS: Seller[] = [
-  { id: 's1', business_name: 'Maison Baoulé', store_slug: 'maison-baoule', store_logo_url: 'https://images.pexels.com/photos/32433910/pexels-photo-32433910.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/30088728/pexels-photo-30088728.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Premium fashion house specializing in wax and contemporary creations.', country_id: 'CI', city: 'Abidjan', phone: '+22507000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 342, total_products: 87, joined_year: 2023, is_official: true },
-  { id: 's2', business_name: 'Teranga Crafts', store_slug: 'teranga-crafts', store_logo_url: 'https://images.pexels.com/photos/33111458/pexels-photo-33111458.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Authentic Senegalese crafts, masks and sculptures.', country_id: 'SN', city: 'Dakar', phone: '+22177000000', plan: 'premium', status: 'approved', business_type: 'Individual', rating: 4.8, total_reviews: 218, total_products: 54, joined_year: 2023, is_official: false },
-  { id: 's3', business_name: 'Lagos Luxe', store_slug: 'lagos-luxe', store_logo_url: 'https://images.pexels.com/photos/11086637/pexels-photo-11086637.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/8526816/pexels-photo-8526816.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'High-end Nigerian men\'s and women\'s fashion.', country_id: 'NG', city: 'Lagos', phone: '+23480000000', plan: 'premium', status: 'approved', business_type: 'Company', rating: 4.7, total_reviews: 189, total_products: 63, joined_year: 2024, is_official: false },
-  { id: 's4', business_name: 'Nairobi Weaves', store_slug: 'nairobi-weaves', store_logo_url: 'https://images.pexels.com/photos/33627196/pexels-photo-33627196.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/29672003/pexels-photo-29672003.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Musical instruments and Kenyan crafts.', country_id: 'KE', city: 'Nairobi', phone: '+25470000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 156, total_products: 41, joined_year: 2023, is_official: true },
-  { id: 's5', business_name: 'Accra Gold', store_slug: 'accra-gold', store_logo_url: 'https://images.pexels.com/photos/30988134/pexels-photo-30988134.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/36773397/pexels-photo-36773397.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Kente textiles and Ghanaian jewelry.', country_id: 'GH', city: 'Accra', phone: '+2332000000', plan: 'starter', status: 'approved', business_type: 'Individual', rating: 4.6, total_reviews: 98, total_products: 12, joined_year: 2024, is_official: false },
+  { id: 's1', business_name: 'Maison Baoulé', store_slug: 'maison-baoule', store_logo_url: 'https://images.pexels.com/photos/32433910/pexels-photo-32433910.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/30088728/pexels-photo-30088728.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Premium fashion house specializing in wax and contemporary creations.', country_id: 'CI', city: 'Abidjan', phone: '+22507000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 342, total_products: 87, joined_year: 2023, is_official: true, plan_expires_at: null },
+  { id: 's2', business_name: 'Teranga Crafts', store_slug: 'teranga-crafts', store_logo_url: 'https://images.pexels.com/photos/33111458/pexels-photo-33111458.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Authentic Senegalese crafts, masks and sculptures.', country_id: 'SN', city: 'Dakar', phone: '+22177000000', plan: 'premium', status: 'approved', business_type: 'Individual', rating: 4.8, total_reviews: 218, total_products: 54, joined_year: 2023, is_official: false, plan_expires_at: null },
+  { id: 's3', business_name: 'Lagos Luxe', store_slug: 'lagos-luxe', store_logo_url: 'https://images.pexels.com/photos/11086637/pexels-photo-11086637.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/8526816/pexels-photo-8526816.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'High-end Nigerian men\'s and women\'s fashion.', country_id: 'NG', city: 'Lagos', phone: '+23480000000', plan: 'premium', status: 'approved', business_type: 'Company', rating: 4.7, total_reviews: 189, total_products: 63, joined_year: 2024, is_official: false, plan_expires_at: null },
+  { id: 's4', business_name: 'Nairobi Weaves', store_slug: 'nairobi-weaves', store_logo_url: 'https://images.pexels.com/photos/33627196/pexels-photo-33627196.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/29672003/pexels-photo-29672003.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Musical instruments and Kenyan crafts.', country_id: 'KE', city: 'Nairobi', phone: '+25470000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 156, total_products: 41, joined_year: 2023, is_official: true, plan_expires_at: null },
+  { id: 's5', business_name: 'Accra Gold', store_slug: 'accra-gold', store_logo_url: 'https://images.pexels.com/photos/30988134/pexels-photo-30988134.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/36773397/pexels-photo-36773397.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Kente textiles and Ghanaian jewelry.', country_id: 'GH', city: 'Accra', phone: '+2332000000', plan: 'starter', status: 'approved', business_type: 'Individual', rating: 4.6, total_reviews: 98, total_products: 12, joined_year: 2024, is_official: false, plan_expires_at: null },
 ];
 
 const MOCK_PRODUCTS: Product[] = [
@@ -1509,6 +1510,32 @@ export async function updateSellerPlan(sellerId: string, plan: 'starter' | 'prem
     await supabase.rpc('record_affiliate_conversion', { p_seller_id: sellerId, p_plan_price: planPrice });
   }
   return true;
+}
+
+// Admin-only subscription extension — effective immediately, written
+// straight to sellers.plan_expires_at (see 036_subscription_expiry).
+export async function adminExtendSellerPlanDays(sellerId: string, days: number): Promise<string | null> {
+  const { data, error } = await supabase.rpc('admin_extend_seller_plan_days', { p_seller_id: sellerId, p_days: days });
+  if (error) { console.error('adminExtendSellerPlanDays:', error.message); return null; }
+  return data as string;
+}
+
+export async function adminExtendSellerPlanMonths(sellerId: string, months: number): Promise<string | null> {
+  const { data, error } = await supabase.rpc('admin_extend_seller_plan_months', { p_seller_id: sellerId, p_months: months });
+  if (error) { console.error('adminExtendSellerPlanMonths:', error.message); return null; }
+  return data as string;
+}
+
+export async function adminSetSellerPlanExpiry(sellerId: string, expiresAtIso: string): Promise<boolean> {
+  const { error } = await supabase.rpc('admin_set_seller_plan_expiry', { p_seller_id: sellerId, p_expires_at: expiresAtIso });
+  if (error) { console.error('adminSetSellerPlanExpiry:', error.message); return false; }
+  return true;
+}
+
+export async function isSellerPlanActive(sellerId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('is_seller_plan_active', { p_seller_id: sellerId });
+  if (error) { console.error('isSellerPlanActive:', error.message); return true; }
+  return data as boolean;
 }
 
 export async function updateAdCampaignStatus(campaignId: string, status: string): Promise<boolean> {

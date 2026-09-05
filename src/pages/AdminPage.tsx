@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember, fetchAdminCaseLog } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember, fetchAdminCaseLog, adminExtendSellerPlanDays, adminExtendSellerPlanMonths, adminSetSellerPlanExpiry } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument, StaffRoleDb, StaffMember, StaffPermission, AdminCase } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
@@ -57,6 +57,8 @@ export function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [complianceReports, setComplianceReports] = useState<ComplianceReport[]>([]);
   const [sellerFilter, setSellerFilter] = useState<string>('all');
+  const [extendingSellerId, setExtendingSellerId] = useState<string | null>(null);
+  const [customExpiryDate, setCustomExpiryDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [superAdmins, setSuperAdmins] = useState<{ id: string; email: string; full_name: string | null; is_active: boolean }[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
@@ -288,10 +290,20 @@ export function AdminPage() {
                 </div>
                 <div className="card overflow-hidden bg-white">
                   {filteredSellers.map((s, i) => (
-                    <div key={s.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
+                    <div key={s.id} className={`p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
+                    <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#f7f8fa] shrink-0"><img src={s.store_logo_url || ''} alt="" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-[#0f172a] truncate">{s.business_name}</p><p className="text-xs text-[#64748b]">{s.city} • {s.total_products} {t.seller.products.toLowerCase()} • {locale === 'fr' ? 'Note' : 'Rating'}: {s.rating.toFixed(1)}</p></div>
-                      <Badge color={s.plan === 'enterprise' ? '#ff7a00' : s.plan === 'premium' ? '#ff7a00' : '#64748b'}>{s.plan}</Badge>
+                      <div className="text-right">
+                        <Badge color={s.plan === 'enterprise' ? '#ff7a00' : s.plan === 'premium' ? '#ff7a00' : '#64748b'}>{s.plan}</Badge>
+                        {s.plan !== 'starter' && (
+                          <p className="text-[10px] text-[#64748b] mt-1">
+                            {s.plan_expires_at
+                              ? `${locale === 'fr' ? 'Expire le' : 'Expires'} ${new Date(s.plan_expires_at).toLocaleDateString()}`
+                              : (locale === 'fr' ? 'Sans expiration' : 'No expiry')}
+                          </p>
+                        )}
+                      </div>
                       <Badge color={s.status === 'approved' ? '#ff7a00' : s.status === 'pending' ? '#ff7a00' : s.status === 'rejected' ? '#ef4444' : '#64748b'}>{s.status}</Badge>
                       {s.status === 'pending' && (
                         <div className="flex gap-1">
@@ -302,6 +314,42 @@ export function AdminPage() {
                       {s.status === 'approved' && (
                         <button onClick={async () => { await updateSellerStatus(s.id, 'suspended'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.suspend', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'suspended' as const } : x)); showToast(locale === 'fr' ? 'Vendeur suspendu' : 'Seller suspended'); }} className="p-2 rounded-lg hover:bg-red-50"><AlertTriangle className="w-4 h-4 text-red-500" /></button>
                       )}
+                      {isSuperAdmin && (
+                        <button onClick={() => { setExtendingSellerId(extendingSellerId === s.id ? null : s.id); setCustomExpiryDate(s.plan_expires_at ? s.plan_expires_at.slice(0, 10) : ''); }} className="p-2 rounded-lg hover:bg-[#f7f8fa]" title={locale === 'fr' ? 'Gérer l\u2019abonnement' : 'Manage subscription'}>
+                          <Clock className="w-4 h-4 text-[#64748b]" />
+                        </button>
+                      )}
+                    </div>
+
+                    {extendingSellerId === s.id && (
+                      <div className="mt-3 p-4 rounded-xl bg-[#f7f8fa] space-y-3">
+                        <p className="text-xs font-bold uppercase text-[#64748b]">{locale === 'fr' ? 'Prolonger l\u2019abonnement — effectif immédiatement' : 'Extend subscription — effective immediately'}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {[7, 30, 90].map((d) => (
+                            <button key={d} onClick={async () => {
+                              const newExpiry = await adminExtendSellerPlanDays(s.id, d);
+                              if (newExpiry) { setSellers(sellers.map(x => x.id === s.id ? { ...x, plan_expires_at: newExpiry } : x)); showToast(locale === 'fr' ? `+${d} jours ajoutés` : `+${d} days added`); }
+                            }} className="px-3 py-1.5 rounded-full bg-white border border-[#e2e8f0] text-xs font-semibold hover:border-[#ff7a00]">+{d} {locale === 'fr' ? 'jours' : 'days'}</button>
+                          ))}
+                          {[1, 3, 6, 12].map((m) => (
+                            <button key={m} onClick={async () => {
+                              const newExpiry = await adminExtendSellerPlanMonths(s.id, m);
+                              if (newExpiry) { setSellers(sellers.map(x => x.id === s.id ? { ...x, plan_expires_at: newExpiry } : x)); showToast(locale === 'fr' ? `+${m} mois ajoutés` : `+${m} months added`); }
+                            }} className="px-3 py-1.5 rounded-full bg-white border border-[#e2e8f0] text-xs font-semibold hover:border-[#ff7a00]">+{m} {m === 12 ? (locale === 'fr' ? 'an' : 'year') : (locale === 'fr' ? 'mois' : 'months')}</button>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input type="date" value={customExpiryDate} onChange={(e) => setCustomExpiryDate(e.target.value)} className="input-field text-xs py-1.5 w-auto" />
+                          <button onClick={async () => {
+                            if (!customExpiryDate) return;
+                            const iso = new Date(customExpiryDate + 'T23:59:59').toISOString();
+                            const ok = await adminSetSellerPlanExpiry(s.id, iso);
+                            if (ok) { setSellers(sellers.map(x => x.id === s.id ? { ...x, plan_expires_at: iso } : x)); showToast(locale === 'fr' ? 'Date d\u2019expiration définie' : 'Expiry date set'); }
+                          }} className="px-3 py-1.5 rounded-full bg-[#0f172a] text-white text-xs font-semibold">{locale === 'fr' ? 'Définir cette date' : 'Set this date'}</button>
+                          <button onClick={() => setExtendingSellerId(null)} className="px-3 py-1.5 rounded-full text-xs font-medium text-[#64748b]">{t.common.cancel}</button>
+                        </div>
+                      </div>
+                    )}
                     </div>
                   ))}
                   {filteredSellers.length === 0 && <p className="text-sm text-[#64748b] text-center py-8">{locale === 'fr' ? 'Aucun vendeur.' : 'No sellers.'}</p>}
