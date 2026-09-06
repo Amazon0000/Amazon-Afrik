@@ -7,14 +7,15 @@ import {
 } from '@/lib/db';
 import type { Product, AdvertisingPlan, AdvertisingPlacement, AdCampaign } from '@/lib/db';
 import { StatCard } from '@/components/ui';
-import { Megaphone, MousePointerClick, Eye, Target, Plus, ChevronRight, Check, CreditCard, Smartphone, Landmark, Loader2, X } from 'lucide-react';
+import { Megaphone, MousePointerClick, Eye, Target, Plus, ChevronRight, Check, CreditCard, Smartphone, Landmark, Loader2, X, Wallet } from 'lucide-react';
 
 type WizardStep = 'product' | 'plan' | 'placement' | 'payment' | 'recap';
 
-const PROVIDER_META: Record<'stripe' | 'flutterwave' | 'payunit', { label: string; icon: typeof CreditCard; hint: { fr: string; en: string } }> = {
+const PROVIDER_META: Record<'stripe' | 'flutterwave' | 'payunit' | 'paddle', { label: string; icon: typeof CreditCard; hint: { fr: string; en: string } }> = {
   stripe: { label: 'Stripe', icon: CreditCard, hint: { fr: 'Carte bancaire internationale', en: 'International card payment' } },
   flutterwave: { label: 'Flutterwave', icon: Smartphone, hint: { fr: 'Carte, Mobile Money, virement (Afrique)', en: 'Card, Mobile Money, transfer (Africa)' } },
   payunit: { label: 'PayUnit', icon: Landmark, hint: { fr: 'MTN MoMo, Orange Money (Cameroun)', en: 'MTN MoMo, Orange Money (Cameroon)' } },
+  paddle: { label: 'Paddle', icon: Wallet, hint: { fr: 'Carte bancaire, facturation internationale (Merchant of Record)', en: 'Card payment, international billing (Merchant of Record)' } },
 };
 
 export function AdsPage() {
@@ -29,7 +30,7 @@ export function AdsPage() {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [selectedPlacementId, setSelectedPlacementId] = useState('');
-  const [selectedProvider, setSelectedProvider] = useState<'stripe' | 'flutterwave' | 'payunit'>('stripe');
+  const [selectedProvider, setSelectedProvider] = useState<'stripe' | 'flutterwave' | 'payunit' | 'paddle'>('stripe');
   const [submitting, setSubmitting] = useState(false);
 
   const sellerId = user?.sellerId || '';
@@ -244,7 +245,7 @@ export function AdsPage() {
               <div>
                 <p className="text-xs font-semibold text-[#0f172a] uppercase mb-3">{locale === 'fr' ? '4. Moyen de paiement' : '4. Payment method'}</p>
                 <div className="grid sm:grid-cols-3 gap-3">
-                  {(Object.keys(PROVIDER_META) as Array<'stripe' | 'flutterwave' | 'payunit'>).map((key) => {
+                  {(Object.keys(PROVIDER_META) as Array<'stripe' | 'flutterwave' | 'payunit' | 'paddle'>).map((key) => {
                     const meta = PROVIDER_META[key];
                     const Icon = meta.icon;
                     return (

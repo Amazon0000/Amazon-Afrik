@@ -10,7 +10,7 @@ import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditC
 // coverage — sellers pick their own PSP here; Zando never touches the
 // funds or takes a cut.
 const PSP_OPTIONS: Record<string, string[]> = {
-  card: ['Stripe', 'PayPal', 'Adyen', 'Square', 'Worldpay', 'PayUnit', 'Flutterwave', 'Paystack', 'CinetPay', 'Interswitch', 'DPO Pay', 'Peach Payments', 'Yoco', 'PayFast', 'Cellulant (Tingg)', 'Fawry', 'PawaPay', 'Razorpay', 'PayU', 'Mercado Pago', 'Alipay', 'Autre / Other'],
+  card: ['Stripe', 'Paddle', 'PayPal', 'Adyen', 'Square', 'Worldpay', 'PayUnit', 'Flutterwave', 'Paystack', 'CinetPay', 'Interswitch', 'DPO Pay', 'Peach Payments', 'Yoco', 'PayFast', 'Cellulant (Tingg)', 'Fawry', 'PawaPay', 'Razorpay', 'PayU', 'Mercado Pago', 'Alipay', 'Autre / Other'],
   mobile_money: ['M-Pesa', 'MTN Mobile Money (MoMo)', 'Orange Money', 'Airtel Money', 'Moov Money', 'Wave', 'Tigo Pesa', 'EcoCash', 'PayUnit', 'Autre / Other'],
   bank: ['Virement bancaire direct / Direct bank transfer', 'PayUnit', 'Autre / Other'],
   crypto: ['USDT (TRC20)', 'USDT (ERC20)', 'Bitcoin', 'Autre / Other'],

@@ -20,6 +20,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   { id: 'flutterwave', label: 'Flutterwave', desc: 'Paiement transfrontalier Afrique', icon: CreditCard },
   { id: 'cinetpay', label: 'CinetPay', desc: 'Mobile Money & cartes — Afrique de l\'Ouest', icon: CreditCard },
   { id: 'stripe', label: 'Stripe', desc: 'Cartes Visa, Mastercard, Amex', icon: CreditCard },
+  { id: 'paddle', label: 'Paddle', desc: 'Merchant of Record — facturation internationale', icon: CreditCard },
   { id: 'paypal', label: 'PayPal', desc: 'Paiement international', icon: CreditCard },
   { id: 'razorpay', label: 'Razorpay', desc: 'Cartes, UPI — Inde', icon: CreditCard },
   { id: 'bank_transfer', label: 'Virement bancaire', desc: 'Virement direct sur votre compte', icon: Banknote },

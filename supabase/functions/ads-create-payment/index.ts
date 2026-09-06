@@ -13,12 +13,14 @@ import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { stripeAdapter } from '../_shared/stripe.ts';
 import { flutterwaveAdapter } from '../_shared/flutterwave.ts';
 import { payunitAdapter } from '../_shared/payunit.ts';
+import { paddleAdapter } from '../_shared/paddle.ts';
 import type { PaymentProviderAdapter, SupportedProvider } from '../_shared/payment-provider.ts';
 
 const adapters: Record<SupportedProvider, PaymentProviderAdapter> = {
   stripe: stripeAdapter,
   flutterwave: flutterwaveAdapter,
   payunit: payunitAdapter,
+  paddle: paddleAdapter,
 };
 
 Deno.serve(async (req: Request) => {

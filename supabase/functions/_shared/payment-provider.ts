@@ -3,7 +3,7 @@
 // (stripe.ts, flutterwave.ts, payunit.ts). Rien ici ne doit contenir de
 // logique métier propre à un provider.
 
-export type SupportedProvider = 'stripe' | 'flutterwave' | 'payunit';
+export type SupportedProvider = 'stripe' | 'flutterwave' | 'payunit' | 'paddle';
 
 export interface CreatePaymentInput {
   internalReference: string; // référence unique générée par nous (idempotency key)

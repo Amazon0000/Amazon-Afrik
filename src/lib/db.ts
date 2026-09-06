@@ -116,7 +116,7 @@ export type AdCampaign = {
   placement_id?: string | null;
   price?: number | null;
   currency_code?: string | null;
-  payment_provider?: 'stripe' | 'flutterwave' | 'payunit' | null;
+  payment_provider?: 'stripe' | 'flutterwave' | 'payunit' | 'paddle' | null;
   payment_reference?: string | null;
   payment_status?: 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
   starts_at?: string | null;
@@ -141,7 +141,7 @@ export type AdvertisingPlacement = {
 
 export type AdvertisingPayment = {
   id: string; campaign_id: string; seller_id: string;
-  provider: 'stripe' | 'flutterwave' | 'payunit';
+  provider: 'stripe' | 'flutterwave' | 'payunit' | 'paddle';
   provider_reference: string; internal_reference: string;
   amount: number; currency_code: string;
   status: 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
@@ -1671,7 +1671,7 @@ export async function createDraftCampaign(opts: {
 // Appelle l'Edge Function ads-create-payment. Le frontend ne fait QUE
 // initier la demande — il ne reçoit ni ne décide jamais d'un statut "payé".
 export async function initiateAdvertisingPayment(opts: {
-  campaignId: string; provider: 'stripe' | 'flutterwave' | 'payunit'; returnUrl: string;
+  campaignId: string; provider: 'stripe' | 'flutterwave' | 'payunit' | 'paddle'; returnUrl: string;
 }): Promise<{ redirectUrl: string } | { error: string }> {
   const { data, error } = await supabase.functions.invoke('ads-create-payment', {
     body: { campaignId: opts.campaignId, provider: opts.provider, returnUrl: opts.returnUrl },
