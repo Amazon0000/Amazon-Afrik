@@ -207,14 +207,29 @@ export function OnboardingPage() {
         }).eq('id', sellerId);
       }
 
+      // Real display names and account identifiers — not raw checkbox ids
+      // with a null identifier, which would leave a buyer with a "mobile_money"
+      // payment option and no actual number/account to pay into.
       await supabase.from('seller_payment_methods').insert(
-        form.selectedPayments.map((pid) => ({
-          seller_id: sellerId,
-          provider_name: pid,
-          provider_type: pid === 'bank_transfer' ? 'bank' : pid === 'mobile_money' ? 'mobile_money' : 'card',
-          is_active: true,
-          is_verified: false,
-        }))
+        form.selectedPayments.map((pid) => {
+          const meta = PAYMENT_METHODS.find((pm) => pm.id === pid);
+          const accountIdentifier =
+            pid === 'mobile_money' ? (form.mobileMoney || null) :
+            pid === 'bank_transfer' ? (form.iban || null) :
+            null; // Gateways like Stripe/Paddle/PayPal/Flutterwave need a real
+                  // OAuth-style connection to get an account identifier, which
+                  // isn't built yet — left null rather than fabricated. The
+                  // seller can fill it in for real from Seller Center > Payment methods.
+          return {
+            seller_id: sellerId,
+            provider_name: meta?.label || pid,
+            provider_type: pid === 'bank_transfer' ? 'bank' : pid === 'mobile_money' ? 'mobile_money' : 'card',
+            account_identifier: accountIdentifier,
+            display_name: meta?.label || pid,
+            is_active: true,
+            is_verified: false,
+          };
+        })
       );
 
       setUser({

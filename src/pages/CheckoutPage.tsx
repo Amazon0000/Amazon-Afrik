@@ -309,7 +309,10 @@ export function CheckoutPage() {
                               <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedPayment[sellerId] === m.id ? 'bg-[#ff7a00] text-white' : 'bg-[#0f172a]/5 text-[#64748b]'}`}>
                                 {m.provider_type === 'mobile_money' ? <Smartphone className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
                               </div>
-                              <span className="text-sm font-medium text-[#0f172a]">{m.display_name || m.provider_name}</span>
+                              <div className="flex-1 min-w-0 text-left">
+                                <p className="text-sm font-medium text-[#0f172a]">{m.display_name || m.provider_name}</p>
+                                {m.account_identifier && <p className="text-xs text-[#64748b] truncate">{m.account_identifier}</p>}
+                              </div>
                               <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 ${selectedPayment[sellerId] === m.id ? 'border-[#ff7a00] bg-[#ff7a00]' : 'border-[#0f172a]/20'}`}>
                                 {selectedPayment[sellerId] === m.id && <CheckCircle className="w-4 h-4 text-white mx-auto" />}
                               </div>
