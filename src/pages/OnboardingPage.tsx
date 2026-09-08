@@ -24,6 +24,9 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   { id: 'paypal', label: 'PayPal', desc: 'Paiement international', icon: CreditCard },
   { id: 'razorpay', label: 'Razorpay', desc: 'Cartes, UPI — Inde', icon: CreditCard },
   { id: 'bank_transfer', label: 'Virement bancaire', desc: 'Virement direct sur votre compte', icon: Banknote },
+  { id: 'airwallex', label: 'Airwallex', desc: 'Paiements multidevises — Asie de l\'Est & international', icon: Wallet },
+  { id: 'alipay', label: 'Alipay', desc: 'Portefeuille numérique — Chine', icon: Wallet },
+  { id: 'wechatpay', label: 'WeChat Pay', desc: 'Portefeuille numérique — Chine', icon: Wallet },
 ];
 
 export function OnboardingPage() {
@@ -223,7 +226,7 @@ export function OnboardingPage() {
           return {
             seller_id: sellerId,
             provider_name: meta?.label || pid,
-            provider_type: pid === 'bank_transfer' ? 'bank' : pid === 'mobile_money' ? 'mobile_money' : 'card',
+            provider_type: pid === 'bank_transfer' ? 'bank' : pid === 'mobile_money' ? 'mobile_money' : (pid === 'airwallex' || pid === 'alipay' || pid === 'wechatpay') ? 'digital_wallet' : 'card',
             account_identifier: accountIdentifier,
             display_name: meta?.label || pid,
             is_active: true,

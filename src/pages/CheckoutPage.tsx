@@ -3,7 +3,7 @@ import { useApp } from '@/lib/store';
 import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon } from '@/lib/db';
 import type { Product, Address, SellerPaymentMethod, FlashDeal } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X } from 'lucide-react';
+import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet } from 'lucide-react';
 
 export function CheckoutPage() {
   const { t, locale, cart, navigate, clearCart, showToast, user } = useApp();
@@ -307,7 +307,7 @@ export function CheckoutPage() {
                             <button key={m.id} onClick={() => setSelectedPayment({ ...selectedPayment, [sellerId]: m.id })}
                               className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all bg-white ${selectedPayment[sellerId] === m.id ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#0f172a]/10 hover:border-[#ff7a00]/50'}`}>
                               <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedPayment[sellerId] === m.id ? 'bg-[#ff7a00] text-white' : 'bg-[#0f172a]/5 text-[#64748b]'}`}>
-                                {m.provider_type === 'mobile_money' ? <Smartphone className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                                {m.provider_type === 'mobile_money' ? <Smartphone className="w-4 h-4" /> : m.provider_type === 'digital_wallet' ? <Wallet className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
                               </div>
                               <div className="flex-1 min-w-0 text-left">
                                 <p className="text-sm font-medium text-[#0f172a]">{m.display_name || m.provider_name}</p>

@@ -10,10 +10,11 @@ import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditC
 // coverage — sellers pick their own PSP here; Zando never touches the
 // funds or takes a cut.
 const PSP_OPTIONS: Record<string, string[]> = {
-  card: ['Stripe', 'Paddle', 'PayPal', 'Adyen', 'Square', 'Worldpay', 'PayUnit', 'Flutterwave', 'Paystack', 'CinetPay', 'Interswitch', 'DPO Pay', 'Peach Payments', 'Yoco', 'PayFast', 'Cellulant (Tingg)', 'Fawry', 'PawaPay', 'Razorpay', 'PayU', 'Mercado Pago', 'Alipay', 'Autre / Other'],
+  card: ['Stripe', 'Paddle', 'PayPal', 'Adyen', 'Square', 'Worldpay', 'PayUnit', 'Flutterwave', 'Paystack', 'CinetPay', 'Interswitch', 'DPO Pay', 'Peach Payments', 'Yoco', 'PayFast', 'Cellulant (Tingg)', 'Fawry', 'PawaPay', 'Razorpay', 'PayU', 'Mercado Pago', 'Autre / Other'],
   mobile_money: ['M-Pesa', 'MTN Mobile Money (MoMo)', 'Orange Money', 'Airtel Money', 'Moov Money', 'Wave', 'Tigo Pesa', 'EcoCash', 'PayUnit', 'Autre / Other'],
   bank: ['Virement bancaire direct / Direct bank transfer', 'PayUnit', 'Autre / Other'],
   crypto: ['USDT (TRC20)', 'USDT (ERC20)', 'Bitcoin', 'Autre / Other'],
+  digital_wallet: ['Airwallex', 'Alipay', 'WeChat Pay', 'Autre / Other'],
 };
 
 type NewProduct = {
@@ -660,6 +661,7 @@ export function SellerCenterPage() {
                             <option value="mobile_money">Mobile Money (M-Pesa, Orange Money...)</option>
                             <option value="bank">{locale === 'fr' ? 'Virement bancaire' : 'Bank transfer'}</option>
                             <option value="crypto">Crypto</option>
+                            <option value="digital_wallet">{locale === 'fr' ? 'Portefeuille numérique — Asie de l\'Est (Airwallex, Alipay, WeChat Pay)' : 'Digital wallet — East Asia (Airwallex, Alipay, WeChat Pay)'}</option>
                           </select>
                         </div>
                         <div>
@@ -680,7 +682,7 @@ export function SellerCenterPage() {
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Identifiant / numéro de compte' : 'Account identifier'}</label>
-                          <input value={newPayment.accountIdentifier} onChange={(e) => setNewPayment({ ...newPayment, accountIdentifier: e.target.value })} className="input-field" placeholder={locale === 'fr' ? 'ID compte, IBAN, numéro...' : 'Account ID, IBAN, number...'} />
+                          <input value={newPayment.accountIdentifier} onChange={(e) => setNewPayment({ ...newPayment, accountIdentifier: e.target.value })} className="input-field" placeholder={newPayment.providerType === 'digital_wallet' ? (locale === 'fr' ? 'ID marchand Airwallex / Alipay / WeChat Pay' : 'Airwallex / Alipay / WeChat Pay merchant ID') : (locale === 'fr' ? 'ID compte, IBAN, numéro...' : 'Account ID, IBAN, number...')} />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? "Nom affiché à l'acheteur" : 'Display name to buyer'}</label>
