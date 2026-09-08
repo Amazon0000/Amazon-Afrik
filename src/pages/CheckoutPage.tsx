@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl } from '@/lib/db';
 import type { Product, Address, SellerPaymentMethod, FlashDeal } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet } from 'lucide-react';
+import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
 
 export function CheckoutPage() {
   const { t, locale, cart, navigate, clearCart, showToast, user } = useApp();
@@ -16,6 +16,8 @@ export function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderIds, setOrderIds] = useState<string[]>([]);
+  const [digitalItems, setDigitalItems] = useState<{ orderItemId: string; name: string }[]>([]);
+  const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', address: '', city: '' });
   const [couponInput, setCouponInput] = useState<Record<string, string>>({});
   const [appliedCoupons, setAppliedCoupons] = useState<Record<string, { code: string; discount: number }>>({});
@@ -102,6 +104,17 @@ export function CheckoutPage() {
     setAppliedCoupons(next);
   };
 
+  const handleDownload = async (orderItemId: string) => {
+    setDownloading((prev) => ({ ...prev, [orderItemId]: true }));
+    const result = await getDigitalDownloadUrl(orderItemId, !user ? guestInfo.email : undefined);
+    setDownloading((prev) => ({ ...prev, [orderItemId]: false }));
+    if ('url' in result) {
+      window.open(result.url, '_blank');
+    } else {
+      showToast(result.error, 'error');
+    }
+  };
+
   const placeOrder = async () => {
     if (items.length === 0) return;
     if (!user && (!guestInfo.name || !guestInfo.email || !guestInfo.address)) {
@@ -172,14 +185,19 @@ export function CheckoutPage() {
 
         if (order) {
           for (const item of groupItems) {
-            await supabase.from('order_items').insert({
+            const { data: insertedItem } = await supabase.from('order_items').insert({
               order_id: order.id,
               product_id: item.productId,
               product_name: item.product!.name,
               qty: item.qty,
               price: effectivePrice(item),
               image_url: item.product!.product_images?.[0]?.image_url || null,
-            });
+              product_type: item.product!.product_type,
+              digital_file_path: item.product!.product_type === 'digital' ? item.product!.digital_file_path : null,
+            }).select('id').single();
+            if (item.product!.product_type === 'digital' && insertedItem) {
+              setDigitalItems((prev) => [...prev, { orderItemId: insertedItem.id, name: item.product!.name }]);
+            }
             await decrementProductStock(item.productId, item.qty);
           }
           createdIds.push(trackingId);
@@ -208,6 +226,21 @@ export function CheckoutPage() {
               <p key={id} className="text-xs text-[#64748b]">{t.delivery.trackingId}: <span className="font-mono font-bold text-[#0f172a]">{id}</span></p>
             ))}
           </div>
+          {digitalItems.length > 0 && (
+            <div className="mb-6 space-y-2 text-left">
+              <p className="text-xs font-semibold text-[#0f172a] uppercase">{locale === 'fr' ? 'Vos téléchargements' : 'Your downloads'}</p>
+              {digitalItems.map((di) => (
+                <div key={di.orderItemId} className="flex items-center gap-3 p-3 rounded-xl bg-[#ff7a00]/5 border border-[#ff7a00]/15">
+                  <FileText className="w-5 h-5 text-[#ff7a00] shrink-0" />
+                  <span className="flex-1 min-w-0 text-sm font-medium text-[#0f172a] truncate">{di.name}</span>
+                  <button onClick={() => handleDownload(di.orderItemId)} disabled={downloading[di.orderItemId]} className="btn-gold px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0 disabled:opacity-50">
+                    {downloading[di.orderItemId] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} {locale === 'fr' ? 'Télécharger' : 'Download'}
+                  </button>
+                </div>
+              ))}
+              {!user && <p className="text-[11px] text-[#64748b]/70">{locale === 'fr' ? 'Créez un compte pour retrouver vos téléchargements plus tard depuis votre tableau de bord.' : 'Create an account to find your downloads later from your dashboard.'}</p>}
+            </div>
+          )}
           <div className="flex gap-3">
             <button onClick={() => navigate('delivery', { id: orderIds[0] })} className="flex-1 btn-gold py-3 rounded-xl font-semibold">{t.delivery.title}</button>
             <button onClick={() => navigate('home')} className="flex-1 btn-cocoa py-3 rounded-xl font-semibold">{t.nav.home}</button>

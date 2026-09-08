@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
@@ -25,9 +25,10 @@ type NewProduct = {
   stock: string;
   sku: string;
   categoryId: string;
+  productType: 'physical' | 'digital';
 };
 
-const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '' };
+const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', productType: 'physical' };
 
 export function SellerCenterPage() {
   const { t, locale, user, setUser, navigate, showToast, categories } = useApp();
@@ -42,6 +43,9 @@ export function SellerCenterPage() {
   const [newProduct, setNewProduct] = useState<NewProduct>(emptyProduct);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [digitalFileMeta, setDigitalFileMeta] = useState<{ path: string; name: string; size: number } | null>(null);
+  const [digitalFileUploading, setDigitalFileUploading] = useState(false);
+  const digitalFileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [paymentMethods, setPaymentMethods] = useState<SellerPaymentMethod[]>([]);
@@ -139,6 +143,22 @@ export function SellerCenterPage() {
     setUploading(false);
   };
 
+  const handleDigitalFileSelect = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024 * 1024) {
+      showToast(locale === 'fr' ? 'Fichier trop volumineux (max 500MB)' : 'File too large (max 500MB)');
+      return;
+    }
+    const sellerId = user?.sellerId;
+    if (!sellerId) return;
+    setDigitalFileUploading(true);
+    const result = await uploadDigitalFile(file, sellerId);
+    setDigitalFileUploading(false);
+    if (result) setDigitalFileMeta(result);
+    else showToast(locale === 'fr' ? "Échec de l'envoi du fichier" : 'File upload failed');
+  };
+
   const handleSaveProduct = async () => {
     if (!newProduct.name.trim() || !newProduct.price.trim() || !newProduct.stock.trim()) {
       showToast(locale === 'fr' ? 'Veuillez remplir les champs requis' : 'Please fill required fields');
@@ -146,6 +166,10 @@ export function SellerCenterPage() {
     }
     if (uploadedImages.length === 0) {
       showToast(locale === 'fr' ? 'Ajoutez au moins une image' : 'Add at least one image');
+      return;
+    }
+    if (newProduct.productType === 'digital' && !digitalFileMeta) {
+      showToast(locale === 'fr' ? 'Ajoutez le fichier digital (PDF, ZIP, audio...)' : 'Add the digital file (PDF, ZIP, audio...)');
       return;
     }
     const sellerId = user?.sellerId;
@@ -165,12 +189,15 @@ export function SellerCenterPage() {
       stock: parseInt(newProduct.stock, 10),
       sku: newProduct.sku.trim() || null,
       imageUrls: uploadedImages,
+      productType: newProduct.productType,
+      digitalFile: newProduct.productType === 'digital' ? digitalFileMeta : null,
     });
     setSaving(false);
     if (productId) {
       showToast(locale === 'fr' ? 'Produit créé — en attente de validation Zando avant mise en ligne' : 'Product created — pending Zando approval before it goes live');
       setNewProduct(emptyProduct);
       setUploadedImages([]);
+      setDigitalFileMeta(null);
       setShowAddProduct(false);
       await reloadProducts();
     } else {
@@ -295,6 +322,20 @@ export function SellerCenterPage() {
 
                 {showAddProduct && (
                   <div className="card p-6 mb-6 animate-fade-up bg-white">
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Type de produit' : 'Product type'}</label>
+                      <div className="inline-flex rounded-xl border border-[#e2e8f0] overflow-hidden">
+                        <button type="button" onClick={() => setNewProduct({ ...newProduct, productType: 'physical' })} className={`px-4 py-2 text-sm font-semibold flex items-center gap-2 transition-colors ${newProduct.productType === 'physical' ? 'bg-[#ff7a00] text-white' : 'bg-white text-[#64748b] hover:bg-[#f7f8fa]'}`}>
+                          <Truck className="w-4 h-4" /> {locale === 'fr' ? 'Produit physique' : 'Physical product'}
+                        </button>
+                        <button type="button" onClick={() => setNewProduct({ ...newProduct, productType: 'digital' })} className={`px-4 py-2 text-sm font-semibold flex items-center gap-2 transition-colors border-l border-[#e2e8f0] ${newProduct.productType === 'digital' ? 'bg-[#ff7a00] text-white' : 'bg-white text-[#64748b] hover:bg-[#f7f8fa]'}`}>
+                          <Download className="w-4 h-4" /> {locale === 'fr' ? 'Produit digital' : 'Digital product'}
+                        </button>
+                      </div>
+                      {newProduct.productType === 'digital' && (
+                        <p className="text-xs text-[#64748b] mt-2">{locale === 'fr' ? 'Livraison instantanée après paiement — pas de livraison physique ni de logistique pour ce produit.' : 'Instant delivery after payment — no shipping or logistics for this product.'}</p>
+                      )}
+                    </div>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.productName} *</label><input value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} className="input-field" placeholder="Robe Wax Premium" /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.price} *</label><input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} className="input-field" placeholder="45" /></div>
@@ -329,6 +370,29 @@ export function SellerCenterPage() {
                           </div>
                         )}
                       </div>
+
+                      {newProduct.productType === 'digital' && (
+                        <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Fichier digital (sécurisé)' : 'Digital file (secure)'} *</label>
+                          <input ref={digitalFileInputRef} type="file" accept=".pdf,.zip,.mp3,.wav,.m4a,.mp4,.mov,.epub,.doc,.docx" className="hidden" onChange={(e) => handleDigitalFileSelect(e.target.files)} />
+                          <div onClick={() => digitalFileInputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); handleDigitalFileSelect(e.dataTransfer.files); }} className="border-2 border-dashed border-[#e2e8f0] rounded-xl p-6 text-center hover:border-[#ff7a00] transition-colors cursor-pointer">
+                            {digitalFileUploading ? (
+                              <div className="flex flex-col items-center gap-2"><Loader2 className="w-8 h-8 text-[#ff7a00] animate-spin" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Envoi sécurisé en cours...' : 'Securely uploading...'}</p></div>
+                            ) : digitalFileMeta ? (
+                              <div className="flex items-center justify-center gap-3">
+                                <FileText className="w-6 h-6 text-[#ff7a00]" />
+                                <div className="text-left">
+                                  <p className="text-sm font-medium text-[#0f172a]">{digitalFileMeta.name}</p>
+                                  <p className="text-xs text-[#64748b]">{(digitalFileMeta.size / 1024 / 1024).toFixed(1)} MB</p>
+                                </div>
+                                <button onClick={(e) => { e.stopPropagation(); setDigitalFileMeta(null); }} className="w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            ) : (
+                              <><FileText className="w-8 h-8 text-[#64748b]/40 mx-auto mb-2" /><p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Cliquez ou glissez le fichier ici' : 'Click or drag the file here'}</p><p className="text-xs text-[#64748b]/60 mt-1">PDF, ZIP, MP3, MP4, EPUB, DOC — max 500MB</p></>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#64748b]/70 mt-2 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {locale === 'fr' ? "Fichier privé — accessible uniquement à l'acheteur après paiement confirmé." : 'Private file — only accessible to the buyer after confirmed payment.'}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-3 mt-5">
                       <button onClick={handleSaveProduct} disabled={saving || uploading} className="btn-green px-6 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">{saving ? <><Loader2 className="w-4 h-4 animate-spin" /> {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}</> : t.common.save}</button>

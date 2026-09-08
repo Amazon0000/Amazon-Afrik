@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests, getOrCreateConversation, fetchConversationMessages, sendMessage, markConversationRead } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests, getOrCreateConversation, fetchConversationMessages, sendMessage, markConversationRead, getDigitalDownloadUrl } from '@/lib/db';
 import type { Product, Address, Order, ReturnRequest, Message } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon, FileText } from 'lucide-react';
 
 export function AccountPage() {
   const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
@@ -13,6 +13,7 @@ export function AccountPage() {
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [buyingAgain, setBuyingAgain] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [downloadingItemId, setDownloadingItemId] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
@@ -112,6 +113,17 @@ export function AccountPage() {
     }
   };
 
+  const downloadDigitalItem = async (orderItemId: string) => {
+    setDownloadingItemId(orderItemId);
+    const result = await getDigitalDownloadUrl(orderItemId);
+    setDownloadingItemId(null);
+    if ('url' in result) {
+      window.open(result.url, '_blank');
+    } else {
+      showToast(result.error, 'error');
+    }
+  };
+
   const openConversationForOrder = async (order: Order) => {
     if (!user || !order.seller_id) return;
     setMessagingOrderId(order.id);
@@ -187,10 +199,17 @@ export function AccountPage() {
                             {item.image_url && <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />}
                             <span className="text-sm text-[#0f172a] flex-1">{item.product_name} x{item.qty}</span>
                             <span className="text-sm font-bold text-[#0f172a]">${item.price * item.qty}</span>
-                            <button onClick={() => buyAgain(item)} disabled={buyingAgain === item.product_id} className="flex items-center gap-1 text-xs font-semibold text-[#3d1f00] border border-[#3d1f00]/20 rounded-full px-3 py-1.5 hover:bg-[#3d1f00]/5 disabled:opacity-50 shrink-0">
-                              {buyingAgain === item.product_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                              {locale === 'fr' ? 'Racheter' : 'Buy again'}
-                            </button>
+                            {item.product_type === 'digital' ? (
+                              <button onClick={() => downloadDigitalItem(item.id)} disabled={downloadingItemId === item.id} className="flex items-center gap-1 text-xs font-semibold text-white bg-[#ff7a00] rounded-full px-3 py-1.5 hover:bg-[#e06c00] disabled:opacity-50 shrink-0">
+                                {downloadingItemId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                                {locale === 'fr' ? 'Télécharger' : 'Download'}
+                              </button>
+                            ) : (
+                              <button onClick={() => buyAgain(item)} disabled={buyingAgain === item.product_id} className="flex items-center gap-1 text-xs font-semibold text-[#3d1f00] border border-[#3d1f00]/20 rounded-full px-3 py-1.5 hover:bg-[#3d1f00]/5 disabled:opacity-50 shrink-0">
+                                {buyingAgain === item.product_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                                {locale === 'fr' ? 'Racheter' : 'Buy again'}
+                              </button>
+                            )}
                           </div>
                         ))}
                         <div className="flex items-center justify-between pt-3 border-t border-[#ff7a00]/10">

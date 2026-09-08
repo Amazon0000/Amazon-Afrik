@@ -51,6 +51,8 @@ export type Product = {
   is_sponsored: boolean; is_active: boolean; created_at: string;
   approval_status: 'pending' | 'approved' | 'rejected';
   reviewed_by: string | null; reviewed_at: string | null; rejection_reason: string | null;
+  product_type: 'physical' | 'digital';
+  digital_file_path: string | null; digital_file_name: string | null; digital_file_size: number | null;
   product_images?: ProductImage[];
   product_variants?: ProductVariant[];
   product_specifications?: ProductSpec[];
@@ -165,6 +167,7 @@ export type Order = {
 export type OrderItem = {
   id: string; order_id: string; product_id: string | null;
   product_name: string; qty: number; price: number; image_url: string | null;
+  product_type: 'physical' | 'digital'; digital_file_path: string | null;
 };
 
 export type Address = {
@@ -282,7 +285,7 @@ const MOCK_SELLERS: Seller[] = [
   { id: 's5', business_name: 'Accra Gold', store_slug: 'accra-gold', store_logo_url: 'https://images.pexels.com/photos/30988134/pexels-photo-30988134.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/36773397/pexels-photo-36773397.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Kente textiles and Ghanaian jewelry.', country_id: 'GH', city: 'Accra', phone: '+2332000000', plan: 'starter', status: 'approved', business_type: 'Individual', rating: 4.6, total_reviews: 98, total_products: 12, joined_year: 2024, is_official: false, plan_expires_at: null },
 ];
 
-const MOCK_PRODUCTS: Product[] = [
+const MOCK_PRODUCTS_BASE: Omit<Product, 'product_type' | 'digital_file_path' | 'digital_file_name' | 'digital_file_size'>[] = [
   {
     id: 'p1',
     seller_id: 's1',
@@ -474,6 +477,16 @@ const MOCK_PRODUCTS: Product[] = [
     countries: MOCK_COUNTRIES[4],
   }
 ];
+
+// Demo/fallback catalog is all-physical — backfilled here in one place
+// rather than repeating these 4 fields on every literal above.
+const MOCK_PRODUCTS: Product[] = MOCK_PRODUCTS_BASE.map((p) => ({
+  ...p,
+  product_type: 'physical',
+  digital_file_path: null,
+  digital_file_name: null,
+  digital_file_size: null,
+}));
 
 export async function fetchCountries(): Promise<Country[]> {
   try {
@@ -966,6 +979,25 @@ export async function uploadProductImage(file: File, sellerId: string): Promise<
   return data.publicUrl;
 }
 
+// Digital product files (PDF/ZIP/audio/video/etc.) live in a PRIVATE bucket —
+// unlike product-images, this returns the storage path, not a public URL.
+// The path is only ever readable through the digital-download Edge Function,
+// which checks the caller actually purchased this exact product first.
+export async function uploadDigitalFile(file: File, sellerId: string): Promise<{ path: string; name: string; size: number } | null> {
+  const ext = file.name.split('.').pop() || 'bin';
+  const path = `${sellerId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from('digital-products').upload(path, file, {
+    cacheControl: '0',
+    upsert: false,
+    contentType: file.type || 'application/octet-stream',
+  });
+  if (error) {
+    console.error('Digital file upload error:', error.message);
+    return null;
+  }
+  return { path, name: file.name, size: file.size };
+}
+
 export async function uploadSellerAsset(file: File, sellerId: string, type: 'logo' | 'banner'): Promise<string | null> {
   const ext = file.name.split('.').pop() || 'jpg';
   const fileName = `${sellerId}/${type}-${Date.now()}.${ext}`;
@@ -1039,6 +1071,15 @@ export async function submitContactMessage(opts: { firstName: string; lastName: 
 
 // ============ MUTATIONS ============
 
+export async function getDigitalDownloadUrl(orderItemId: string, guestEmail?: string): Promise<{ url: string } | { error: string }> {
+  const { data, error } = await supabase.functions.invoke('digital-download', {
+    body: { orderItemId, guestEmail: guestEmail || undefined },
+  });
+  if (error) return { error: error.message || 'Download failed' };
+  if (data?.error) return { error: data.error };
+  return { url: data.url };
+}
+
 export async function createProduct(opts: {
   sellerId: string;
   name: string;
@@ -1053,6 +1094,8 @@ export async function createProduct(opts: {
   sku?: string | null;
   imageUrls: string[];
   variants?: { variant_type: string; variant_value: string; price_adjustment: number; stock: number }[];
+  productType?: 'physical' | 'digital';
+  digitalFile?: { path: string; name: string; size: number } | null;
 }): Promise<string | null> {
   const slug = opts.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).slice(2, 6);
 
@@ -1074,6 +1117,10 @@ export async function createProduct(opts: {
     rating: 0,
     total_reviews: 0,
     approval_status: 'pending',
+    product_type: opts.productType ?? 'physical',
+    digital_file_path: opts.digitalFile?.path ?? null,
+    digital_file_name: opts.digitalFile?.name ?? null,
+    digital_file_size: opts.digitalFile?.size ?? null,
   }).select('id').single();
 
   if (error || !product) {
