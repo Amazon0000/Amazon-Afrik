@@ -65,8 +65,8 @@ export function CartPage() {
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-3">
               {items.map((item) => (
-                <div key={item.productId} className="card p-4 flex items-center gap-4">
-                  <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} className="w-20 h-20 rounded-xl object-cover cursor-pointer" onClick={() => navigate('product', { id: item.productId })} />
+                <div key={item.productId} className="card p-4 flex items-center gap-3 sm:gap-4">
+                  <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover cursor-pointer shrink-0" onClick={() => navigate('product', { id: item.productId })} />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-[#0f172a] cursor-pointer hover:text-[#ff7a00]" onClick={() => navigate('product', { id: item.productId })}>{item.product!.name}</h3>
                     <p className="text-xs text-[#64748b]">{item.product!.sellers?.business_name}</p>
@@ -90,7 +90,7 @@ export function CartPage() {
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p className="text-lg font-bold text-[#0f172a]">${(effectivePrice(item) * item.qty).toFixed(0)}</p>
                     <p className="text-xs text-[#64748b]">
                       {item.deal && <span className="line-through mr-1">${item.product!.price}</span>}
@@ -101,7 +101,7 @@ export function CartPage() {
               ))}
             </div>
             <div>
-              <div className="card p-5 sticky top-20">
+              <div className="card p-5 lg:sticky lg:top-20">
                 <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4">{t.cart.orderSummary}</h2>
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${total.toFixed(2)}</span></div>
