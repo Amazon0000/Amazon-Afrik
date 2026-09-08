@@ -291,6 +291,12 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>3. Cliquez sur « Retourner » et indiquez la raison.</p>
                 <p>4. Le vendeur vous contactera pour organiser la reprise du produit.</p>
               </Section>
+              <Section title="Produits digitaux">
+                <p>Les produits digitaux (ebooks, fichiers audio, logiciels, ZIP...) sont livrés instantanément après paiement et ne sont pas éligibles au retour ou remboursement une fois le téléchargement effectué, sauf si le fichier est corrompu, illisible ou ne correspond manifestement pas à sa description — signalez ce cas au vendeur via la messagerie dans les 48 heures suivant l'achat.</p>
+              </Section>
+              <Section title="Livraison internationale et douanes">
+                <p>Pour les commandes livrées vers un autre pays que celui du vendeur, des droits de douane, taxes à l'importation ou frais de dédouanement peuvent s'appliquer à l'arrivée et sont à la charge de l'acheteur, sauf mention contraire du vendeur. Les délais de livraison affichés au moment de la commande sont des estimations et peuvent varier selon les formalités douanières locales.</p>
+              </Section>
             </>
           ) : (
             <>
@@ -308,6 +314,12 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>2. Select the relevant order.</p>
                 <p>3. Click "Return" and indicate the reason.</p>
                 <p>4. The seller will contact you to arrange product pickup.</p>
+              </Section>
+              <Section title="Digital Products">
+                <p>Digital products (ebooks, audio files, software, ZIP archives...) are delivered instantly after payment and are not eligible for return or refund once downloaded, unless the file is corrupted, unreadable, or clearly does not match its description — report this to the seller via messaging within 48 hours of purchase.</p>
+              </Section>
+              <Section title="International Shipping & Customs">
+                <p>For orders shipped to a country other than the seller's, import duties, taxes, or customs clearance fees may apply on arrival and are the buyer's responsibility unless the seller states otherwise. Delivery timelines shown at checkout are estimates and may vary depending on local customs processing.</p>
               </Section>
             </>
           ))}
@@ -385,6 +397,24 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               <Section title="6. Modifications">
                 <p>Zando se réserve le droit de modifier ces conditions à tout moment. Les modifications entrent en vigueur dès leur publication.</p>
               </Section>
+              <Section title="7. Éligibilité">
+                <p>Vous devez avoir au moins 18 ans, ou l'âge légal de majorité dans votre pays de résidence, pour créer un compte acheteur ou vendeur sur Zando.</p>
+              </Section>
+              <Section title="8. Articles interdits">
+                <p>Il est interdit de vendre sur Zando : des biens contrefaits, des armes, des substances illégales ou réglementées, des animaux vivants protégés, des biens volés, ainsi que tout produit dont la vente enfreint les lois locales ou internationales applicables. Zando se réserve le droit de retirer toute annonce non conforme et de suspendre le compte du vendeur concerné.</p>
+              </Section>
+              <Section title="9. Licence des produits digitaux">
+                <p>L'achat d'un produit digital (ebook, fichier audio, logiciel...) vous accorde une licence d'usage personnel telle que définie par le vendeur, et non un transfert de propriété intellectuelle. La revente, redistribution ou reproduction non autorisée d'un produit digital acheté sur Zando est interdite.</p>
+              </Section>
+              <Section title="10. Limitation de responsabilité">
+                <p>Dans la mesure permise par la loi, la responsabilité de Zando envers un utilisateur, pour toute réclamation liée à l'utilisation de la plateforme, est limitée au montant des frais de plateforme effectivement perçus par Zando pour la transaction concernée. Zando n'est pas responsable des dommages indirects, pertes de profits ou pertes de données.</p>
+              </Section>
+              <Section title="11. Droit applicable et résolution des litiges">
+                <p>Les présentes conditions sont régies par le droit applicable au lieu d'immatriculation de Zando. Tout litige non résolu via le centre de confiance et de sécurité de Zando sera soumis, en priorité, à une tentative de résolution amiable, puis à la juridiction compétente ou à un mode alternatif de résolution des litiges convenu entre les parties.</p>
+              </Section>
+              <Section title="12. Résiliation de compte">
+                <p>Zando peut suspendre ou résilier un compte en cas de violation des présentes conditions, de fraude avérée, ou de non-respect répété des engagements vendeur. L'utilisateur peut demander la suppression de son compte à tout moment via le support.</p>
+              </Section>
             </>
           ) : (
             <>
@@ -408,6 +438,24 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
               <Section title="6. Modifications">
                 <p>Zando reserves the right to modify these terms at any time. Changes take effect upon publication.</p>
+              </Section>
+              <Section title="7. Eligibility">
+                <p>You must be at least 18 years old, or the legal age of majority in your country of residence, to create a buyer or seller account on Zando.</p>
+              </Section>
+              <Section title="8. Prohibited Items">
+                <p>It is prohibited to sell on Zando: counterfeit goods, weapons, illegal or regulated substances, protected live animals, stolen goods, or any product whose sale violates applicable local or international law. Zando reserves the right to remove any non-compliant listing and suspend the seller's account.</p>
+              </Section>
+              <Section title="9. Digital Product Licensing">
+                <p>Purchasing a digital product (ebook, audio file, software...) grants you a personal-use license as defined by the seller, not a transfer of intellectual property. Reselling, redistributing, or reproducing a digital product purchased on Zando without authorization is prohibited.</p>
+              </Section>
+              <Section title="10. Limitation of Liability">
+                <p>To the extent permitted by law, Zando's liability to any user, for any claim related to use of the platform, is limited to the amount of platform fees actually collected by Zando for the transaction in question. Zando is not liable for indirect damages, lost profits, or data loss.</p>
+              </Section>
+              <Section title="11. Governing Law & Dispute Resolution">
+                <p>These terms are governed by the law applicable at Zando's place of incorporation. Any dispute not resolved through Zando's Trust & Safety center will first be subject to a good-faith attempt at amicable resolution, then to the competent jurisdiction or an alternative dispute resolution method agreed between the parties.</p>
+              </Section>
+              <Section title="12. Account Termination">
+                <p>Zando may suspend or terminate an account in case of violation of these terms, proven fraud, or repeated failure to meet seller obligations. Users may request account deletion at any time via support.</p>
               </Section>
             </>
           ))}

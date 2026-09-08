@@ -586,6 +586,26 @@ export function SellerCenterPage() {
                   <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.ads}</h1>
                   <button onClick={() => navigate('ads')} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4" /> {t.ads.createCampaign}</button>
                 </div>
+                {ads.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    <div className="card p-4 bg-white text-center">
+                      <p className="text-xl font-bold text-[#0f172a]">{ads.filter((a) => a.status === 'active').length}</p>
+                      <p className="text-[11px] text-[#64748b] mt-1">{locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'}</p>
+                    </div>
+                    <div className="card p-4 bg-white text-center">
+                      <p className="text-xl font-bold text-[#0f172a]">${ads.reduce((sum, a) => sum + (a.price ?? a.budget ?? 0), 0).toFixed(0)}</p>
+                      <p className="text-[11px] text-[#64748b] mt-1">{locale === 'fr' ? 'Dépense totale' : 'Total spend'}</p>
+                    </div>
+                    <div className="card p-4 bg-white text-center">
+                      <p className="text-xl font-bold text-[#0f172a]">{ads.reduce((sum, a) => sum + a.impressions, 0).toLocaleString()}</p>
+                      <p className="text-[11px] text-[#64748b] mt-1">{t.ads.impressions}</p>
+                    </div>
+                    <div className="card p-4 bg-white text-center">
+                      <p className="text-xl font-bold text-[#0f172a]">{ads.reduce((sum, a) => sum + a.clicks, 0).toLocaleString()}</p>
+                      <p className="text-[11px] text-[#64748b] mt-1">{t.ads.clicks}</p>
+                    </div>
+                  </div>
+                )}
                 {ads.length === 0 ? (
                   <div className="card p-6 text-center text-sm text-[#64748b] bg-white"><Megaphone className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />{locale === 'fr' ? 'Aucune campagne publicitaire.' : 'No ad campaigns yet.'}</div>
                 ) : (
