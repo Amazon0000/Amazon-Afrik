@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry, notifyNewOrder } from '@/lib/db';
 import type { Product, Address, SellerPaymentMethod, FlashDeal, ShippingRate } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
@@ -202,14 +202,21 @@ export function CheckoutPage() {
         const method = sellerPayments[sellerId]?.find((m) => m.id === selectedPayment[sellerId]);
         const trackingId = `ORD-${Date.now().toString().slice(-6)}-${sellerId.slice(0, 4)}`;
         const rate = sellerShippingRate(sellerId);
+        const isFullyDigital = groupItems.every((i) => i.product!.product_type === 'digital');
+        const customerPhone = user ? (addr?.phone || null) : (guestInfo.phone || null);
 
         const { data: order } = await supabase.from('orders').insert({
           user_id: user?.id || null,
           guest_name: !user ? guestInfo.name : null,
           guest_email: !user ? guestInfo.email : null,
           guest_phone: !user ? guestInfo.phone : null,
+          customer_phone: customerPhone,
           seller_id: sellerId,
-          status: 'confirmed',
+          // Digital-only orders are fulfilled the instant payment succeeds
+          // (file access already granted below); physical orders start
+          // "confirmed" = awaiting shipment, and move through preparing ->
+          // inTransit -> delivered as the seller updates them.
+          status: isFullyDigital ? 'delivered' : 'confirmed',
           total: groupTotal,
           coupon_code: redeemedCode,
           discount_amount: discountAmount,
@@ -240,6 +247,7 @@ export function CheckoutPage() {
             await decrementProductStock(item.productId, item.qty);
           }
           createdIds.push(trackingId);
+          notifyNewOrder(order.id);
         }
       }
       setOrderIds(createdIds);

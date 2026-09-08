@@ -4,7 +4,7 @@ import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaig
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, MessageCircle, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle } from 'lucide-react';
 
 // Major global payment service providers, with strong African + worldwide
 // coverage — sellers pick their own PSP here; Zando never touches the
@@ -86,6 +86,18 @@ export function SellerCenterPage() {
       finally { setLoading(false); }
     })();
   }, [user]);
+
+  const whatsappOrderLink = (o: Order) => {
+    if (!o.customer_phone) return null;
+    const digits = o.customer_phone.replace(/[^\d]/g, '');
+    if (digits.length < 8) return null;
+    const items = (o.order_items || []).map((it) => `- ${it.product_name} x${it.qty}`).join('\n');
+    const timeline = o.shipping_min_days ? `${o.shipping_min_days}-${o.shipping_max_days} ${locale === 'fr' ? 'jours' : 'days'}` : (locale === 'fr' ? 'à confirmer' : 'to confirm');
+    const msg = locale === 'fr'
+      ? `Bonjour, votre commande ${o.tracking_id} est confirmée !\n${items}\nTotal: $${o.total.toFixed(2)}\nLivraison: ${o.delivery_address || ''}\nDélai estimé: ${timeline}`
+      : `Hi, your order ${o.tracking_id} is confirmed!\n${items}\nTotal: $${o.total.toFixed(2)}\nShipping to: ${o.delivery_address || ''}\nEstimated delivery: ${timeline}`;
+    return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+  };
 
   const navItems = [
     { id: 'dashboard', label: t.seller.dashboard, icon: LayoutDashboard },
@@ -500,9 +512,15 @@ export function SellerCenterPage() {
                           <div className="flex-1 min-w-[140px]">
                             <p className="text-sm font-semibold text-[#0f172a]">{o.order_items?.[0]?.product_name || 'Order'}</p>
                             <p className="text-xs text-[#64748b]">{o.tracking_id || o.id.slice(0, 8)} • {new Date(o.created_at).toLocaleDateString()}</p>
+                            {o.status === 'confirmed' && <p className="text-[10px] font-semibold text-[#ff7a00] mt-0.5">{locale === 'fr' ? "📦 En attente d'expédition" : '📦 Awaiting shipment'}</p>}
                           </div>
                           <span className="px-2 py-1 text-[10px] font-bold uppercase rounded-full" style={{ background: `${statusColors[o.status]}15`, color: statusColors[o.status] }}>{t.delivery[o.status as 'pending' | 'confirmed' | 'preparing' | 'inTransit' | 'delivered' | 'cancelled']}</span>
                           <span className="font-bold text-[#0f172a]">${o.total.toFixed(0)}</span>
+                          {whatsappOrderLink(o) && (
+                            <a href={whatsappOrderLink(o)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#25D366]/10 text-[#128C4A] text-xs font-semibold hover:bg-[#25D366]/20">
+                              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                            </a>
+                          )}
                           {(canAdvance || canCancel) && (
                             <div className="flex gap-1.5 w-full sm:w-auto">
                               {canAdvance && (

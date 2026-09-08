@@ -161,7 +161,7 @@ export type Order = {
   total: number; currency_code: string; payment_method: string | null;
   delivery_address: string | null; tracking_id: string | null; created_at: string;
   shipping_fee: number; shipping_min_days: number | null; shipping_max_days: number | null;
-  destination_country_id: string | null;
+  destination_country_id: string | null; customer_phone: string | null;
   order_items?: OrderItem[];
   sellers?: Seller;
 };
@@ -1086,6 +1086,18 @@ export async function getDigitalDownloadUrl(orderItemId: string, guestEmail?: st
   if (error) return { error: error.message || 'Download failed' };
   if (data?.error) return { error: data.error };
   return { url: data.url };
+}
+
+// Fire-and-forget: notifications has no client INSERT policy by design
+// (see migration 017), so the seller's "New Order" dashboard alert only
+// ever gets created through this Edge Function. Failure here should never
+// block checkout — the order itself already succeeded.
+export async function notifyNewOrder(orderId: string): Promise<void> {
+  try {
+    await supabase.functions.invoke('notify-new-order', { body: { orderId } });
+  } catch (e) {
+    console.warn('notifyNewOrder failed:', e);
+  }
 }
 
 export async function createProduct(opts: {
