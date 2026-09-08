@@ -1,4 +1,4 @@
-const CACHE = 'zando-v1';
+const CACHE = 'zando-v2';
 const ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/zando-mark.svg'];
 
 self.addEventListener('install', (event) => {
