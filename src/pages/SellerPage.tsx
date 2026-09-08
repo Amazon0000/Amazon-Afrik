@@ -51,10 +51,19 @@ export function SellerPage() {
             <img src={seller.store_logo_url || ''} alt={seller.business_name} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
+            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
               <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#0f172a]">{seller.business_name}</h1>
               <BadgeIcon className="w-5 h-5" style={{ color: badgeColor }} />
               {seller.is_official && <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-[#ff7a00] text-[#0f172a]">Official Store</span>}
+              {seller.is_verified ? (
+                <span className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-blue-600 text-white flex items-center gap-1">
+                  <BadgeCheck className="w-3 h-3" /> {locale === 'fr' ? 'Vendeur Vérifié' : 'Verified Merchant'}
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-[#94a3b8]/15 text-[#64748b]">
+                  {locale === 'fr' ? 'Boutique en attente de validation' : 'Unverified Seller'}
+                </span>
+              )}
             </div>
             <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
               <div className="flex items-center gap-1"><Star className="w-4 h-4 fill-[#ff7a00] text-[#ff7a00]" /><span className="text-sm font-medium text-[#0f172a]">{seller.rating}</span><span className="text-xs text-[#64748b]/60">({seller.total_reviews})</span></div>

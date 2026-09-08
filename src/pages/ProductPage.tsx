@@ -5,7 +5,7 @@ import type { Product, FlashDeal, ProductQuestion } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { Countdown } from '@/components/ui';
 import { CountryFlag } from '@/components/CountryFlag';
-import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame, Store } from 'lucide-react';
+import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame, Store, BadgeCheck } from 'lucide-react';
 
 export function ProductPage() {
   const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user } = useApp();
@@ -456,7 +456,10 @@ export function ProductPage() {
                     <img src={seller.store_logo_url || ''} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900">{seller.business_name}</h4>
+                    <h4 className="font-bold text-gray-900 flex items-center gap-1.5">
+                      {seller.business_name}
+                      {seller.is_verified && <BadgeCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                    </h4>
                     <div className="flex items-center gap-0.5 mt-0.5 text-[10px]">
                       <Star className="w-3.5 h-3.5 fill-[#de7921] text-[#de7921]" />
                       <span className="font-bold text-gray-800">{seller.rating}</span>
@@ -464,6 +467,15 @@ export function ProductPage() {
                     </div>
                   </div>
                 </div>
+                {seller.is_verified ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold">
+                    <BadgeCheck className="w-3 h-3" /> {locale === 'fr' ? 'Vendeur Vérifié' : 'Verified Merchant'}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-200 text-gray-600 text-[10px] font-bold">
+                    {locale === 'fr' ? 'Boutique en attente de validation' : 'Unverified Seller'}
+                  </span>
+                )}
                 <button
                   onClick={() => navigate('seller', { id: seller?.id || '' })}
                   className="w-full bg-white hover:bg-gray-100 border border-gray-300 py-1.5 rounded text-xs font-bold text-gray-700 transition-colors mt-2"

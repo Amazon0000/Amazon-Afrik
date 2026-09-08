@@ -36,6 +36,7 @@ export type Seller = {
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   business_type: string | null; rating: number; total_reviews: number;
   total_products: number; joined_year: number | null; is_official: boolean;
+  is_verified: boolean; verified_at: string | null;
 };
 
 export type ProductImage = { id: string; image_url: string; sort_order: number; is_hidden?: boolean };
@@ -285,13 +286,19 @@ const MOCK_CATEGORIES: Category[] = [
   { id: 'textiles', parent_id: null, slug: 'textiles', name: 'Textiles', icon: 'Scissors', banner_url: null, is_featured: true, is_trending: true, sort_order: 8, is_active: true },
 ];
 
-const MOCK_SELLERS: Seller[] = [
+const MOCK_SELLERS_BASE: Omit<Seller, 'is_verified' | 'verified_at'>[] = [
   { id: 's1', business_name: 'Maison Baoulé', store_slug: 'maison-baoule', store_logo_url: 'https://images.pexels.com/photos/32433910/pexels-photo-32433910.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/30088728/pexels-photo-30088728.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Premium fashion house specializing in wax and contemporary creations.', country_id: 'CI', city: 'Abidjan', phone: '+22507000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 342, total_products: 87, joined_year: 2023, is_official: true, plan_expires_at: null },
   { id: 's2', business_name: 'Teranga Crafts', store_slug: 'teranga-crafts', store_logo_url: 'https://images.pexels.com/photos/33111458/pexels-photo-33111458.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Authentic Senegalese crafts, masks and sculptures.', country_id: 'SN', city: 'Dakar', phone: '+22177000000', plan: 'premium', status: 'approved', business_type: 'Individual', rating: 4.8, total_reviews: 218, total_products: 54, joined_year: 2023, is_official: false, plan_expires_at: null },
   { id: 's3', business_name: 'Lagos Luxe', store_slug: 'lagos-luxe', store_logo_url: 'https://images.pexels.com/photos/11086637/pexels-photo-11086637.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/8526816/pexels-photo-8526816.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'High-end Nigerian men\'s and women\'s fashion.', country_id: 'NG', city: 'Lagos', phone: '+23480000000', plan: 'premium', status: 'approved', business_type: 'Company', rating: 4.7, total_reviews: 189, total_products: 63, joined_year: 2024, is_official: false, plan_expires_at: null },
   { id: 's4', business_name: 'Nairobi Weaves', store_slug: 'nairobi-weaves', store_logo_url: 'https://images.pexels.com/photos/33627196/pexels-photo-33627196.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/29672003/pexels-photo-29672003.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Musical instruments and Kenyan crafts.', country_id: 'KE', city: 'Nairobi', phone: '+25470000000', plan: 'enterprise', status: 'approved', business_type: 'Company', rating: 4.9, total_reviews: 156, total_products: 41, joined_year: 2023, is_official: true, plan_expires_at: null },
   { id: 's5', business_name: 'Accra Gold', store_slug: 'accra-gold', store_logo_url: 'https://images.pexels.com/photos/30988134/pexels-photo-30988134.jpeg?auto=compress&cs=tinysrgb&w=300', store_banner_url: 'https://images.pexels.com/photos/36773397/pexels-photo-36773397.jpeg?auto=compress&cs=tinysrgb&w=1000', description: 'Kente textiles and Ghanaian jewelry.', country_id: 'GH', city: 'Accra', phone: '+2332000000', plan: 'starter', status: 'approved', business_type: 'Individual', rating: 4.6, total_reviews: 98, total_products: 12, joined_year: 2024, is_official: false, plan_expires_at: null },
 ];
+
+const MOCK_SELLERS: Seller[] = MOCK_SELLERS_BASE.map((s) => ({
+  ...s,
+  is_verified: true,
+  verified_at: '2024-01-01T00:00:00Z',
+}));
 
 const MOCK_PRODUCTS_BASE: Omit<Product, 'product_type' | 'digital_file_path' | 'digital_file_name' | 'digital_file_size'>[] = [
   {
@@ -1593,6 +1600,21 @@ export async function fetchShippingRatesForCountry(countryId: string): Promise<S
 export async function updateSellerStatus(sellerId: string, status: string): Promise<boolean> {
   const { error } = await supabase.from('sellers').update({ status }).eq('id', sellerId);
   if (error) { console.error('updateSellerStatus:', error.message); return false; }
+  return true;
+}
+
+// Grants the "Vendeur Vérifié / Verified Merchant" badge — a distinct,
+// higher bar than per-document approval (a seller can have all 3 KYC docs
+// individually approved and still not be granted the badge until an admin
+// makes this final call). Revoke by passing verified: false (e.g. if a
+// verified seller is later found to have submitted fraudulent documents).
+export async function setSellerVerified(sellerId: string, verified: boolean, adminUserId: string | null): Promise<boolean> {
+  const { error } = await supabase.from('sellers').update({
+    is_verified: verified,
+    verified_at: verified ? new Date().toISOString() : null,
+    verified_by: verified ? adminUserId : null,
+  }).eq('id', sellerId);
+  if (error) { console.error('setSellerVerified:', error.message); return false; }
   return true;
 }
 

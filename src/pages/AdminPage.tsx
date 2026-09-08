@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember, fetchAdminCaseLog, adminExtendSellerPlanDays, adminExtendSellerPlanMonths, adminSetSellerPlanExpiry } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember, fetchAdminCaseLog, adminExtendSellerPlanDays, adminExtendSellerPlanMonths, adminSetSellerPlanExpiry, setSellerVerified } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument, StaffRoleDb, StaffMember, StaffPermission, AdminCase } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { CountryFlag } from '@/components/CountryFlag';
-import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye } from 'lucide-react';
+import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye, BadgeCheck } from 'lucide-react';
 
 function ProductApprovalCard({ product, categories, locale, onApprove, onReject }: {
   product: Product;
@@ -1128,7 +1128,7 @@ function AdvertisingPaymentsTab() {
 }
 
 function SellerDocumentsTab({ locale }: { locale: 'fr' | 'en' }) {
-  const { showToast } = useApp();
+  const { showToast, user } = useApp();
   const [docs, setDocs] = useState<(SellerDocument & { sellers?: Seller })[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('pending');
@@ -1162,7 +1162,21 @@ function SellerDocumentsTab({ locale }: { locale: 'fr' | 'en' }) {
     }
   };
 
+  const handleVerifyBadge = async (sellerId: string, verified: boolean) => {
+    const ok = await setSellerVerified(sellerId, verified, user?.id || null);
+    if (ok) {
+      showToast(verified ? (locale === 'fr' ? '✓ Badge Vendeur Vérifié accordé' : '✓ Verified Merchant badge granted') : (locale === 'fr' ? 'Badge retiré' : 'Badge revoked'));
+      setDocs((prev) => prev.map((d) => d.seller_id === sellerId && d.sellers ? { ...d, sellers: { ...d.sellers, is_verified: verified } } : d));
+    } else {
+      showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+    }
+  };
+
   const filtered = statusFilter === 'all' ? docs : docs.filter((d) => d.status === statusFilter);
+  // Show the seller-level "grant badge" action only once per seller, on
+  // their first document row, rather than repeating it per-file.
+  const firstDocIdBySeller = new Map<string, string>();
+  filtered.forEach((d) => { if (!firstDocIdBySeller.has(d.seller_id)) firstDocIdBySeller.set(d.seller_id, d.id); });
 
   return (
     <div className="animate-fade-up">
@@ -1184,7 +1198,10 @@ function SellerDocumentsTab({ locale }: { locale: 'fr' | 'en' }) {
             <div key={d.id} className="card p-4 bg-white flex flex-wrap items-center gap-3">
               <FileText className="w-5 h-5 text-[#ff7a00] shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[#0f172a]">{d.sellers?.business_name || d.seller_id}</p>
+                <p className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
+                  {d.sellers?.business_name || d.seller_id}
+                  {d.sellers?.is_verified && <span title={locale === 'fr' ? 'Vendeur Vérifié' : 'Verified Merchant'}><BadgeCheck className="w-4 h-4 text-[#2563eb]" /></span>}
+                </p>
                 <p className="text-xs text-[#64748b]">{d.doc_type} • {new Date(d.created_at).toLocaleDateString()}</p>
               </div>
               <Badge color={d.status === 'approved' ? '#22c55e' : d.status === 'rejected' ? '#ef4444' : '#d97706'}>{d.status}</Badge>
@@ -1196,6 +1213,17 @@ function SellerDocumentsTab({ locale }: { locale: 'fr' | 'en' }) {
                   <button onClick={() => handleDecision(d.id, 'approved')} className="px-3 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold">{locale === 'fr' ? 'Approuver' : 'Approve'}</button>
                   <button onClick={() => handleDecision(d.id, 'rejected')} className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">{locale === 'fr' ? 'Rejeter' : 'Reject'}</button>
                 </>
+              )}
+              {firstDocIdBySeller.get(d.seller_id) === d.id && (
+                d.sellers?.is_verified ? (
+                  <button onClick={() => handleVerifyBadge(d.seller_id, false)} className="px-3 py-1.5 rounded-lg bg-[#0f172a]/5 text-[#64748b] text-xs font-semibold w-full sm:w-auto">
+                    {locale === 'fr' ? 'Retirer le badge' : 'Revoke badge'}
+                  </button>
+                ) : (
+                  <button onClick={() => handleVerifyBadge(d.seller_id, true)} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 w-full sm:w-auto justify-center">
+                    <BadgeCheck className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Accorder le badge Vérifié' : 'Grant Verified badge'}
+                  </button>
+                )
               )}
             </div>
           ))}
