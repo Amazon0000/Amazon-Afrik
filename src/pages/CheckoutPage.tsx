@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl } from '@/lib/db';
-import type { Product, Address, SellerPaymentMethod, FlashDeal } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry } from '@/lib/db';
+import type { Product, Address, SellerPaymentMethod, FlashDeal, ShippingRate } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
 
 export function CheckoutPage() {
-  const { t, locale, cart, navigate, clearCart, showToast, user } = useApp();
+  const { t, locale, cart, navigate, clearCart, showToast, user, countries } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [deals, setDeals] = useState<Record<string, FlashDeal>>({});
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -18,7 +18,9 @@ export function CheckoutPage() {
   const [orderIds, setOrderIds] = useState<string[]>([]);
   const [digitalItems, setDigitalItems] = useState<{ orderItemId: string; name: string }[]>([]);
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
-  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', address: '', city: '' });
+  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', address: '', city: '', countryId: '' });
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [shippingLoading, setShippingLoading] = useState(false);
   const [couponInput, setCouponInput] = useState<Record<string, string>>({});
   const [appliedCoupons, setAppliedCoupons] = useState<Record<string, { code: string; discount: number }>>({});
   const [couponChecking, setCouponChecking] = useState<Record<string, boolean>>({});
@@ -73,9 +75,33 @@ export function CheckoutPage() {
   const sellerIds = Object.keys(sellerGroups);
   const allSellersHavePayment = sellerIds.every((sid) => selectedPayment[sid]);
   const sellerSubtotal = (sid: string) => sellerGroups[sid].reduce((sum, i) => sum + effectivePrice(i) * i.qty, 0);
-  const sellerFinalTotal = (sid: string) => Math.max(0, sellerSubtotal(sid) - (appliedCoupons[sid]?.discount || 0));
+
+  // Shipping — physical items only, priced dynamically per seller x destination
+  // country. Digital-only sellers never need a rate (instant delivery).
+  const destinationCountryId = user
+    ? addresses.find((a) => a.id === selectedAddressId)?.country_id || ''
+    : guestInfo.countryId;
+
+  useEffect(() => {
+    if (!destinationCountryId) { setShippingRates([]); return; }
+    (async () => {
+      setShippingLoading(true);
+      setShippingRates(await fetchShippingRatesForCountry(destinationCountryId));
+      setShippingLoading(false);
+    })();
+  }, [destinationCountryId]);
+
+  const sellerHasPhysicalItems = (sid: string) => sellerGroups[sid].some((i) => i.product!.product_type !== 'digital');
+  const sellerShippingRate = (sid: string) => shippingRates.find((r) => r.seller_id === sid);
+  const sellerShippingFee = (sid: string) => sellerHasPhysicalItems(sid) ? (sellerShippingRate(sid)?.fee ?? 0) : 0;
+  // A seller blocks checkout only if they actually have physical items, a
+  // destination has been chosen, and they simply don't ship there.
+  const allSellersCanShip = sellerIds.every((sid) => !sellerHasPhysicalItems(sid) || !destinationCountryId || sellerShippingRate(sid));
+  const totalShipping = sellerIds.reduce((sum, sid) => sum + sellerShippingFee(sid), 0);
+
+  const sellerFinalTotal = (sid: string) => Math.max(0, sellerSubtotal(sid) - (appliedCoupons[sid]?.discount || 0)) + sellerShippingFee(sid);
   const totalDiscount = Object.values(appliedCoupons).reduce((sum, c) => sum + c.discount, 0);
-  const grandTotal = Math.max(0, subtotal - totalDiscount);
+  const grandTotal = Math.max(0, subtotal - totalDiscount) + totalShipping;
 
   const applyCoupon = async (sellerId: string) => {
     const code = (couponInput[sellerId] || '').trim();
@@ -121,8 +147,16 @@ export function CheckoutPage() {
       showToast(locale === 'fr' ? 'Veuillez remplir vos informations' : 'Please fill your information', 'error');
       return;
     }
+    if (!user && items.some((i) => i.product!.product_type !== 'digital') && !guestInfo.countryId) {
+      showToast(locale === 'fr' ? 'Sélectionnez votre pays de livraison' : 'Select your delivery country', 'error');
+      return;
+    }
     if (!allSellersHavePayment) {
       showToast(locale === 'fr' ? "Un vendeur n'a pas encore de moyen de paiement actif" : 'A seller has no active payment method yet', 'error');
+      return;
+    }
+    if (!allSellersCanShip) {
+      showToast(locale === 'fr' ? "Un vendeur ne livre pas encore vers votre pays" : "A seller doesn't ship to your country yet", 'error');
       return;
     }
 
@@ -164,9 +198,10 @@ export function CheckoutPage() {
             showToast(locale === 'fr' ? `Le code ${coupon.code} n'est plus disponible — commande passée au prix plein` : `Code ${coupon.code} is no longer available — order placed at full price`, 'error');
           }
         }
-        const groupTotal = Math.max(0, rawTotal - discountAmount);
+        const groupTotal = Math.max(0, rawTotal - discountAmount) + sellerShippingFee(sellerId);
         const method = sellerPayments[sellerId]?.find((m) => m.id === selectedPayment[sellerId]);
         const trackingId = `ORD-${Date.now().toString().slice(-6)}-${sellerId.slice(0, 4)}`;
+        const rate = sellerShippingRate(sellerId);
 
         const { data: order } = await supabase.from('orders').insert({
           user_id: user?.id || null,
@@ -181,6 +216,10 @@ export function CheckoutPage() {
           payment_method: method?.display_name || method?.provider_name || null,
           delivery_address: deliveryAddress,
           tracking_id: trackingId,
+          shipping_fee: sellerShippingFee(sellerId),
+          shipping_min_days: rate?.min_days ?? null,
+          shipping_max_days: rate?.max_days ?? null,
+          destination_country_id: destinationCountryId || null,
         }).select().single();
 
         if (order) {
@@ -308,6 +347,15 @@ export function CheckoutPage() {
                     <input value={guestInfo.city} onChange={(e) => setGuestInfo({ ...guestInfo, city: e.target.value })} placeholder={locale === 'fr' ? 'Ville' : 'City'} className="input-field" />
                   </div>
                   <input value={guestInfo.address} onChange={(e) => setGuestInfo({ ...guestInfo, address: e.target.value })} placeholder={locale === 'fr' ? 'Adresse de livraison' : 'Delivery address'} className="input-field" />
+                  {items.some((i) => i.product!.product_type !== 'digital') && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Pays de livraison' : 'Delivery country'} *</label>
+                      <select value={guestInfo.countryId} onChange={(e) => setGuestInfo({ ...guestInfo, countryId: e.target.value })} className="input-field cursor-pointer">
+                        <option value="">—</option>
+                        {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -329,6 +377,18 @@ export function CheckoutPage() {
                         <span className="text-sm font-semibold text-[#0f172a]">{seller?.business_name || sellerId}</span>
                         <span className="ml-auto text-sm font-bold text-[#0f172a]">${sellerFinalTotal(sellerId).toFixed(2)}</span>
                       </div>
+                      {sellerHasPhysicalItems(sellerId) && destinationCountryId && !sellerShippingRate(sellerId) && (
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 text-xs mb-2">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          {locale === 'fr' ? "Ce vendeur ne livre pas encore vers votre pays." : "This seller doesn't ship to your country yet."}
+                        </div>
+                      )}
+                      {sellerHasPhysicalItems(sellerId) && sellerShippingRate(sellerId) && (
+                        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white text-xs text-[#0f172a] mb-2 border border-[#0f172a]/10">
+                          <Truck className="w-3.5 h-3.5 text-[#ff7a00] shrink-0" />
+                          <span className="flex-1">{locale === 'fr' ? 'Livraison' : 'Shipping'}: ${sellerShippingRate(sellerId)!.fee.toFixed(2)} · {sellerShippingRate(sellerId)!.min_days}-{sellerShippingRate(sellerId)!.max_days} {locale === 'fr' ? 'jours' : 'days'}</span>
+                        </div>
+                      )}
                       {methods.length === 0 ? (
                         <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 text-xs">
                           <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -403,13 +463,24 @@ export function CheckoutPage() {
                 {totalDiscount > 0 && (
                   <div className="flex items-center justify-between text-sm"><span className="text-[#64748b] flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Remise' : 'Discount'}</span><span className="font-semibold text-[#3d1f00]">-${totalDiscount.toFixed(2)}</span></div>
                 )}
-                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#3d1f00] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#64748b]">{t.cart.delivery}</span>
+                  {items.every((i) => i.product!.product_type === 'digital') ? (
+                    <span className="font-semibold text-[#3d1f00] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span>
+                  ) : !destinationCountryId ? (
+                    <span className="text-[#64748b]">{locale === 'fr' ? 'Choisissez la destination' : 'Choose destination'}</span>
+                  ) : shippingLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#64748b]" />
+                  ) : (
+                    <span className="font-semibold text-[#0f172a]">${totalShipping.toFixed(2)}</span>
+                  )}
+                </div>
                 <div className="flex items-center justify-between pt-2 border-t border-[#3d1f00]/15">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
                   <span className="text-2xl font-bold text-[#0f172a]">${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
-              <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address) || !allSellersHavePayment} className="w-full btn-gold py-3.5 rounded-full font-semibold mt-5 disabled:opacity-50 soft-glow">
+              <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address || (items.some((i) => i.product!.product_type !== 'digital') && !guestInfo.countryId)) || !allSellersHavePayment || !allSellersCanShip} className="w-full btn-gold py-3.5 rounded-full font-semibold mt-5 disabled:opacity-50 soft-glow">
                 {t.checkout.placeOrder}
               </button>
               <button onClick={() => navigate('cart')} className="w-full mt-2 text-sm text-[#64748b] hover:text-[#0f172a] transition-colors">{t.common.back}</button>

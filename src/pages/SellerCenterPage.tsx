@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle } from 'lucide-react';
@@ -31,7 +31,7 @@ type NewProduct = {
 const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', productType: 'physical' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, setUser, navigate, showToast, categories } = useApp();
+  const { t, locale, user, setUser, navigate, showToast, categories, countries } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -51,6 +51,9 @@ export function SellerCenterPage() {
   const [paymentMethods, setPaymentMethods] = useState<SellerPaymentMethod[]>([]);
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newPayment, setNewPayment] = useState({ providerName: PSP_OPTIONS.card[0], providerType: 'card', accountIdentifier: '', displayName: '' });
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [newRate, setNewRate] = useState({ countryId: '', fee: '', minDays: '5', maxDays: '10' });
+  const [savingRate, setSavingRate] = useState(false);
   const [changingPlan, setChangingPlan] = useState(false);
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
   const [flashDealFor, setFlashDealFor] = useState<string | null>(null);
@@ -76,6 +79,7 @@ export function SellerCenterPage() {
         setReturns(rets);
         const pms = await fetchSellerPaymentMethods(sellerId);
         setPaymentMethods(pms);
+        setShippingRates(await fetchSellerShippingRates(sellerId));
         setFlashDeals(await fetchSellerFlashDeals(sellerId));
         setCoupons(await fetchSellerCoupons(sellerId));
       } catch (e) { console.error(e); }
@@ -97,6 +101,7 @@ export function SellerCenterPage() {
     { id: 'analytics', label: t.seller.analytics, icon: BarChart3 },
     { id: 'messages', label: locale === 'fr' ? 'Messages' : 'Messages', icon: MessageSquare },
     { id: 'payments', label: locale === 'fr' ? 'Moyens de paiement' : 'Payment methods', icon: Wallet },
+    { id: 'logistics', label: locale === 'fr' ? 'Logistique' : 'Logistics', icon: Truck },
     { id: 'invoices', label: locale === 'fr' ? 'Factures' : 'Invoices', icon: FileText },
     { id: 'subscription', label: t.seller.subscription, icon: CreditCard },
     { id: 'settings', label: locale === 'fr' ? 'Paramètres' : 'Settings', icon: Settings },
@@ -806,6 +811,95 @@ export function SellerCenterPage() {
                           <button onClick={async () => {
                             const ok = await removeSellerPaymentMethod(pm.id);
                             if (ok) { setPaymentMethods(paymentMethods.filter(x => x.id !== pm.id)); showToast(locale === 'fr' ? 'PSP retiré' : 'PSP removed'); }
+                          }} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {tab === 'logistics' && (
+              <div className="animate-fade-up space-y-6">
+                <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Logistique' : 'Logistics'}</h1>
+                <div className="card p-4 bg-[#ff7a00]/5 flex items-start gap-3">
+                  <Truck className="w-5 h-5 text-[#ff7a00] mt-0.5 shrink-0" />
+                  <p className="text-sm text-[#0f172a]">
+                    {locale === 'fr'
+                      ? "Choisissez les pays où vous livrez, vos frais de livraison et le délai estimé pour chacun (ex: Cameroun → USA = 7-10 jours). Concerne uniquement vos produits physiques — les produits digitaux sont livrés instantanément, sans frais de port."
+                      : 'Choose which countries you ship to, your fee, and the estimated delivery time for each (e.g. Cameroon → USA = 7-10 days). Applies only to physical products — digital products deliver instantly, no shipping fee.'}
+                  </p>
+                </div>
+
+                <div className="card p-6 bg-white">
+                  <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Ajouter une destination' : 'Add a destination'}</h2>
+                  <div className="grid sm:grid-cols-4 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Pays de destination' : 'Destination country'}</label>
+                      <select value={newRate.countryId} onChange={(e) => setNewRate({ ...newRate, countryId: e.target.value })} className="input-field cursor-pointer">
+                        <option value="">—</option>
+                        {countries.filter((c) => !shippingRates.some((r) => r.country_id === c.id)).map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Frais ($)' : 'Fee ($)'}</label>
+                      <input type="number" min="0" value={newRate.fee} onChange={(e) => setNewRate({ ...newRate, fee: e.target.value })} className="input-field" placeholder="15" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Délai (jours)' : 'Delivery (days)'}</label>
+                      <div className="flex items-center gap-1.5">
+                        <input type="number" min="1" value={newRate.minDays} onChange={(e) => setNewRate({ ...newRate, minDays: e.target.value })} className="input-field" placeholder="5" />
+                        <span className="text-[#64748b]">–</span>
+                        <input type="number" min="1" value={newRate.maxDays} onChange={(e) => setNewRate({ ...newRate, maxDays: e.target.value })} className="input-field" placeholder="10" />
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    disabled={savingRate || !newRate.countryId || !newRate.fee}
+                    onClick={async () => {
+                      const sellerId = user?.sellerId;
+                      if (!sellerId) return;
+                      const minD = parseInt(newRate.minDays, 10) || 1;
+                      const maxD = Math.max(parseInt(newRate.maxDays, 10) || minD, minD);
+                      setSavingRate(true);
+                      const id = await addShippingRate({ sellerId, countryId: newRate.countryId, fee: parseFloat(newRate.fee), minDays: minD, maxDays: maxD });
+                      setSavingRate(false);
+                      if (id) {
+                        const country = countries.find((c) => c.id === newRate.countryId);
+                        setShippingRates([...shippingRates, { id, seller_id: sellerId, country_id: newRate.countryId, fee: parseFloat(newRate.fee), min_days: minD, max_days: maxD, is_active: true, created_at: new Date().toISOString(), countries: country }]);
+                        setNewRate({ countryId: '', fee: '', minDays: '5', maxDays: '10' });
+                        showToast(locale === 'fr' ? 'Destination ajoutée' : 'Destination added');
+                      } else {
+                        showToast(locale === 'fr' ? "Erreur lors de l'ajout" : 'Error adding destination', 'error');
+                      }
+                    }}
+                    className="btn-green px-5 py-2 rounded-lg text-xs font-semibold mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingRate ? <Loader2 className="w-4 h-4 animate-spin" /> : (locale === 'fr' ? 'Ajouter' : 'Add')}
+                  </button>
+                </div>
+
+                <div className="card p-6 bg-white">
+                  <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Vos destinations' : 'Your destinations'}</h2>
+                  {shippingRates.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Truck className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />
+                      <p className="text-sm text-[#64748b]">{locale === 'fr' ? "Aucune destination configurée. Ajoutez-en une ci-dessus pour pouvoir livrer vos produits physiques." : 'No destination configured yet. Add one above so you can ship physical products.'}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {shippingRates.map((r) => (
+                        <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border border-[#e2e8f0]">
+                          <span className="text-xl shrink-0">{r.countries?.flag || '🌍'}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-[#0f172a]">{r.countries?.name || r.country_id}</p>
+                            <p className="text-xs text-[#64748b]">{r.min_days}-{r.max_days} {locale === 'fr' ? 'jours' : 'days'}</p>
+                          </div>
+                          <span className="font-bold text-[#0f172a]">${r.fee.toFixed(2)}</span>
+                          <button onClick={async () => {
+                            const ok = await removeShippingRate(r.id);
+                            if (ok) { setShippingRates(shippingRates.filter((x) => x.id !== r.id)); showToast(locale === 'fr' ? 'Destination retirée' : 'Destination removed'); }
                           }} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
                         </div>
                       ))}

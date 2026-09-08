@@ -160,6 +160,8 @@ export type Order = {
   status: 'pending' | 'confirmed' | 'preparing' | 'inTransit' | 'delivered' | 'cancelled';
   total: number; currency_code: string; payment_method: string | null;
   delivery_address: string | null; tracking_id: string | null; created_at: string;
+  shipping_fee: number; shipping_min_days: number | null; shipping_max_days: number | null;
+  destination_country_id: string | null;
   order_items?: OrderItem[];
   sellers?: Seller;
 };
@@ -214,6 +216,12 @@ export type SellerPaymentMethod = {
   id: string; seller_id: string; provider_name: string; provider_type: string;
   account_identifier: string | null; is_active: boolean; is_verified: boolean;
   display_name: string | null; instructions: string | null; created_at: string;
+};
+
+export type ShippingRate = {
+  id: string; seller_id: string; country_id: string; fee: number;
+  min_days: number; max_days: number; is_active: boolean; created_at: string;
+  countries?: Country;
 };
 
 export type SellerDocument = {
@@ -1539,6 +1547,35 @@ export async function toggleSellerPaymentMethod(methodId: string, isActive: bool
   const { error } = await supabase.from('seller_payment_methods').update({ is_active: isActive }).eq('id', methodId);
   if (error) { console.error('toggleSellerPaymentMethod:', error.message); return false; }
   return true;
+}
+
+export async function fetchSellerShippingRates(sellerId: string): Promise<ShippingRate[]> {
+  const { data, error } = await supabase.from('seller_shipping_rates').select('*, countries(*)').eq('seller_id', sellerId).order('created_at');
+  if (error) { console.error('fetchSellerShippingRates:', error.message); return []; }
+  return (data || []) as ShippingRate[];
+}
+
+export async function addShippingRate(opts: { sellerId: string; countryId: string; fee: number; minDays: number; maxDays: number }): Promise<string | null> {
+  const { data, error } = await supabase.from('seller_shipping_rates').upsert({
+    seller_id: opts.sellerId, country_id: opts.countryId, fee: opts.fee,
+    min_days: opts.minDays, max_days: opts.maxDays, is_active: true,
+  }, { onConflict: 'seller_id,country_id' }).select('id').single();
+  if (error || !data) { console.error('addShippingRate:', error?.message); return null; }
+  return data.id;
+}
+
+export async function removeShippingRate(rateId: string): Promise<boolean> {
+  const { error } = await supabase.from('seller_shipping_rates').delete().eq('id', rateId);
+  if (error) { console.error('removeShippingRate:', error.message); return false; }
+  return true;
+}
+
+// Checkout needs rates for many (seller, country) pairs at once — fetched by
+// country so it works for a mixed-seller cart without one query per seller.
+export async function fetchShippingRatesForCountry(countryId: string): Promise<ShippingRate[]> {
+  const { data, error } = await supabase.from('seller_shipping_rates').select('*').eq('country_id', countryId).eq('is_active', true);
+  if (error) { console.error('fetchShippingRatesForCountry:', error.message); return []; }
+  return (data || []) as ShippingRate[];
 }
 
 export async function updateSellerStatus(sellerId: string, status: string): Promise<boolean> {
