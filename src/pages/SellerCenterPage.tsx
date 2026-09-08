@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, initiateSubscriptionPayment, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, MessageCircle, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, MessageCircle, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle, Smartphone, Landmark, Lock } from 'lucide-react';
 
 // Major global payment service providers, with strong African + worldwide
 // coverage — sellers pick their own PSP here; Zando never touches the
@@ -31,7 +31,7 @@ type NewProduct = {
 const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', productType: 'physical' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, setUser, navigate, showToast, categories, countries } = useApp();
+  const { t, locale, user, navigate, showToast, categories, countries, params } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -55,6 +55,18 @@ export function SellerCenterPage() {
   const [newRate, setNewRate] = useState({ countryId: '', fee: '', minDays: '5', maxDays: '10' });
   const [savingRate, setSavingRate] = useState(false);
   const [changingPlan, setChangingPlan] = useState(false);
+  const [upgradingPlan, setUpgradingPlan] = useState<'starter' | 'premium' | 'enterprise' | null>(null);
+  const [upgradeProvider, setUpgradeProvider] = useState<'stripe' | 'flutterwave' | 'payunit' | 'paddle'>('stripe');
+
+  // Deep-link support: arriving from the public Plans page with a plan
+  // pre-selected (e.g. after choosing a paid tier) jumps straight to the
+  // Subscription tab and opens the checkout provider picker.
+  useEffect(() => {
+    if (params.tab) setTab(params.tab);
+    if (params.plan === 'starter' || params.plan === 'premium' || params.plan === 'enterprise') {
+      setUpgradingPlan(params.plan);
+    }
+  }, [params.tab, params.plan]);
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
   const [flashDealFor, setFlashDealFor] = useState<string | null>(null);
   const [newDeal, setNewDeal] = useState({ discountPercent: '20', durationHours: '24', stockLimit: '' });
@@ -955,28 +967,29 @@ export function SellerCenterPage() {
                   <p className="text-3xl font-bold text-[#0f172a] mt-1 capitalize" style={{ color: planColor }}>{plan}</p>
                   <p className="text-xs text-[#64748b] mt-2">
                     {locale === 'fr'
-                      ? "C'est votre seul coût fixe chez Zando — aucune commission n'est prélevée sur vos ventes, qui vous sont versées directement via votre PSP."
-                      : "This is your only fixed cost on Zando — zero commission is taken on your sales, which are paid to you directly via your PSP."}
+                      ? "C'est votre seul coût fixe chez Zando — aucune commission n'est prélevée sur vos ventes, qui vous sont versées directement via votre PSP. Un essai gratuit de 14 jours est offert à l'inscription."
+                      : "This is your only fixed cost on Zando — zero commission is taken on your sales, which are paid to you directly via your PSP. A 14-day free trial is included at signup."}
                   </p>
                 </div>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {(['starter', 'premium', 'enterprise'] as const).map((p) => (
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {([
+                    { id: 'starter' as const, price: 9, limit: locale === 'fr' ? 'Produits illimités' : 'Unlimited products' },
+                    { id: 'premium' as const, price: 29, limit: locale === 'fr' ? 'Produits illimités + mise en avant' : 'Unlimited products + boosted visibility' },
+                    { id: 'enterprise' as const, price: 79, limit: locale === 'fr' ? 'Produits illimités + support prioritaire' : 'Unlimited products + priority support' },
+                  ]).map(({ id: p, price, limit }) => (
                     <div key={p} className={`card p-5 ${plan === p ? 'ring-2 ring-[#ff7a00]' : ''}`}>
-                      <h3 className="font-display text-lg font-bold text-[#0f172a] capitalize mb-2">{p}</h3>
+                      <h3 className="font-display text-lg font-bold text-[#0f172a] capitalize mb-1">{p}</h3>
+                      <p className="text-2xl font-bold text-[#0f172a] mb-1">${price}<span className="text-xs font-normal text-[#64748b]">/mo</span></p>
+                      <p className="text-xs text-[#64748b] mb-4">{limit}</p>
                       <button
                         disabled={plan === p || changingPlan}
-                        onClick={async () => {
-                          const sellerId = user?.sellerId;
-                          if (!sellerId || !user) return;
-                          setChangingPlan(true);
-                          const ok = await updateSellerPlan(sellerId, p);
-                          if (ok) {
-                            setUser({ ...user, sellerPlan: p });
-                            showToast(locale === 'fr' ? 'Plan mis à jour' : 'Plan updated');
-                          } else {
-                            showToast(locale === 'fr' ? 'Erreur lors du changement de plan' : 'Error changing plan', 'error');
-                          }
-                          setChangingPlan(false);
+                        onClick={() => {
+                          if (!user?.sellerId) return;
+                          // Every paid plan — including the entry tier —
+                          // requires a real payment through the central PSP;
+                          // this opens the provider picker below, it never
+                          // grants access instantly.
+                          setUpgradingPlan(p);
                         }}
                         className={`w-full py-2.5 rounded-lg text-sm font-semibold ${plan === p ? 'bg-[#0f172a]/10 text-[#64748b] cursor-default' : 'btn-green'}`}
                       >
@@ -985,6 +998,46 @@ export function SellerCenterPage() {
                     </div>
                   ))}
                 </div>
+
+                {upgradingPlan && (
+                  <div className="card p-6 bg-white animate-fade-up">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-display text-lg font-bold text-[#0f172a] flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-[#ff7a00]" /> {locale === 'fr' ? `Payer le plan ${upgradingPlan}` : `Pay for ${upgradingPlan} plan`}
+                      </h3>
+                      <button onClick={() => setUpgradingPlan(null)} className="text-xs text-[#64748b] hover:text-[#0f172a]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                    </div>
+                    <div className="grid sm:grid-cols-4 gap-2 mb-4">
+                      {([
+                        { key: 'stripe' as const, label: 'Stripe', icon: CreditCard },
+                        { key: 'flutterwave' as const, label: 'Flutterwave', icon: Smartphone },
+                        { key: 'payunit' as const, label: 'PayUnit', icon: Landmark },
+                        { key: 'paddle' as const, label: 'Paddle', icon: Wallet },
+                      ]).map(({ key, label, icon: Icon }) => (
+                        <button key={key} onClick={() => setUpgradeProvider(key)} className={`p-3 rounded-xl border text-left transition-all ${upgradeProvider === key ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#e2e8f0] hover:border-[#ff7a00]/50'}`}>
+                          <Icon className="w-4 h-4 mb-1 text-[#0f172a]" />
+                          <p className="text-xs font-semibold text-[#0f172a]">{label}</p>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      disabled={changingPlan}
+                      onClick={async () => {
+                        setChangingPlan(true);
+                        const returnUrl = `${window.location.origin}${window.location.pathname}#subscription-return`;
+                        const result = await initiateSubscriptionPayment({ plan: upgradingPlan, provider: upgradeProvider, returnUrl });
+                        setChangingPlan(false);
+                        if ('error' in result) { showToast(result.error, 'error'); return; }
+                        // Real redirect to the provider's checkout page — the
+                        // plan activates only once the webhook confirms payment.
+                        window.location.href = result.redirectUrl;
+                      }}
+                      className="w-full btn-gold py-3 rounded-full font-semibold disabled:opacity-50"
+                    >
+                      {changingPlan ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (locale === 'fr' ? `Payer via ${upgradeProvider}` : `Pay via ${upgradeProvider}`)}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

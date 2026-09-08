@@ -1618,15 +1618,17 @@ export async function setSellerVerified(sellerId: string, verified: boolean, adm
   return true;
 }
 
+// Admin/support use only (e.g. a manual comp or downgrade) — writes the
+// plan directly with NO payment involved. There is no free plan; every
+// paid plan change from the seller-facing UI must go through
+// initiateSubscriptionPayment() + the webhook-verified activation in
+// _shared/activate-subscription.ts. The Seller Center UI never calls this
+// function directly.
 export async function updateSellerPlan(sellerId: string, plan: 'starter' | 'premium' | 'enterprise'): Promise<boolean> {
   const { error: dbError } = await supabase.from('sellers').update({ plan, plan_selected: plan }).eq('id', sellerId);
   if (dbError) { console.error('updateSellerPlan:', dbError.message); return false; }
   const { error: authError } = await supabase.auth.updateUser({ data: { seller_plan: plan } });
   if (authError) { console.error('updateSellerPlan (auth):', authError.message); }
-  if (plan !== 'starter') {
-    const planPrice = plan === 'premium' ? 29 : 79; // must match PLAN_PRICE_USD
-    await supabase.rpc('record_affiliate_conversion', { p_seller_id: sellerId, p_plan_price: planPrice });
-  }
   return true;
 }
 
@@ -1681,14 +1683,13 @@ export type PlatformRevenueSummary = {
   adSpendActive: number;
 };
 
-// Must match PLAN_PRICE_USD in PlansPage.tsx — the canonical seller
-// subscription prices in USD. Keeping one number per plan in two files is
-// fragile; both are pinned to the same values so admin revenue reporting
-// never silently drifts from what sellers are actually shown/charged.
+// Must match PLAN_PRICE_USD in PlansPage.tsx and
+// supabase/functions/subscription-create-payment — the canonical seller
+// subscription prices in USD. There is no free plan; every seller gets a
+// 14-day trial (subscription_status='trial'), then pays for one of these
+// tiers via the real central-PSP checkout (initiateSubscriptionPayment).
 const PLAN_PRICE_USD: Record<'starter' | 'premium' | 'enterprise', number> = {
-  starter: 9,
-  premium: 29,
-  enterprise: 79,
+  starter: 9, premium: 29, enterprise: 79,
 };
 
 export async function fetchPlatformRevenue(): Promise<PlatformRevenueSummary> {
@@ -1793,6 +1794,21 @@ export async function initiateAdvertisingPayment(opts: {
 }): Promise<{ redirectUrl: string } | { error: string }> {
   const { data, error } = await supabase.functions.invoke('ads-create-payment', {
     body: { campaignId: opts.campaignId, provider: opts.provider, returnUrl: opts.returnUrl },
+  });
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+  return { redirectUrl: data.redirectUrl };
+}
+
+// Real central-PSP checkout for a paid subscription plan — replaces the
+// previous updateSellerPlan() free-instant-grant. The plan is applied ONLY
+// by the webhook after payment is verified server-side (see
+// _shared/activate-subscription.ts); this call just opens checkout.
+export async function initiateSubscriptionPayment(opts: {
+  plan: 'starter' | 'premium' | 'enterprise'; provider: 'stripe' | 'flutterwave' | 'payunit' | 'paddle'; returnUrl: string;
+}): Promise<{ redirectUrl: string } | { error: string }> {
+  const { data, error } = await supabase.functions.invoke('subscription-create-payment', {
+    body: { plan: opts.plan, provider: opts.provider, returnUrl: opts.returnUrl },
   });
   if (error) return { error: error.message };
   if (data?.error) return { error: data.error };

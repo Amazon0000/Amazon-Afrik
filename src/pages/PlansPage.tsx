@@ -1,38 +1,44 @@
 import { useApp } from '@/lib/store';
 import { Check, Crown, Award, Star, Zap } from 'lucide-react';
 
-// Canonical prices in USD — the only source of truth for plan pricing.
-// Displayed converted to the user's currency via formatPrice(); never
-// hardcode a pre-formatted price string, or conversion silently breaks.
+// Canonical prices in USD — single source of truth, mirrored server-side in
+// supabase/functions/subscription-create-payment (never trust a client-sent
+// price) and in fetchPlatformRevenue's PLAN_PRICE_USD in src/lib/db.ts.
+// There is no free plan — every new seller gets a 14-day free trial
+// (subscription_status='trial', see migration 036_subscription_expiry),
+// then must pay for one of these 3 tiers.
 const PLAN_PRICE_USD: Record<'starter' | 'premium' | 'enterprise', number> = {
   starter: 9, premium: 29, enterprise: 79,
 };
 
 export function PlansPage() {
-  const { t, navigate, user, setUser, locale, formatPrice, currencyCode } = useApp();
+  const { t, navigate, user, locale, formatPrice, currencyCode } = useApp();
 
   const plans = [
     {
-      id: 'starter', name: t.plans.starter, icon: Star, color: '#64748b',
+      id: 'starter' as const, name: t.plans.starter, icon: Star, color: '#64748b',
       features: t.plans.starterFeatures, highlight: false,
     },
     {
-      id: 'premium', name: t.plans.premium, icon: Award, color: '#ff7a00',
+      id: 'premium' as const, name: t.plans.premium, icon: Award, color: '#ff7a00',
       features: t.plans.premiumFeatures, highlight: true,
     },
     {
-      id: 'enterprise', name: t.plans.enterprise, icon: Crown, color: '#0f172a',
+      id: 'enterprise' as const, name: t.plans.enterprise, icon: Crown, color: '#0f172a',
       features: t.plans.enterpriseFeatures, highlight: false,
     },
-  ] as const;
+  ];
 
+  // Every plan is paid — real checkout through the central PSP. The plan is
+  // applied only after a webhook confirms payment (see
+  // subscription-create-payment + activate-subscription.ts), never granted
+  // client-side here. Logged-out visitors go through signup first.
   const choose = (planId: 'starter' | 'premium' | 'enterprise') => {
-    if (user) {
-      setUser({ ...user, sellerPlan: planId });
-      navigate('seller-center');
-    } else {
+    if (!user) {
       navigate('signup', { plan: planId });
+      return;
     }
+    navigate('seller-center', { tab: 'subscription', plan: planId });
   };
 
   return (
@@ -41,6 +47,7 @@ export function PlansPage() {
         <div className="text-center mb-12">
           <h1 className="font-display text-4xl font-bold text-[#0f172a]">{t.plans.title}</h1>
           <p className="text-sm text-[#64748b] mt-2">{t.plans.subtitle}</p>
+          <p className="text-xs text-[#64748b] mt-1">{locale === 'fr' ? 'Essai gratuit de 14 jours inclus à l\u2019inscription.' : '14-day free trial included at signup.'}</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -76,7 +83,7 @@ export function PlansPage() {
                 ))}
               </ul>
               <button
-                onClick={() => choose(plan.id as 'starter' | 'premium' | 'enterprise')}
+                onClick={() => choose(plan.id)}
                 disabled={user?.sellerPlan === plan.id}
                 className={`w-full py-3 rounded-xl font-semibold transition-all ${user?.sellerPlan === plan.id ? 'bg-[#0f172a]/10 text-[#64748b] cursor-default' : plan.highlight ? 'btn-gold' : 'btn-cocoa'}`}
               >
