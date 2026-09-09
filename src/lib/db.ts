@@ -1048,16 +1048,34 @@ export async function fetchSellerOrders(sellerId: string): Promise<Order[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
+  if (status === 'cancelled') {
+    await restoreStockIfReserved(orderId);
+  }
   const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
   if (error) { console.error('updateOrderStatus:', error.message); return false; }
   return true;
 }
 
 export async function cancelOwnOrder(orderId: string): Promise<boolean> {
+  await restoreStockIfReserved(orderId);
   const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
   if (error) { console.error('cancelOwnOrder:', error.message); return false; }
   return true;
 }
+
+// Shared by both cancellation paths above. Only restores stock for orders
+// that had actually reserved it — a 'pending' order (awaiting a real PSP
+// payment, see migration 057) never decremented stock in the first place,
+// so cancelling it must not add stock that was never taken.
+async function restoreStockIfReserved(orderId: string): Promise<void> {
+  const { data: order } = await supabase.from('orders').select('status').eq('id', orderId).maybeSingle();
+  if (!order || order.status === 'pending' || order.status === 'cancelled') return;
+  const { data: items } = await supabase.from('order_items').select('product_id, qty').eq('order_id', orderId);
+  for (const item of items || []) {
+    if (item.product_id) await restoreProductStock(item.product_id, item.qty);
+  }
+}
+
 
 // Real, derived notification feed — no separate notifications table; built
 // from actual order status so nothing shown is fabricated.
@@ -1188,6 +1206,12 @@ export async function createSellerDocument(opts: { sellerId: string; docType: st
 export async function decrementProductStock(productId: string, qty: number): Promise<number | null> {
   const { data, error } = await supabase.rpc('decrement_product_stock', { p_product_id: productId, p_qty: qty });
   if (error) { console.error('decrementProductStock:', error.message); return null; }
+  return data as number;
+}
+
+export async function restoreProductStock(productId: string, qty: number): Promise<number | null> {
+  const { data, error } = await supabase.rpc('restore_product_stock', { p_product_id: productId, p_qty: qty });
+  if (error) { console.error('restoreProductStock:', error.message); return null; }
   return data as number;
 }
 
