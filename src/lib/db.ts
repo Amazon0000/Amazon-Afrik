@@ -1625,7 +1625,11 @@ export async function setSellerVerified(sellerId: string, verified: boolean, adm
 // _shared/activate-subscription.ts. The Seller Center UI never calls this
 // function directly.
 export async function updateSellerPlan(sellerId: string, plan: 'starter' | 'premium' | 'enterprise'): Promise<boolean> {
-  const { error: dbError } = await supabase.from('sellers').update({ plan, plan_selected: plan }).eq('id', sellerId);
+  // subscription_status: 'active' with plan_expires_at left untouched (NULL
+  // for a seller who never paid) is what is_seller_plan_active() treats as
+  // an explicit, indefinite admin-granted plan — otherwise a manual comp
+  // here would leave the storefront still hidden under the new enforcement.
+  const { error: dbError } = await supabase.from('sellers').update({ plan, plan_selected: plan, subscription_status: 'active' }).eq('id', sellerId);
   if (dbError) { console.error('updateSellerPlan:', dbError.message); return false; }
   const { error: authError } = await supabase.auth.updateUser({ data: { seller_plan: plan } });
   if (authError) { console.error('updateSellerPlan (auth):', authError.message); }

@@ -93,7 +93,7 @@ export async function processVerifiedSubscriptionPayment(args: ActivateArgs): Pr
   // traitement (même paiement déjà appliqué par un webhook concurrent).
   const { data: updated } = await supabase
     .from('sellers')
-    .update({ plan: payment.plan, plan_selected: payment.plan, plan_expires_at: computeNextExpiry() })
+    .update({ plan: payment.plan, plan_selected: payment.plan, plan_expires_at: computeNextExpiry(), subscription_status: 'active' })
     .eq('id', payment.seller_id)
     .select('id')
     .maybeSingle();

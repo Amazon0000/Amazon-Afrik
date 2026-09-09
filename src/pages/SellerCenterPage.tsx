@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, initiateSubscriptionPayment, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
@@ -55,6 +55,7 @@ export function SellerCenterPage() {
   const [newRate, setNewRate] = useState({ countryId: '', fee: '', minDays: '5', maxDays: '10' });
   const [savingRate, setSavingRate] = useState(false);
   const [changingPlan, setChangingPlan] = useState(false);
+  const [planActive, setPlanActive] = useState(true);
   const [upgradingPlan, setUpgradingPlan] = useState<'starter' | 'premium' | 'enterprise' | null>(null);
   const [upgradeProvider, setUpgradeProvider] = useState<'stripe' | 'flutterwave' | 'payunit' | 'paddle'>('stripe');
 
@@ -91,6 +92,7 @@ export function SellerCenterPage() {
         setReturns(rets);
         const pms = await fetchSellerPaymentMethods(sellerId);
         setPaymentMethods(pms);
+        setPlanActive(await isSellerPlanActive(sellerId));
         setShippingRates(await fetchSellerShippingRates(sellerId));
         setFlashDeals(await fetchSellerFlashDeals(sellerId));
         setCoupons(await fetchSellerCoupons(sellerId));
@@ -269,6 +271,22 @@ export function SellerCenterPage() {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
+            {!planActive && (
+              <div className="card p-5 mb-6 bg-red-50 border border-red-200 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0"><Lock className="w-6 h-6 text-red-600" /></div>
+                <div className="flex-1">
+                  <p className="font-bold text-red-700">{locale === 'fr' ? 'Boutique masquée' : 'Storefront hidden'}</p>
+                  <p className="text-sm text-red-600 mt-0.5">
+                    {locale === 'fr'
+                      ? "Votre essai ou votre abonnement a expiré — votre boutique et vos produits ne sont plus visibles par les acheteurs. Choisissez un plan pour réactiver votre boutique immédiatement."
+                      : 'Your trial or subscription has expired — your storefront and products are no longer visible to buyers. Choose a plan to reactivate your store immediately.'}
+                  </p>
+                </div>
+                <button onClick={() => setTab('subscription')} className="btn-gold px-5 py-2.5 rounded-full text-sm font-semibold shrink-0 w-full sm:w-auto">
+                  {locale === 'fr' ? 'Réactiver ma boutique' : 'Reactivate my store'}
+                </button>
+              </div>
+            )}
             {tab === 'inventory' && user?.sellerId && <InventoryTab sellerId={user.sellerId} locale={locale} />}
 
             {tab === 'account-health' && user?.sellerId && <AccountHealthTab sellerId={user.sellerId} locale={locale} />}
