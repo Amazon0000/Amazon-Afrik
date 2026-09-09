@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: item, error: itemErr } = await admin
       .from('order_items')
-      .select('id, product_type, digital_file_path, product_name, order_id, orders!inner(user_id, guest_email)')
+      .select('id, product_type, digital_file_path, product_name, order_id, orders!inner(user_id, guest_email, status)')
       .eq('id', orderItemId)
       .maybeSingle();
 
@@ -48,7 +48,16 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Cet article n'est pas un produit digital" }, 400);
     }
 
-    const order = item.orders as unknown as { user_id: string | null; guest_email: string | null };
+    const order = item.orders as unknown as { user_id: string | null; guest_email: string | null; status: string };
+    // Real bug fixed here: this check previously only verified the caller
+    // owned the order, never that payment was actually confirmed. An
+    // order going through a real vendor PSP starts 'pending' (see
+    // migration 057) — without this check, a buyer could download a paid
+    // digital product before ever completing payment.
+    if (order.status !== 'confirmed' && order.status !== 'delivered') {
+      return jsonResponse({ error: 'Paiement non encore confirmé pour cette commande' }, 402);
+    }
+
     const ownedByCaller = callerId && order.user_id && callerId === order.user_id;
     const ownedByGuest = !order.user_id && order.guest_email && guestEmail &&
       order.guest_email.toLowerCase().trim() === guestEmail.toLowerCase().trim();

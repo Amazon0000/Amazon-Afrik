@@ -79,6 +79,14 @@ export async function processVerifiedVendorPayment(args: ActivateArgs): Promise<
   // Paiement confirmé — la commande passe de 'pending' à 'confirmed'.
   await supabase.from('orders').update({ status: 'confirmed' }).eq('id', payment.order_id).eq('status', 'pending');
 
+  // Stock is only reserved now, at real confirmation — not at checkout
+  // time — so an abandoned/failed PSP checkout never permanently locks
+  // inventory for a sale that never happened (see CheckoutPage.tsx).
+  const { data: items } = await supabase.from('order_items').select('product_id, qty').eq('order_id', payment.order_id);
+  for (const item of items || []) {
+    if (item.product_id) await supabase.rpc('decrement_product_stock', { p_product_id: item.product_id, p_qty: item.qty });
+  }
+
   const { data: seller } = await supabase.from('sellers').select('user_id').eq('id', payment.seller_id).maybeSingle();
   if (seller?.user_id) {
     await notifyUser(

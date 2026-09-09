@@ -193,6 +193,17 @@ select cron.schedule(
 ```
 (Nécessite l'extension `pg_cron` et `pg_net` activées : Database → Extensions.)
 
+## 6bis. Nettoyage des commandes abandonnées (audit du 09/09/2026)
+
+Une commande passant par un vrai PSP vendeur démarre `pending` (voir module
+Real Vendor Checkout ci-dessous) — si l'acheteur abandonne le paiement,
+cette commande resterait visible indéfiniment dans le dashboard du
+vendeur sans nettoyage. `cleanup-stale-orders` annule automatiquement
+toute commande `pending` de plus de 2h. Même méthode de programmation que
+l'étape 6 ci-dessus, en remplaçant `ads-expire-campaigns` par
+`cleanup-stale-orders` (toutes les 15-30 minutes suffit, moins urgent que
+l'expiration des campagnes pub).
+
 ## 7. Test de bout en bout (recommandé avant mode `live`)
 
 1. Mettre `PAYUNIT_MODE=test` et utiliser les clés de test Stripe (`sk_test_...`) / Flutterwave (`FLWSECK_TEST-...`) le temps du test.
@@ -278,4 +289,68 @@ production avant le prochain déploiement du site, et vérifier que la ligne
 ```bash
 curl "https://tysbzwgzeyqtzluvdria.supabase.co/functions/v1/sitemap-products?domain=https://YOUR_DOMAIN"
 ```
+
+---
+
+## Module Real Vendor Checkout (ajouté — audit du 09/09/2026)
+
+**Ce que ce module corrige** : le checkout n'a jamais vérifié aucun
+paiement — une commande passait directement à `confirmed` au clic du
+bouton, quel que soit le PSP affiché. Ce module fait initier et vérifier
+un vrai paiement, sur le compte PSP propre du VENDEUR (jamais celui de la
+plateforme), en réutilisant les identifiants stockés de façon sécurisée
+(module Real Vendor PSP Credentials, migration 054).
+
+### Déployer
+
+```bash
+supabase functions deploy vendor-checkout-create-payment --no-verify-jwt
+supabase functions deploy vendor-checkout-webhook-stripe --no-verify-jwt
+supabase functions deploy vendor-checkout-webhook-flutterwave --no-verify-jwt
+supabase functions deploy vendor-checkout-webhook-payunit --no-verify-jwt
+supabase functions deploy vendor-checkout-webhook-paddle --no-verify-jwt
+supabase functions deploy vendor-checkout-webhook-paystack --no-verify-jwt
+supabase functions deploy cleanup-stale-orders --no-verify-jwt
+```
+
+Aucun secret plateforme requis — chaque appel utilise la clé du vendeur,
+lue depuis `seller_psp_secrets` (jamais depuis les secrets Edge Function).
+
+### Webhooks
+
+Contrairement aux modules Ads/Subscriptions (secret webhook unique côté
+plateforme), il n'existe pas de secret de signature webhook par vendeur
+stocké ici — chaque vendeur aurait son propre secret différent selon son
+propre compte PSP, ce qui n'est pas encore collecté à la connexion. La
+sécurité repose donc entièrement sur la revérification serveur
+obligatoire (GET du statut réel via l'API du PSP, avec la clé secrète du
+vendeur) avant de confirmer quoi que ce soit — jamais sur le contenu brut
+du webhook seul. Paystack fait exception : sa signature utilise la même
+clé secrète que l'API, donc vérifiée en plus par sécurité.
+
+Chaque vendeur doit configurer, dans le dashboard de son propre compte
+PSP, l'URL de notification correspondante :
+- Stripe → `.../functions/v1/vendor-checkout-webhook-stripe`
+- Flutterwave → `.../functions/v1/vendor-checkout-webhook-flutterwave`
+- PayUnit → envoyé dynamiquement par `vendor-checkout-create-payment`, rien à configurer côté vendeur
+- Paddle → `.../functions/v1/vendor-checkout-webhook-paddle`
+- Paystack → `.../functions/v1/vendor-checkout-webhook-paystack`
+
+### Nettoyage des commandes abandonnées
+
+Voir section 6bis ci-dessus — `cleanup-stale-orders` doit être programmé
+en cron, sinon les commandes `pending` abandonnées restent visibles
+indéfiniment.
+
+### ⚠️ Avant la mise en production réelle
+
+Ce code est écrit et vérifié (typecheck, lint, build, et les 30 tests
+unitaires de `supabase/functions/_shared` passent, y compris 5 nouveaux
+tests pour Paystack) mais n'a **jamais été exécuté contre un vrai compte
+PSP en mode test**. Avant d'accepter de l'argent réel, faites au moins un
+paiement de test complet par provider utilisé (clé de test, petit
+montant), en vérifiant que : la commande passe bien de `pending` à
+`confirmed`, le stock ne se décrémente qu'à ce moment-là (jamais avant),
+et le téléchargement digital reste bloqué tant que le paiement n'est pas
+confirmé.
 

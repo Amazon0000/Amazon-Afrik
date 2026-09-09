@@ -257,7 +257,17 @@ export function CheckoutPage() {
             if (item.product!.product_type === 'digital' && insertedItem) {
               setDigitalItems((prev) => [...prev, { orderItemId: insertedItem.id, name: item.product!.name }]);
             }
-            await decrementProductStock(item.productId, item.qty);
+            // Stock is only reserved for orders that are immediately
+            // trusted (manual payment methods, digital goods). Orders
+            // awaiting real PSP verification ('pending') must NOT
+            // decrement stock yet — an abandoned/failed checkout would
+            // otherwise permanently lock inventory for a sale that never
+            // happened. That decrement instead happens in the webhook
+            // handler (activate-vendor-payment.ts) once payment is
+            // actually confirmed.
+            if (!realCredential) {
+              await decrementProductStock(item.productId, item.qty);
+            }
           }
           createdIds.push(trackingId);
           if (realCredential) {

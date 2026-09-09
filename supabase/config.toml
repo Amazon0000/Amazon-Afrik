@@ -81,5 +81,8 @@ verify_jwt = false
 [functions.vendor-checkout-webhook-paystack]
 verify_jwt = false
 
+[functions.cleanup-stale-orders]
+verify_jwt = false
+
 [functions.notify-seller-status-change]
 verify_jwt = true
