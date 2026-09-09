@@ -496,7 +496,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Vous devez créer un compte pour acheter ou vendre. Les vendeurs doivent compléter le processus KYC. Vous êtes responsable de la confidentialité de vos identifiants.</p>
               </Section>
               <Section title="2. Transactions">
-                <p>Les transactions se font directement entre l'acheteur et le vendeur. Zando agit comme intermédiaire technique et ne participe pas à la transaction financière. Le paiement est envoyé directement au vendeur.</p>
+                <p>Les transactions se font directement entre l'acheteur et le vendeur. Zando agit comme intermédiaire technique — infrastructure de place de marché, outils vendeurs, messagerie, résolution de litiges — et ne participe pas à la transaction financière : le paiement est envoyé directement au vendeur via son propre moyen de paiement. <em>[Si Zando vend directement des produits en tant que vendeur, cette activité sera identifiée comme telle sur les fiches concernées — non implémenté à ce jour dans l'application.]</em> Les vendeurs tiers sont seuls responsables de la qualité, l'authenticité, la conformité réglementaire et l'exécution de leurs propres produits.</p>
               </Section>
               <Section title="3. Responsabilité">
                 <p>Zando n'est pas responsable des litiges entre acheteurs et vendeurs concernant la qualité, la livraison ou le remboursement des produits. Cependant, nous offrons des outils de résolution de litiges via le centre de confiance.</p>
@@ -523,7 +523,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Dans la mesure permise par la loi, la responsabilité de Zando envers un utilisateur, pour toute réclamation liée à l'utilisation de la plateforme, est limitée au montant des frais de plateforme effectivement perçus par Zando pour la transaction concernée. Zando n'est pas responsable des dommages indirects, pertes de profits ou pertes de données.</p>
               </Section>
               <Section title="11. Droit applicable et résolution des litiges">
-                <p>Les présentes conditions sont régies par le droit applicable au lieu d'immatriculation de Zando. Tout litige non résolu via le centre de confiance et de sécurité de Zando sera soumis, en priorité, à une tentative de résolution amiable, puis à la juridiction compétente ou à un mode alternatif de résolution des litiges convenu entre les parties.</p>
+                <p>Zando opère via des entités enregistrées aux Émirats arabes unis (SPC FZC) et au Cameroun. Le droit applicable et la juridiction compétente exacts dépendent de l'entité contractante et de votre pays de résidence. <em>[Clause à finaliser avec un conseil juridique qualifié dans chaque juridiction concernée — LEGAL REVIEW REQUIRED avant publication définitive.]</em> Tout litige non résolu via le centre de confiance et de sécurité de Zando sera d'abord soumis à une tentative de résolution amiable, puis à la juridiction compétente ou à un mode alternatif de résolution des litiges convenu entre les parties.</p>
               </Section>
               <Section title="12. Résiliation de compte">
                 <p>Zando peut suspendre ou résilier un compte en cas de violation des présentes conditions, de fraude avérée, ou de non-respect répété des engagements vendeur. L'utilisateur peut demander la suppression de son compte à tout moment via le support.</p>
@@ -538,7 +538,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>You must create an account to buy or sell. Sellers must complete the KYC process. You are responsible for keeping your credentials confidential.</p>
               </Section>
               <Section title="2. Transactions">
-                <p>Transactions occur directly between buyer and seller. Zando acts as a technical intermediary and does not participate in the financial transaction. Payment is sent directly to the seller.</p>
+                <p>Transactions occur directly between buyer and seller. Zando acts as a technical intermediary — marketplace infrastructure, seller tools, messaging, dispute resolution — and does not participate in the financial transaction: payment is sent directly to the seller via their own payment method. <em>[If Zando sells products directly as a seller, that activity will be clearly identified as such on the relevant listings — not currently implemented in the application.]</em> Third-party sellers are solely responsible for the quality, authenticity, regulatory compliance, and fulfillment of their own products.</p>
               </Section>
               <Section title="3. Liability">
                 <p>Zando is not liable for disputes between buyers and sellers regarding product quality, delivery, or refunds. However, we provide dispute resolution tools via the Trust & Safety center.</p>
@@ -565,7 +565,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>To the extent permitted by law, Zando's liability to any user, for any claim related to use of the platform, is limited to the amount of platform fees actually collected by Zando for the transaction in question. Zando is not liable for indirect damages, lost profits, or data loss.</p>
               </Section>
               <Section title="11. Governing Law & Dispute Resolution">
-                <p>These terms are governed by the law applicable at Zando's place of incorporation. Any dispute not resolved through Zando's Trust & Safety center will first be subject to a good-faith attempt at amicable resolution, then to the competent jurisdiction or an alternative dispute resolution method agreed between the parties.</p>
+                <p>Zando operates through entities registered in the United Arab Emirates (SPC FZC) and in Cameroon. The exact governing law and competent jurisdiction depend on the contracting entity and your country of residence. <em>[Clause to be finalized with qualified legal counsel in each relevant jurisdiction — LEGAL REVIEW REQUIRED before final publication.]</em> Any dispute not resolved through Zando's Trust & Safety center will first be subject to a good-faith attempt at amicable resolution, then to the competent jurisdiction or an alternative dispute resolution method agreed between the parties.</p>
               </Section>
               <Section title="12. Account Termination">
                 <p>Zando may suspend or terminate an account in case of violation of these terms, proven fraud, or repeated failure to meet seller obligations. Users may request account deletion at any time via support.</p>
@@ -576,47 +576,57 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           {pageKey === 'privacy' && (locale === 'fr' ? (
             <>
               <Section title="Politique de confidentialité">
-                <p>Zando s'engage à protéger vos données personnelles. Cette politique explique quelles données nous collectons et comment nous les utilisons.</p>
+                <p>Zando s'engage à protéger vos données personnelles. Cette politique explique quelles données nous collectons réellement et comment nous les utilisons — elle reflète le fonctionnement effectif de la plateforme, pas une liste générique.</p>
               </Section>
               <Section title="Données collectées">
-                <p><strong>Comptes acheteurs :</strong> Nom, e-mail, téléphone, adresses de livraison.</p>
-                <p><strong>Comptes vendeurs :</strong> Informations d'entreprise, documents KYC, coordonnées bancaires.</p>
-                <p><strong>Données de navigation :</strong> Adresse IP, navigateur, pages visitées (cookies).</p>
+                <p><strong>Comptes acheteurs :</strong> nom, e-mail, téléphone, adresses de livraison.</p>
+                <p><strong>Comptes vendeurs :</strong> informations d'entreprise, documents KYC (pièce d'identité, selfie de vérification), coordonnées bancaires ou identifiants de moyen de paiement que vous configurez vous-même.</p>
+                <p><strong>Commandes :</strong> articles achetés, montant, adresse de livraison, statut de livraison, échanges de messagerie avec le vendeur.</p>
+                <p><strong>Abonnement vendeur :</strong> plan choisi, statut d'essai, historique de paiement d'abonnement (traité par le fournisseur de paiement central de Zando — Stripe, Paddle, PayUnit ou Flutterwave selon le mode de paiement choisi).</p>
+                <p><strong>Données techniques :</strong> Cloudflare (hébergement) et Supabase (base de données) journalisent certaines données techniques standard (adresse IP, horodatages de requête) à des fins de sécurité et de fonctionnement de l'infrastructure — Zando n'exploite pas ces journaux à des fins de suivi marketing.</p>
+              </Section>
+              <Section title="Ce que Zando NE collecte PAS">
+                <p>Zando n'utilise actuellement aucun outil d'analyse comportementale ou de suivi publicitaire tiers (type Google Analytics, Meta Pixel, etc.). Nous ne suivons pas votre navigation à des fins publicitaires.</p>
               </Section>
               <Section title="Utilisation des données">
-                <p>Vos données sont utilisées pour : traiter les commandes, vérifier les vendeurs (KYC), faciliter la livraison, améliorer le service, et assurer la sécurité de la plateforme.</p>
+                <p>Vos données sont utilisées pour : traiter les commandes, vérifier les vendeurs (KYC), faciliter la livraison, gérer les abonnements vendeur, traiter les signalements et litiges, et assurer la sécurité de la plateforme.</p>
               </Section>
               <Section title="Partage des données">
-                <p>Vos données de commande (nom, adresse, téléphone) sont partagées avec le vendeur pour la livraison. Nous ne vendons jamais vos données à des tiers. Les fournisseurs de paiement reçoivent uniquement les données nécessaires à la transaction.</p>
+                <p>Vos données de commande (nom, adresse, téléphone) sont partagées avec le vendeur concerné pour la livraison — jamais avec les autres vendeurs. Nous ne vendons jamais vos données à des tiers. Chaque vendeur reçoit uniquement les données nécessaires à ses propres commandes, via son propre fournisseur de paiement (que Zando ne contrôle pas).</p>
               </Section>
               <Section title="Vos droits">
-                <p>Vous pouvez accéder, modifier ou supprimer vos données à tout moment depuis « Mon compte ». Pour exercer vos droits, contactez-nous à <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a>.</p>
+                <p>Vous pouvez accéder à vos données, les modifier ou demander leur suppression à tout moment depuis « Mon compte », ou en nous contactant à <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a>. Selon votre pays de résidence, des droits supplémentaires peuvent s'appliquer (RGPD dans l'UE, par exemple) — LEGAL REVIEW REQUIRED pour la formulation exacte applicable à votre juridiction.</p>
               </Section>
               <Section title="Sécurité">
-                <p>Nous utilisons le chiffrement SSL et des fournisseurs certifiés pour protéger vos données. Les documents KYC sont stockés de manière sécurisée.</p>
+                <p>Les documents KYC sont stockés dans un espace privé, accessible uniquement au vendeur concerné et au personnel Zando autorisé. Les mots de passe et sessions sont gérés par notre fournisseur d'infrastructure (Supabase), avec chiffrement en transit (HTTPS).</p>
               </Section>
             </>
           ) : (
             <>
               <Section title="Privacy Policy">
-                <p>Zando is committed to protecting your personal data. This policy explains what data we collect and how we use it.</p>
+                <p>Zando is committed to protecting your personal data. This policy explains what data we actually collect and how we use it — it reflects how the platform really works, not a generic template.</p>
               </Section>
               <Section title="Data Collected">
-                <p><strong>Buyer accounts:</strong> Name, email, phone, shipping addresses.</p>
-                <p><strong>Seller accounts:</strong> Business information, KYC documents, bank details.</p>
-                <p><strong>Browsing data:</strong> IP address, browser, pages visited (cookies).</p>
+                <p><strong>Buyer accounts:</strong> name, email, phone, shipping addresses.</p>
+                <p><strong>Seller accounts:</strong> business information, KYC documents (ID, verification selfie), bank details or payment method identifiers you configure yourself.</p>
+                <p><strong>Orders:</strong> items purchased, amount, delivery address, delivery status, messaging exchanges with the seller.</p>
+                <p><strong>Seller subscription:</strong> chosen plan, trial status, subscription payment history (processed by Zando's central payment provider — Stripe, Paddle, PayUnit, or Flutterwave depending on the payment method chosen).</p>
+                <p><strong>Technical data:</strong> Cloudflare (hosting) and Supabase (database) log certain standard technical data (IP address, request timestamps) for security and infrastructure purposes — Zando does not use these logs for marketing tracking.</p>
+              </Section>
+              <Section title="What Zando Does NOT Collect">
+                <p>Zando currently uses no third-party behavioral analytics or advertising tracking tool (e.g. Google Analytics, Meta Pixel). We do not track your browsing for advertising purposes.</p>
               </Section>
               <Section title="Data Usage">
-                <p>Your data is used to: process orders, verify sellers (KYC), facilitate delivery, improve service, and ensure platform security.</p>
+                <p>Your data is used to: process orders, verify sellers (KYC), facilitate delivery, manage seller subscriptions, process reports and disputes, and ensure platform security.</p>
               </Section>
               <Section title="Data Sharing">
-                <p>Your order data (name, address, phone) is shared with the seller for delivery. We never sell your data to third parties. Payment providers receive only the data necessary for the transaction.</p>
+                <p>Your order data (name, address, phone) is shared with the relevant seller for delivery — never with other sellers. We never sell your data to third parties. Each seller only receives the data necessary for their own orders, via their own payment provider (which Zando does not control).</p>
               </Section>
               <Section title="Your Rights">
-                <p>You can access, modify, or delete your data at any time from "My Account". To exercise your rights, contact us at <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a>.</p>
+                <p>You can access, modify, or request deletion of your data at any time from "My Account", or by contacting us at <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a>. Depending on your country of residence, additional rights may apply (e.g. GDPR in the EU) — LEGAL REVIEW REQUIRED for the exact wording applicable to your jurisdiction.</p>
               </Section>
               <Section title="Security">
-                <p>We use SSL encryption and certified providers to protect your data. KYC documents are stored securely.</p>
+                <p>KYC documents are stored in a private space, accessible only to the relevant seller and authorized Zando staff. Passwords and sessions are managed by our infrastructure provider (Supabase), with encryption in transit (HTTPS).</p>
               </Section>
             </>
           ))}
@@ -624,29 +634,35 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
           {pageKey === 'cookies' && (locale === 'fr' ? (
             <>
               <Section title="Politique de cookies">
-                <p>Zando utilise des cookies pour améliorer votre expérience de navigation et assurer le bon fonctionnement de la plateforme.</p>
+                <p>Cette page décrit précisément ce que Zando stocke sur votre appareil aujourd'hui — pas une liste générique. Techniquement, Zando utilise le stockage local du navigateur (localStorage), pas des cookies traditionnels, à l'exception du cookie de session géré par notre fournisseur d'authentification.</p>
               </Section>
-              <Section title="Types de cookies">
-                <p><strong>Cookies essentiels :</strong> Nécessaires au fonctionnement du site (session, panier, authentification).</p>
-                <p><strong>Cookies analytiques :</strong> Nous aident à comprendre comment vous utilisez le site pour l'améliorer.</p>
-                <p><strong>Cookies de préférences :</strong> Mémorisent votre langue, devise et localisation.</p>
+              <Section title="Ce que nous stockons réellement">
+                <p><strong>Essentiel :</strong> jeton de session d'authentification (pour rester connecté), contenu du panier, liste de souhaits.</p>
+                <p><strong>Préférences :</strong> langue choisie, devise d'affichage, pays/ville sélectionnés pour le filtrage.</p>
+                <p><strong>Programme d'affiliation :</strong> si vous arrivez via un lien d'affilié, le code de parrainage est mémorisé temporairement pour attribuer la conversion.</p>
               </Section>
-              <Section title="Gestion des cookies">
-                <p>Vous pouvez gérer ou désactiver les cookies dans les paramètres de votre navigateur. Notez que la désactivation des cookies essentiels peut affecter le fonctionnement du site.</p>
+              <Section title="Ce que nous n'utilisons PAS">
+                <p>Zando n'utilise actuellement aucun cookie ou outil d'analyse tiers (Google Analytics, Meta Pixel, ou équivalent) et aucun cookie publicitaire de suivi inter-sites. Si cela évolue, cette page sera mise à jour en conséquence.</p>
+              </Section>
+              <Section title="Gestion">
+                <p>Vous pouvez effacer ces données à tout moment via les paramètres de votre navigateur (« Effacer les données de navigation »). Cela vous déconnectera et réinitialisera votre panier et vos préférences.</p>
               </Section>
             </>
           ) : (
             <>
               <Section title="Cookies Policy">
-                <p>Zando uses cookies to improve your browsing experience and ensure the proper functioning of the platform.</p>
+                <p>This page describes precisely what Zando actually stores on your device today — not a generic list. Technically, Zando uses browser local storage (localStorage), not traditional cookies, apart from the session cookie managed by our authentication provider.</p>
               </Section>
-              <Section title="Types of Cookies">
-                <p><strong>Essential cookies:</strong> Required for the site to function (session, cart, authentication).</p>
-                <p><strong>Analytics cookies:</strong> Help us understand how you use the site to improve it.</p>
-                <p><strong>Preference cookies:</strong> Remember your language, currency, and location.</p>
+              <Section title="What We Actually Store">
+                <p><strong>Essential:</strong> authentication session token (to keep you logged in), cart contents, wishlist.</p>
+                <p><strong>Preferences:</strong> chosen language, display currency, selected country/city for filtering.</p>
+                <p><strong>Affiliate program:</strong> if you arrive via an affiliate link, the referral code is temporarily remembered to attribute the conversion.</p>
               </Section>
-              <Section title="Cookie Management">
-                <p>You can manage or disable cookies in your browser settings. Note that disabling essential cookies may affect site functionality.</p>
+              <Section title="What We Do NOT Use">
+                <p>Zando currently uses no third-party cookies or analytics tools (Google Analytics, Meta Pixel, or equivalent) and no cross-site advertising tracking cookies. If this changes, this page will be updated accordingly.</p>
+              </Section>
+              <Section title="Management">
+                <p>You can clear this data at any time via your browser settings ("Clear browsing data"). This will log you out and reset your cart and preferences.</p>
               </Section>
             </>
           ))}
@@ -661,6 +677,9 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>E-mail : <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a></p>
                 <p>Service client : <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a></p>
                 <p>Support technique : <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
+              </Section>
+              <Section title="Entités juridiques">
+                <p>Zando opère via les structures suivantes : une entité enregistrée aux Émirats arabes unis (SPC FZC) et une entité enregistrée au Cameroun. <em>[Numéro d'enregistrement, adresse de siège social et licence commerciale précise : NON VÉRIFIÉ — à confirmer et compléter avec les documents d'immatriculation officiels avant publication finale.]</em></p>
               </Section>
               <Section title="Hébergement">
                 <p>La plateforme Zando est hébergée sur des infrastructures cloud sécurisées avec chiffrement des données.</p>
@@ -679,6 +698,9 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Email: <a href="mailto:zando@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">zando@liafrik.com</a></p>
                 <p>Customer service: <a href="mailto:cs@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">cs@liafrik.com</a></p>
                 <p>Technical support: <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
+              </Section>
+              <Section title="Registered Entities">
+                <p>Zando operates through the following structures: an entity registered in the United Arab Emirates (SPC FZC) and an entity registered in Cameroon. <em>[Precise registration number, registered office address, and commercial license: NOT VERIFIED — to be confirmed and completed with official incorporation documents before final publication.]</em></p>
               </Section>
               <Section title="Hosting">
                 <p>The Zando platform is hosted on secure cloud infrastructure with data encryption.</p>
