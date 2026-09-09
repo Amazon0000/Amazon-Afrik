@@ -15,7 +15,7 @@ type User = {
   fullName: string;
   role: 'customer' | 'seller' | 'admin' | 'superadmin';
   sellerId?: string;
-  sellerPlan?: 'starter' | 'premium' | 'enterprise';
+  sellerPlan?: 'free' | 'starter' | 'premium' | 'enterprise';
   sellerStatus?: 'pending' | 'approved' | 'rejected' | 'suspended';
 } | null;
 
@@ -68,7 +68,7 @@ function asUserRole(value: unknown): NonNullable<User>['role'] | undefined {
 }
 
 function asSellerPlan(value: unknown): NonNullable<User>['sellerPlan'] | undefined {
-  return value === 'starter' || value === 'premium' || value === 'enterprise' ? value : undefined;
+  return value === 'free' || value === 'starter' || value === 'premium' || value === 'enterprise' ? value : undefined;
 }
 
 function asSellerStatus(value: unknown): NonNullable<User>['sellerStatus'] | undefined {

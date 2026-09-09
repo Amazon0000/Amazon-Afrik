@@ -45,7 +45,7 @@ export function OnboardingPage() {
     shipNational: true, shipInternational: false, shipExpress: true, shipLocal: true, shipPickup: false,
     selectedPayments: ['mobile_money', 'paystack'] as string[],
     paymentDetails: {} as Record<string, string>,
-    plan: (params.plan as string) || 'starter',
+    plan: (params.plan as string) || 'free',
   });
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -583,10 +583,14 @@ export function OnboardingPage() {
                 <Sparkles className="w-5 h-5 text-[#ff7a00] shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-[#0f172a]">
-                    {locale === 'fr' ? 'Plan choisi : ' + form.plan + ' — 14 jours gratuits' : 'Selected plan: ' + form.plan + ' — 14 days free'}
+                    {form.plan === 'free'
+                      ? (locale === 'fr' ? 'Plan choisi : Gratuit — permanent, 1 produit actif' : 'Selected plan: Free — permanent, 1 active product')
+                      : (locale === 'fr' ? 'Plan choisi : ' + form.plan + ' — 14 jours gratuits' : 'Selected plan: ' + form.plan + ' — 14 days free')}
                   </p>
                   <p className="text-xs text-[#64748b] mt-1">
-                    {locale === 'fr' ? 'Aucun paiement maintenant. Après 14 jours, un abonnement sera requis.' : 'No payment now. After 14 days, a subscription will be required.'}
+                    {form.plan === 'free'
+                      ? (locale === 'fr' ? 'Aucun paiement requis. Passez à un plan payant à tout moment pour publier plus de produits.' : 'No payment required. Upgrade to a paid plan anytime to list more products.')
+                      : (locale === 'fr' ? 'Aucun paiement maintenant. Après 14 jours, un abonnement sera requis.' : 'No payment now. After 14 days, a subscription will be required.')}
                   </p>
                 </div>
               </div>

@@ -625,15 +625,16 @@ export function AdminPage() {
             {tab === 'plans' && isSuperAdmin && (
               <div className="animate-fade-up">
                 <h2 className="font-display text-xl font-bold text-[#0f172a] mb-4">{t.admin.plans}</h2>
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
                   {[
+                    { name: 'Free', price: locale === 'fr' ? 'Gratuit' : 'Free', subs: sellers.filter((s) => s.plan === 'free').length },
                     { name: 'Starter', price: '$9', subs: sellers.filter((s) => s.plan === 'starter').length },
                     { name: 'Premium', price: '$29', subs: sellers.filter((s) => s.plan === 'premium').length },
                     { name: 'Enterprise', price: '$79', subs: sellers.filter((s) => s.plan === 'enterprise').length },
                   ].map((p) => (
                     <div key={p.name} className="card p-5 bg-white">
                       <h3 className="font-display text-lg font-bold text-[#0f172a]">{p.name}</h3>
-                      <p className="text-2xl font-bold text-[#ff7a00] mt-2">{p.price}<span className="text-sm text-[#64748b]">/mo</span></p>
+                      <p className="text-2xl font-bold text-[#ff7a00] mt-2">{p.price}<span className="text-sm text-[#64748b]">{p.price !== 'Free' && p.price !== 'Gratuit' ? '/mo' : ''}</span></p>
                       <p className="text-xs text-[#64748b] mt-3">{p.subs} {locale === 'fr' ? 'abonnés' : 'subscribers'}</p>
                     </div>
                   ))}

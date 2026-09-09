@@ -31,7 +31,7 @@ export type Seller = {
   id: string; business_name: string; store_slug: string;
   store_logo_url: string | null; store_banner_url: string | null;
   description: string | null; country_id: string | null; city: string | null;
-  phone: string | null; plan: 'starter' | 'premium' | 'enterprise';
+  phone: string | null; plan: 'free' | 'starter' | 'premium' | 'enterprise';
   plan_expires_at: string | null;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   business_type: string | null; rating: number; total_reviews: number;
@@ -1662,7 +1662,7 @@ export async function setSellerVerified(sellerId: string, verified: boolean, adm
 // initiateSubscriptionPayment() + the webhook-verified activation in
 // _shared/activate-subscription.ts. The Seller Center UI never calls this
 // function directly.
-export async function updateSellerPlan(sellerId: string, plan: 'starter' | 'premium' | 'enterprise'): Promise<boolean> {
+export async function updateSellerPlan(sellerId: string, plan: 'free' | 'starter' | 'premium' | 'enterprise'): Promise<boolean> {
   // subscription_status: 'active' with plan_expires_at left untouched (NULL
   // for a seller who never paid) is what is_seller_plan_active() treats as
   // an explicit, indefinite admin-granted plan — otherwise a manual comp
@@ -1720,7 +1720,7 @@ export async function updateUserProfile(userId: string, updates: { full_name?: s
 // Revenue summary for admins — see fetchPlatformRevenue below.
 export type PlatformRevenueSummary = {
   subscriptionMonthlyRevenue: number;
-  sellersByPlan: Record<'starter' | 'premium' | 'enterprise', number>;
+  sellersByPlan: Record<'free' | 'starter' | 'premium' | 'enterprise', number>;
   adSpendTotal: number;
   adSpendActive: number;
 };
@@ -1730,17 +1730,17 @@ export type PlatformRevenueSummary = {
 // subscription prices in USD. There is no free plan; every seller gets a
 // 14-day trial (subscription_status='trial'), then pays for one of these
 // tiers via the real central-PSP checkout (initiateSubscriptionPayment).
-const PLAN_PRICE_USD: Record<'starter' | 'premium' | 'enterprise', number> = {
-  starter: 9, premium: 29, enterprise: 79,
+const PLAN_PRICE_USD: Record<'free' | 'starter' | 'premium' | 'enterprise', number> = {
+  free: 0, starter: 9, premium: 29, enterprise: 79,
 };
 
 export async function fetchPlatformRevenue(): Promise<PlatformRevenueSummary> {
-  const sellersByPlan: Record<'starter' | 'premium' | 'enterprise', number> = { starter: 0, premium: 0, enterprise: 0 };
+  const sellersByPlan: Record<'free' | 'starter' | 'premium' | 'enterprise', number> = { free: 0, starter: 0, premium: 0, enterprise: 0 };
   let subscriptionMonthlyRevenue = 0;
   const { data: sellers, error: sellersError } = await supabase.from('sellers').select('plan').eq('status', 'approved');
   if (!sellersError && sellers) {
     for (const s of sellers as { plan: string }[]) {
-      const plan = (s.plan as 'starter' | 'premium' | 'enterprise') || 'starter';
+      const plan = (s.plan as 'free' | 'starter' | 'premium' | 'enterprise') || 'free';
       if (plan in sellersByPlan) sellersByPlan[plan]++;
       subscriptionMonthlyRevenue += PLAN_PRICE_USD[plan] ?? 0;
     }

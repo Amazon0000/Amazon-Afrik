@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
@@ -34,6 +34,7 @@ export function SellerCenterPage() {
   const { t, locale, user, navigate, showToast, categories, countries, params } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
@@ -141,6 +142,26 @@ export function SellerCenterPage() {
   const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
   const avgRating = products.length > 0 ? products.reduce((sum, p) => sum + p.rating, 0) / products.length : 0;
   const totalReviews = products.reduce((sum, p) => sum + p.total_reviews, 0);
+
+  // Real period-over-period trend (last 30 days vs the 30 days before that)
+  // — replaces what used to be hardcoded "+15%" / "+22%" shown to every
+  // seller regardless of their actual performance. Omitted (not faked)
+  // when there's no prior-period data to compare against.
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+  const inWindow = (o: Order, startDaysAgo: number, endDaysAgo: number) => {
+    const t = new Date(o.created_at).getTime();
+    return t >= now - startDaysAgo * DAY && t < now - endDaysAgo * DAY;
+  };
+  const thisPeriod = completedOrders.filter((o) => inWindow(o, 30, 0));
+  const prevPeriod = completedOrders.filter((o) => inWindow(o, 60, 30));
+  const pctChange = (curr: number, prev: number): string | undefined => {
+    if (prev === 0) return curr > 0 ? (locale === 'fr' ? 'Nouveau' : 'New') : undefined;
+    const pct = Math.round(((curr - prev) / prev) * 100);
+    return `${pct >= 0 ? '+' : ''}${pct}%`;
+  };
+  const ordersTrend = pctChange(thisPeriod.length, prevPeriod.length);
+  const revenueTrend = pctChange(thisPeriod.reduce((s, o) => s + o.total, 0), prevPeriod.reduce((s, o) => s + o.total, 0));
   const totalOrders = orders.length;
   const activeProducts = products.filter((p) => p.approval_status === 'approved' && p.is_active).length;
   const lowStock = products.filter((p) => p.stock > 0 && p.stock < 5);
@@ -295,8 +316,8 @@ export function SellerCenterPage() {
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.dashboard}</h1>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard label={t.seller.orders} value={orders.length.toString()} icon={ShoppingCart} trend="+15%" />
-                  <StatCard label={locale === 'fr' ? 'Revenus' : 'Revenue'} value={`$${totalRevenue.toFixed(0)}`} icon={DollarSign} trend="+22%" />
+                  <StatCard label={t.seller.orders} value={orders.length.toString()} icon={ShoppingCart} trend={ordersTrend} />
+                  <StatCard label={locale === 'fr' ? 'Revenus' : 'Revenue'} value={`$${totalRevenue.toFixed(0)}`} icon={DollarSign} trend={revenueTrend} />
                   <StatCard label={t.seller.products} value={products.length.toString()} icon={Package} />
                   <StatCard label={t.seller.reputation} value={avgRating.toFixed(1)} icon={Star} />
                 </div>
@@ -364,7 +385,14 @@ export function SellerCenterPage() {
               <div className="animate-fade-up">
                 <div className="flex items-center justify-between mb-6">
                   <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.products}</h1>
-                  <button onClick={() => setShowAddProduct(!showAddProduct)} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {t.seller.addProduct}</button>
+                  <button onClick={() => {
+                    const activeCount = products.filter((p) => p.is_active).length;
+                    if (plan === 'free' && activeCount >= 1 && !showAddProduct) {
+                      setShowUpgradeModal(true);
+                      return;
+                    }
+                    setShowAddProduct(!showAddProduct);
+                  }} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {t.seller.addProduct}</button>
                 </div>
 
                 {showAddProduct && (
@@ -985,28 +1013,40 @@ export function SellerCenterPage() {
                   <p className="text-3xl font-bold text-[#0f172a] mt-1 capitalize" style={{ color: planColor }}>{plan}</p>
                   <p className="text-xs text-[#64748b] mt-2">
                     {locale === 'fr'
-                      ? "C'est votre seul coût fixe chez Zando — aucune commission n'est prélevée sur vos ventes, qui vous sont versées directement via votre PSP. Un essai gratuit de 14 jours est offert à l'inscription."
-                      : "This is your only fixed cost on Zando — zero commission is taken on your sales, which are paid to you directly via your PSP. A 14-day free trial is included at signup."}
+                      ? "C'est votre seul coût fixe chez Zando — aucune commission n'est prélevée sur vos ventes, qui vous sont versées directement via votre PSP. Le plan Gratuit est permanent (1 produit). Chaque plan payant inclut 14 jours d'essai gratuit."
+                      : "This is your only fixed cost on Zando — zero commission is taken on your sales, which are paid to you directly via your PSP. The Free plan is permanent (1 product). Every paid plan includes a 14-day free trial."}
                   </p>
                 </div>
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
                   {([
+                    { id: 'free' as const, price: 0, limit: locale === 'fr' ? '1 produit actif — permanent' : '1 active product — permanent' },
                     { id: 'starter' as const, price: 9, limit: locale === 'fr' ? 'Produits illimités' : 'Unlimited products' },
                     { id: 'premium' as const, price: 29, limit: locale === 'fr' ? 'Produits illimités + mise en avant' : 'Unlimited products + boosted visibility' },
                     { id: 'enterprise' as const, price: 79, limit: locale === 'fr' ? 'Produits illimités + support prioritaire' : 'Unlimited products + priority support' },
                   ]).map(({ id: p, price, limit }) => (
                     <div key={p} className={`card p-5 ${plan === p ? 'ring-2 ring-[#ff7a00]' : ''}`}>
-                      <h3 className="font-display text-lg font-bold text-[#0f172a] capitalize mb-1">{p}</h3>
-                      <p className="text-2xl font-bold text-[#0f172a] mb-1">${price}<span className="text-xs font-normal text-[#64748b]">/mo</span></p>
+                      <h3 className="font-display text-lg font-bold text-[#0f172a] capitalize mb-1">{p === 'free' ? (locale === 'fr' ? 'Gratuit' : 'Free') : p}</h3>
+                      <p className="text-2xl font-bold text-[#0f172a] mb-1">{price === 0 ? (locale === 'fr' ? 'Gratuit' : 'Free') : `$${price}`}<span className="text-xs font-normal text-[#64748b]">{price > 0 ? '/mo' : ''}</span></p>
                       <p className="text-xs text-[#64748b] mb-4">{limit}</p>
                       <button
                         disabled={plan === p || changingPlan}
-                        onClick={() => {
-                          if (!user?.sellerId) return;
-                          // Every paid plan — including the entry tier —
-                          // requires a real payment through the central PSP;
-                          // this opens the provider picker below, it never
-                          // grants access instantly.
+                        onClick={async () => {
+                          const sellerId = user?.sellerId;
+                          if (!sellerId || !user) return;
+                          if (p === 'free') {
+                            // Downgrading to the permanent free plan needs
+                            // no payment — direct write, like an admin comp.
+                            setChangingPlan(true);
+                            const ok = await updateSellerPlan(sellerId, 'free');
+                            setChangingPlan(false);
+                            if (ok) { showToast(locale === 'fr' ? 'Plan mis à jour — rechargement...' : 'Plan updated — reloading...'); window.location.reload(); }
+                            else showToast(locale === 'fr' ? 'Erreur lors du changement de plan' : 'Error changing plan', 'error');
+                            return;
+                          }
+                          // Paid plans require a real payment through the
+                          // central PSP (after the 14-day trial) — opens
+                          // the provider picker below, never grants access
+                          // instantly.
                           setUpgradingPlan(p);
                         }}
                         className={`w-full py-2.5 rounded-lg text-sm font-semibold ${plan === p ? 'bg-[#0f172a]/10 text-[#64748b] cursor-default' : 'btn-green'}`}
@@ -1178,6 +1218,26 @@ export function SellerCenterPage() {
           </div>
         </div>
       </div>
+
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowUpgradeModal(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center animate-fade-up" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-[#ff7a00]/10 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-7 h-7 text-[#ff7a00]" />
+            </div>
+            <h3 className="font-display text-lg font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Limite du plan gratuit atteinte' : 'Free plan limit reached'}</h3>
+            <p className="text-sm text-[#64748b] mb-6">
+              {locale === 'fr'
+                ? 'Le plan Gratuit est limité à 1 produit actif. Passez à un plan payant pour publier des produits illimités.'
+                : 'The Free plan is limited to 1 active product. Upgrade to a paid plan to list unlimited products.'}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowUpgradeModal(false)} className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-[#e2e8f0] text-[#64748b]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+              <button onClick={() => { setShowUpgradeModal(false); setTab('subscription'); }} className="flex-1 btn-gold py-2.5 rounded-full text-sm font-semibold">{locale === 'fr' ? 'Voir les plans' : 'View plans'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
