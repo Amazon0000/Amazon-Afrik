@@ -24,6 +24,70 @@ function toFormBody(params: Record<string, string>): string {
     .join('&');
 }
 
+// Fabrique un adaptateur Stripe lié à une clé secrète dynamique — utilisé
+// pour le checkout vendeur (chaque vendeur a son propre compte Stripe),
+// par opposition à `stripeAdapter` ci-dessous qui reste lié à la clé
+// plateforme (STRIPE_SECRET_KEY) pour les abonnements/pubs Zando.
+export function createStripeAdapterWithKey(secretKey: string): PaymentProviderAdapter {
+  return {
+    async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+      const sep = (path: string) => (path.includes('?') ? '&' : '?');
+      const params: Record<string, string> = {
+        'mode': 'payment',
+        'success_url': `${input.returnUrl}${sep(input.returnUrl)}session_id={CHECKOUT_SESSION_ID}&ref=${input.internalReference}`,
+        'cancel_url': `${input.returnUrl}${sep(input.returnUrl)}cancelled=1&ref=${input.internalReference}`,
+        'client_reference_id': input.internalReference,
+        'line_items[0][price_data][currency]': input.currency.toLowerCase(),
+        'line_items[0][price_data][product_data][name]': input.description,
+        'line_items[0][price_data][unit_amount]': String(Math.round(input.amount * 100)),
+        'line_items[0][quantity]': '1',
+      };
+      if (input.metadata) {
+        for (const [k, v] of Object.entries(input.metadata)) params[`metadata[${k}]`] = v;
+      }
+      params['metadata[internal_reference]'] = input.internalReference;
+
+      const res = await fetch(`${STRIPE_API_BASE}/checkout/sessions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${secretKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Idempotency-Key': input.internalReference,
+        },
+        body: toFormBody(params),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(`Stripe createPayment error: ${data?.error?.message || res.statusText}`);
+      return { providerReference: data.id, redirectUrl: data.url };
+    },
+
+    async verifyPayment(providerReference: string): Promise<VerifyPaymentResult> {
+      const res = await fetch(`${STRIPE_API_BASE}/checkout/sessions/${providerReference}`, {
+        headers: { 'Authorization': `Bearer ${secretKey}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(`Stripe verifyPayment error: ${data?.error?.message || res.statusText}`);
+      let status: VerifyPaymentResult['status'] = 'pending';
+      if (data.payment_status === 'paid') status = 'paid';
+      else if (data.status === 'expired') status = 'cancelled';
+      return { providerReference, status, amount: (data.amount_total ?? 0) / 100, currency: (data.currency ?? '').toUpperCase() };
+    },
+
+    async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult> {
+      const params: Record<string, string> = { payment_intent: input.providerReference };
+      if (input.amount) params.amount = String(Math.round(input.amount * 100));
+      const res = await fetch(`${STRIPE_API_BASE}/refunds`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody(params),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data?.error?.message || res.statusText };
+      return { success: true, refundReference: data.id };
+    },
+  };
+}
+
 export const stripeAdapter: PaymentProviderAdapter = {
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
     const sep = (path: string) => (path.includes('?') ? '&' : '?');

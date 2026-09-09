@@ -116,7 +116,66 @@ export const paddleAdapter: PaymentProviderAdapter = {
   },
 };
 
-// Vérification de la signature webhook Paddle : HMAC-SHA256 du body brut,
+// Fabrique un adaptateur Paddle lié à une clé API dynamique (checkout
+// vendeur — chaque vendeur son propre compte Paddle).
+export function createPaddleAdapterWithKey(apiKey: string): PaymentProviderAdapter {
+  return {
+    async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+      const res = await fetch(`${PADDLE_API_BASE}/transactions`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: [{
+            quantity: 1,
+            price: {
+              description: input.description, name: input.description,
+              billing_cycle: null, trial_period: null, tax_mode: 'account_setting',
+              unit_price: { amount: String(Math.round(input.amount * 100)), currency_code: input.currency.toUpperCase() },
+            },
+          }],
+          collection_mode: 'automatic',
+          checkout: { url: input.returnUrl },
+          custom_data: { internal_reference: input.internalReference, ...(input.metadata || {}) },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(`Paddle createPayment error: ${data?.error?.detail || res.statusText}`);
+      const txId = data?.data?.id;
+      const checkoutUrl = data?.data?.checkout?.url;
+      if (!txId || !checkoutUrl) throw new Error('Paddle createPayment: réponse inattendue');
+      return { providerReference: txId, redirectUrl: checkoutUrl };
+    },
+    async verifyPayment(providerReference: string): Promise<VerifyPaymentResult> {
+      const res = await fetch(`${PADDLE_API_BASE}/transactions/${providerReference}`, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(`Paddle verifyPayment error: ${data?.error?.detail || res.statusText}`);
+      const tx = data.data;
+      let status: VerifyPaymentResult['status'] = 'pending';
+      if (tx.status === 'completed' || tx.status === 'paid') status = 'paid';
+      else if (tx.status === 'canceled') status = 'cancelled';
+      else if (tx.status === 'past_due') status = 'failed';
+      const totals = tx.details?.totals;
+      return { providerReference, status, amount: totals ? Number(totals.total) / 100 : 0, currency: tx.currency_code || '' };
+    },
+    async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult> {
+      const res = await fetch(`${PADDLE_API_BASE}/adjustments`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'refund', transaction_id: input.providerReference,
+          reason: 'Zando order refund',
+          items: input.amount ? undefined : [{ type: 'full', item_id: undefined }],
+          ...(input.amount ? { items: undefined } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data?.error?.detail || res.statusText };
+      return { success: true, refundReference: data?.data?.id };
+    },
+  };
+}
+
+
 // clé = notification secret Paddle (distinct de la clé API), comparaison en
 // temps constant. Format d'en-tête Paddle-Signature: "ts=...;h1=...".
 export async function verifyPaddleWebhookSignature(

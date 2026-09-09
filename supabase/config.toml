@@ -62,5 +62,24 @@ verify_jwt = false
 [functions.sitemap-products]
 verify_jwt = false
 
+# ---- Real vendor PSP checkout (audit pass: "les PSP doivent être vrai") ----
+[functions.vendor-checkout-create-payment]
+verify_jwt = false
+
+[functions.vendor-checkout-webhook-stripe]
+verify_jwt = false
+
+[functions.vendor-checkout-webhook-flutterwave]
+verify_jwt = false
+
+[functions.vendor-checkout-webhook-payunit]
+verify_jwt = false
+
+[functions.vendor-checkout-webhook-paddle]
+verify_jwt = false
+
+[functions.vendor-checkout-webhook-paystack]
+verify_jwt = false
+
 [functions.notify-seller-status-change]
 verify_jwt = true

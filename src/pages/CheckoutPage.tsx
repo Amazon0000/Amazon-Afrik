@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductsByIds, fetchFlashDealsForProducts, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry, notifyNewOrder } from '@/lib/db';
-import type { Product, Address, SellerPaymentMethod, FlashDeal, ShippingRate } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductsByIds, fetchFlashDealsForProducts, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry, notifyNewOrder, fetchSellerPspCredentials, initiateVendorCheckoutPayment } from '@/lib/db';
+import type { Product, Address, SellerPaymentMethod, FlashDeal, ShippingRate, SellerPspCredential } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
 
@@ -11,6 +11,7 @@ export function CheckoutPage() {
   const [deals, setDeals] = useState<Record<string, FlashDeal>>({});
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [sellerPayments, setSellerPayments] = useState<Record<string, SellerPaymentMethod[]>>({});
+  const [pspCredentialsBySeller, setPspCredentialsBySeller] = useState<Record<string, SellerPspCredential[]>>({});
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -42,13 +43,19 @@ export function CheckoutPage() {
 
       const sellerIds = Array.from(new Set(Object.values(prods).map((p) => p.seller_id)));
       const paymentsBySeller: Record<string, SellerPaymentMethod[]> = {};
+      const pspCredsBySeller: Record<string, SellerPspCredential[]> = {};
       const defaults: Record<string, string> = {};
       await Promise.all(sellerIds.map(async (sellerId) => {
-        const methods = (await fetchSellerPaymentMethods(sellerId)).filter((m) => m.is_active);
+        const [methods, pspCreds] = await Promise.all([
+          fetchSellerPaymentMethods(sellerId).then((m) => m.filter((x) => x.is_active)),
+          fetchSellerPspCredentials(sellerId),
+        ]);
         paymentsBySeller[sellerId] = methods;
+        pspCredsBySeller[sellerId] = pspCreds;
         if (methods.length > 0) defaults[sellerId] = methods[0].id;
       }));
       setSellerPayments(paymentsBySeller);
+      setPspCredentialsBySeller(pspCredsBySeller);
       setSelectedPayment(defaults);
       setLoading(false);
     })();
@@ -170,6 +177,7 @@ export function CheckoutPage() {
 
     try {
       const createdIds: string[] = [];
+      const pendingRealPayments: { orderId: string; provider: 'stripe' | 'paddle' | 'payunit' | 'paystack' | 'flutterwave'; trackingId: string }[] = [];
       for (const sellerId of sellerIds) {
         const groupItems = sellerGroups[sellerId];
         const rawTotal = groupItems.reduce((sum, i) => sum + effectivePrice(i) * i.qty, 0);
@@ -196,6 +204,18 @@ export function CheckoutPage() {
         const isFullyDigital = groupItems.every((i) => i.product!.product_type === 'digital');
         const customerPhone = user ? (addr?.phone || null) : (guestInfo.phone || null);
 
+        // Real API-connected PSP? (seller_psp_credentials, matched by
+        // provider name against the chosen manual-directory entry) — if
+        // so, the order starts 'pending' and only becomes 'confirmed' once
+        // a webhook verifies real payment (see vendor-checkout-*).
+        // Otherwise (mobile money, bank transfer, no API key configured),
+        // keep the existing behavior: the seller confirms manually.
+        const providerKey = (method?.provider_name || '').toLowerCase();
+        const realCredential = pspCredentialsBySeller[sellerId]?.find(
+          (c): c is SellerPspCredential & { provider: 'stripe' | 'paddle' | 'payunit' | 'paystack' | 'flutterwave' } =>
+            c.is_active && c.has_secret && c.provider !== 'airwallex' && c.provider === providerKey
+        );
+
         const { data: order } = await supabase.from('orders').insert({
           user_id: user?.id || null,
           guest_name: !user ? guestInfo.name : null,
@@ -206,8 +226,10 @@ export function CheckoutPage() {
           // Digital-only orders are fulfilled the instant payment succeeds
           // (file access already granted below); physical orders start
           // "confirmed" = awaiting shipment, and move through preparing ->
-          // inTransit -> delivered as the seller updates them.
-          status: isFullyDigital ? 'delivered' : 'confirmed',
+          // inTransit -> delivered as the seller updates them. Orders
+          // going through a real connected PSP start 'pending' instead —
+          // confirmed only once the webhook verifies payment.
+          status: realCredential ? 'pending' : (isFullyDigital ? 'delivered' : 'confirmed'),
           total: groupTotal,
           coupon_code: redeemedCode,
           discount_amount: discountAmount,
@@ -238,8 +260,30 @@ export function CheckoutPage() {
             await decrementProductStock(item.productId, item.qty);
           }
           createdIds.push(trackingId);
-          notifyNewOrder(order.id);
+          if (realCredential) {
+            pendingRealPayments.push({ orderId: order.id, provider: realCredential.provider, trackingId });
+          } else {
+            notifyNewOrder(order.id);
+          }
         }
+      }
+
+      // If any seller in this order uses a real connected PSP, send the
+      // buyer to pay right now — redirecting to the vendor's own checkout
+      // page. The order only confirms once that payment is verified.
+      if (pendingRealPayments.length > 0) {
+        const first = pendingRealPayments[0];
+        const returnUrl = `${window.location.origin}${window.location.pathname}?p=account&tab=orders`;
+        const result = await initiateVendorCheckoutPayment({
+          orderId: first.orderId, provider: first.provider, returnUrl,
+          buyerEmail: user?.email || guestInfo.email,
+        });
+        if ('redirectUrl' in result) {
+          clearCart();
+          window.location.href = result.redirectUrl;
+          return;
+        }
+        showToast(result.error, 'error');
       }
       setOrderIds(createdIds);
       setOrderPlaced(true);
@@ -395,21 +439,27 @@ export function CheckoutPage() {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          {methods.map((m) => (
+                          {methods.map((m) => {
+                            const isReal = pspCredentialsBySeller[sellerId]?.some((c) => c.is_active && c.has_secret && c.provider === m.provider_name.toLowerCase());
+                            return (
                             <button key={m.id} onClick={() => setSelectedPayment({ ...selectedPayment, [sellerId]: m.id })}
                               className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all bg-white ${selectedPayment[sellerId] === m.id ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#0f172a]/10 hover:border-[#ff7a00]/50'}`}>
                               <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedPayment[sellerId] === m.id ? 'bg-[#ff7a00] text-white' : 'bg-[#0f172a]/5 text-[#64748b]'}`}>
                                 {m.provider_type === 'mobile_money' ? <Smartphone className="w-4 h-4" /> : m.provider_type === 'digital_wallet' ? <Wallet className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
                               </div>
                               <div className="flex-1 min-w-0 text-left">
-                                <p className="text-sm font-medium text-[#0f172a]">{m.display_name || m.provider_name}</p>
+                                <p className="text-sm font-medium text-[#0f172a] flex items-center gap-1.5">
+                                  {m.display_name || m.provider_name}
+                                  {isReal && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-green-100 text-green-700">{locale === 'fr' ? 'Paiement instantané' : 'Instant payment'}</span>}
+                                </p>
                                 {m.account_identifier && <p className="text-xs text-[#64748b] truncate">{m.account_identifier}</p>}
                               </div>
                               <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 ${selectedPayment[sellerId] === m.id ? 'border-[#ff7a00] bg-[#ff7a00]' : 'border-[#0f172a]/20'}`}>
                                 {selectedPayment[sellerId] === m.id && <CheckCircle className="w-4 h-4 text-white mx-auto" />}
                               </div>
                             </button>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
 

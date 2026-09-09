@@ -86,13 +86,53 @@ export const payunitAdapter: PaymentProviderAdapter = {
   async refundPayment(): Promise<RefundPaymentResult> {
     // La documentation publique PayUnit ne décrit pas d'endpoint de
     // remboursement automatisé au moment de cette implémentation.
-    // On ne fabrique pas un faux endpoint : le remboursement PayUnit doit
-    // être traité manuellement (support PayUnit) et enregistré ensuite via
-    // le statut 'refunded' côté admin. À réévaluer si PayUnit publie un
-    // endpoint dédié.
     return {
       success: false,
       message: 'Remboursement PayUnit non automatisable via API publique — traitement manuel requis (contacter support PayUnit), puis marquer refunded côté admin.',
     };
   },
 };
+
+// Fabrique un adaptateur PayUnit lié à des identifiants dynamiques
+// (checkout vendeur — chaque vendeur son propre compte PayUnit).
+export function createPayunitAdapterWithKey(apiUser: string, apiPassword: string, apiKey: string, mode: 'test' | 'live'): PaymentProviderAdapter {
+  const authHeaders = (): Record<string, string> => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Basic ${btoa(`${apiUser}:${apiPassword}`)}`,
+    'x-api-key': apiKey,
+    'mode': mode,
+  });
+  return {
+    async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+      const res = await fetch(`${PAYUNIT_BASE}/api/gateway/initialize`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          total_amount: input.amount,
+          currency: input.currency,
+          transaction_id: input.internalReference,
+          return_url: input.returnUrl,
+          notify_url: input.notifyUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'SUCCESS') throw new Error(`PayUnit createPayment error: ${data?.message || res.statusText}`);
+      return { providerReference: data.data.transaction_id, redirectUrl: data.data.transaction_url };
+    },
+    async verifyPayment(providerReference: string): Promise<VerifyPaymentResult> {
+      const res = await fetch(`${PAYUNIT_BASE}/api/gateway/paymentstatus/${providerReference}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(`PayUnit verifyPayment error: ${data?.message || res.statusText}`);
+      const txStatus = data?.data?.transaction_status;
+      let status: VerifyPaymentResult['status'] = 'pending';
+      if (txStatus === 'SUCCESS') status = 'paid';
+      else if (txStatus === 'FAILED') status = 'failed';
+      else if (txStatus === 'CANCELLED') status = 'cancelled';
+      return { providerReference, status, amount: Number(data?.data?.transaction_amount ?? 0), currency: data?.data?.transaction_currency ?? '' };
+    },
+    async refundPayment(): Promise<RefundPaymentResult> {
+      return { success: false, message: 'Remboursement PayUnit non automatisable via API publique — traitement manuel requis.' };
+    },
+  };
+}
+

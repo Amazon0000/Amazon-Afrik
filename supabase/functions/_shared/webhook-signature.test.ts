@@ -9,6 +9,7 @@
 import { strictEqual } from 'node:assert';
 import { verifyStripeWebhookSignature } from './stripe.ts';
 import { verifyFlutterwaveWebhookSignature } from './flutterwave.ts';
+import { verifyPaystackWebhookSignature } from './paystack.ts';
 
 // ============ Stripe ============
 
@@ -78,3 +79,47 @@ Deno.test('verifyFlutterwaveWebhookSignature: longueur différente -> rejetée s
   const valid = verifyFlutterwaveWebhookSignature('short', 'a-much-longer-secret-hash-value');
   strictEqual(valid, false);
 });
+
+// ============ Paystack (checkout vendeur — nouveau) ============
+
+async function buildValidPaystackSignature(payload: string, secretKey: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secretKey), { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']);
+  const sigBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+  return Array.from(new Uint8Array(sigBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+Deno.test('verifyPaystackWebhookSignature: signature valide construite avec la bonne clé secrète du vendeur -> acceptée', async () => {
+  const payload = JSON.stringify({ event: 'charge.success', data: { reference: 'VENDOR-abc-123' } });
+  const secretKey = 'sk_test_vendor_secret_123';
+  const sig = await buildValidPaystackSignature(payload, secretKey);
+  const valid = await verifyPaystackWebhookSignature(payload, sig, secretKey);
+  strictEqual(valid, true);
+});
+
+Deno.test("verifyPaystackWebhookSignature: signée avec la clé d'un AUTRE vendeur -> rejetée (empêche qu'un vendeur confirme le paiement d'un autre)", async () => {
+  const payload = JSON.stringify({ event: 'charge.success', data: { reference: 'VENDOR-abc-123' } });
+  const sig = await buildValidPaystackSignature(payload, 'sk_test_attacker_own_key');
+  const valid = await verifyPaystackWebhookSignature(payload, sig, 'sk_test_vendor_secret_123');
+  strictEqual(valid, false);
+});
+
+Deno.test('verifyPaystackWebhookSignature: payload modifié après signature -> rejetée (anti-falsification du montant/statut)', async () => {
+  const originalPayload = JSON.stringify({ event: 'charge.success', data: { reference: 'VENDOR-abc-123', amount: 5000 } });
+  const secretKey = 'sk_test_vendor_secret_123';
+  const sig = await buildValidPaystackSignature(originalPayload, secretKey);
+  const tamperedPayload = JSON.stringify({ event: 'charge.success', data: { reference: 'VENDOR-abc-123', amount: 1 } });
+  const valid = await verifyPaystackWebhookSignature(tamperedPayload, sig, secretKey);
+  strictEqual(valid, false);
+});
+
+Deno.test('verifyPaystackWebhookSignature: en-tête x-paystack-signature absent -> rejetée', async () => {
+  const valid = await verifyPaystackWebhookSignature('{}', null, 'sk_test_vendor_secret_123');
+  strictEqual(valid, false);
+});
+
+Deno.test('verifyPaystackWebhookSignature: longueur différente -> rejetée sans planter', async () => {
+  const valid = await verifyPaystackWebhookSignature('{}', 'short-sig', 'sk_test_vendor_secret_123');
+  strictEqual(valid, false);
+});
+

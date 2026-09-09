@@ -1808,6 +1808,21 @@ export async function disconnectSellerPsp(credentialId: string): Promise<boolean
   return true;
 }
 
+// Real checkout — initiates a payment against the SELLER's own connected
+// PSP (their stored API keys), never the platform's. The order must
+// already exist with status='pending'; it only becomes 'confirmed' once
+// the matching webhook verifies payment server-side.
+export async function initiateVendorCheckoutPayment(opts: {
+  orderId: string; provider: 'stripe' | 'paddle' | 'payunit' | 'paystack' | 'flutterwave'; returnUrl: string; buyerEmail?: string;
+}): Promise<{ redirectUrl: string } | { error: string }> {
+  const { data, error } = await supabase.functions.invoke('vendor-checkout-create-payment', {
+    body: { orderId: opts.orderId, provider: opts.provider, returnUrl: opts.returnUrl, buyerEmail: opts.buyerEmail },
+  });
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+  return { redirectUrl: data.redirectUrl };
+}
+
 export async function fetchSellerShippingRates(sellerId: string): Promise<ShippingRate[]> {
   const { data, error } = await supabase.from('seller_shipping_rates').select('*, countries(*)').eq('seller_id', sellerId).order('created_at');
   if (error) { console.error('fetchSellerShippingRates:', error.message); return []; }

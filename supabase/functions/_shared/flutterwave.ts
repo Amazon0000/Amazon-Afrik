@@ -90,7 +90,56 @@ export const flutterwaveAdapter: PaymentProviderAdapter = {
   },
 };
 
-// Vérification du webhook Flutterwave : comparaison directe du header
+// Fabrique un adaptateur Flutterwave lié à une clé secrète dynamique
+// (checkout vendeur — chaque vendeur son propre compte Flutterwave).
+export function createFlutterwaveAdapterWithKey(secretKey: string): PaymentProviderAdapter {
+  return {
+    async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+      const res = await fetch(`${FLW_API_BASE}/payments`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tx_ref: input.internalReference,
+          amount: input.amount,
+          currency: input.currency,
+          redirect_url: input.returnUrl,
+          customizations: { title: 'Zando', description: input.description },
+          meta: { internal_reference: input.internalReference, ...input.metadata },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(`Flutterwave createPayment error: ${data?.message || res.statusText}`);
+      return { providerReference: input.internalReference, redirectUrl: data.data.link };
+    },
+    async verifyPayment(providerReference: string): Promise<VerifyPaymentResult> {
+      const res = await fetch(`${FLW_API_BASE}/transactions/${providerReference}/verify`, {
+        headers: { 'Authorization': `Bearer ${secretKey}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(`Flutterwave verifyPayment error: ${data?.message || res.statusText}`);
+      const txStatus = data?.data?.status;
+      let status: VerifyPaymentResult['status'] = 'pending';
+      if (txStatus === 'successful') status = 'paid';
+      else if (txStatus === 'failed') status = 'failed';
+      else if (txStatus === 'cancelled') status = 'cancelled';
+      return { providerReference, status, amount: data?.data?.amount ?? 0, currency: data?.data?.currency ?? '' };
+    },
+    async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult> {
+      const body: Record<string, unknown> = {};
+      if (input.amount) body.amount = input.amount;
+      const res = await fetch(`${FLW_API_BASE}/transactions/${input.providerReference}/refund`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') return { success: false, message: data?.message || res.statusText };
+      return { success: true, refundReference: String(data?.data?.id ?? '') };
+    },
+  };
+}
+
+
 // 'verif-hash' avec le secret hash configuré dans le dashboard Flutterwave
 // (Settings > Webhooks). Ce n'est PAS un HMAC calculé sur le payload —
 // c'est le mécanisme officiel documenté par Flutterwave.
