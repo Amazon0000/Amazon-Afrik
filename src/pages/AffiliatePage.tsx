@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { applyForAffiliate, fetchMyAffiliateAccount, fetchAffiliateReferrals, updateAffiliatePayoutDetails } from '@/lib/db';
-import type { Affiliate, AffiliateReferral } from '@/lib/db';
-import { Users, DollarSign, Link2, Copy, CheckCircle, Clock, XCircle, Megaphone, TrendingUp, Wallet, Loader2 } from 'lucide-react';
+import { applyForAffiliate, fetchMyAffiliateAccount, fetchAffiliateReferrals, updateAffiliatePayoutDetails, uploadAffiliatePhoto, fetchAffiliateFunnelStats } from '@/lib/db';
+import type { Affiliate, AffiliateReferral, AffiliateFunnelStats } from '@/lib/db';
+import { Users, DollarSign, Link2, Copy, CheckCircle, Clock, XCircle, Megaphone, TrendingUp, Wallet, Loader2, MousePointerClick, Camera, Instagram } from 'lucide-react';
 
 const PAYOUT_OPTIONS = ['PayUnit', 'Flutterwave', 'Paystack', 'PayPal', 'Stripe', 'Wise', 'Mobile Money', 'Virement bancaire / Bank transfer'];
 
@@ -13,8 +13,12 @@ export function AffiliatePage() {
   const [referrals, setReferrals] = useState<AffiliateReferral[]>([]);
   const [copied, setCopied] = useState(false);
 
-  const [applyForm, setApplyForm] = useState({ fullName: user?.fullName || '', email: user?.email || '', audience: '' });
+  const [applyForm, setApplyForm] = useState({ fullName: user?.fullName || '', email: user?.email || '', audience: '', socialLink: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [funnel, setFunnel] = useState<AffiliateFunnelStats | null>(null);
 
   const [payoutForm, setPayoutForm] = useState({ provider: PAYOUT_OPTIONS[0], accountIdentifier: '' });
   const [savingPayout, setSavingPayout] = useState(false);
@@ -27,6 +31,7 @@ export function AffiliatePage() {
       if (acc) {
         setReferrals(await fetchAffiliateReferrals(acc.id));
         setPayoutForm({ provider: acc.payout_provider || PAYOUT_OPTIONS[0], accountIdentifier: acc.payout_account_identifier || '' });
+        if (acc.status === 'approved') setFunnel(await fetchAffiliateFunnelStats(acc.id));
       }
       setLoading(false);
     })();
@@ -35,8 +40,16 @@ export function AffiliatePage() {
   const submitApplication = async () => {
     if (!user) { navigate('login'); return; }
     if (!applyForm.fullName || !applyForm.email) { showToast(locale === 'fr' ? 'Nom et email requis' : 'Name and email required', 'error'); return; }
+    if (!applyForm.socialLink.trim()) { showToast(locale === 'fr' ? 'Le lien de votre réseau social est requis' : 'Your social media link is required', 'error'); return; }
+    if (!photoFile) { showToast(locale === 'fr' ? 'Une photo de profil est requise' : 'A profile photo is required', 'error'); return; }
     setSubmitting(true);
-    const id = await applyForAffiliate({ userId: user.id, fullName: applyForm.fullName, email: applyForm.email, audienceDescription: applyForm.audience });
+    const photoUrl = await uploadAffiliatePhoto(photoFile, user.id);
+    if (!photoUrl) {
+      setSubmitting(false);
+      showToast(locale === 'fr' ? "Erreur lors de l'envoi de la photo" : 'Error uploading photo', 'error');
+      return;
+    }
+    const id = await applyForAffiliate({ userId: user.id, fullName: applyForm.fullName, email: applyForm.email, audienceDescription: applyForm.audience, socialLink: applyForm.socialLink.trim(), photoUrl });
     setSubmitting(false);
     if (id) {
       const acc = await fetchMyAffiliateAccount(user.id);
@@ -111,6 +124,19 @@ export function AffiliatePage() {
             <div className="card p-6 sm:p-8 bg-white">
               <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4">{locale === 'fr' ? 'Postuler' : 'Apply now'}</h2>
               <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { setPhotoFile(f); setPhotoPreview(URL.createObjectURL(f)); }
+                  }} />
+                  <button type="button" onClick={() => photoInputRef.current?.click()} className="w-20 h-20 rounded-full border-2 border-dashed border-[#0f172a]/20 flex items-center justify-center overflow-hidden shrink-0 hover:border-[#ff7a00]">
+                    {photoPreview ? <img src={photoPreview} alt="" className="w-full h-full object-cover" /> : <Camera className="w-6 h-6 text-[#64748b]/50" />}
+                  </button>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0f172a]">{locale === 'fr' ? 'Votre photo de profil' : 'Your profile photo'} *</p>
+                    <p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Visible sur votre profil affilié.' : 'Shown on your affiliate profile.'}</p>
+                  </div>
+                </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Nom complet' : 'Full name'}</label>
@@ -122,8 +148,12 @@ export function AffiliatePage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Décrivez votre audience (réseaux sociaux, blog, communauté...)' : 'Describe your audience (social media, blog, community...)'}</label>
-                  <textarea value={applyForm.audience} onChange={(e) => setApplyForm({ ...applyForm, audience: e.target.value })} rows={4} className="input-field resize-none" placeholder={locale === 'fr' ? 'Ex : Instagram @moncompte, 15k abonnés, niche e-commerce Afrique...' : 'E.g. Instagram @myaccount, 15k followers, e-commerce niche...'} />
+                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5 flex items-center gap-1.5"><Instagram className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Lien de votre réseau social' : 'Your social media link'} *</label>
+                  <input value={applyForm.socialLink} onChange={(e) => setApplyForm({ ...applyForm, socialLink: e.target.value })} className="input-field" placeholder="https://instagram.com/votrecompte" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Décrivez votre audience (taille, niche, plateforme...)' : 'Describe your audience (size, niche, platform...)'}</label>
+                  <textarea value={applyForm.audience} onChange={(e) => setApplyForm({ ...applyForm, audience: e.target.value })} rows={4} className="input-field resize-none" placeholder={locale === 'fr' ? 'Ex : Instagram, 15k abonnés, niche e-commerce Afrique...' : 'E.g. Instagram, 15k followers, e-commerce niche...'} />
                 </div>
                 <button onClick={submitApplication} disabled={submitting} className="btn-gold px-6 py-3 rounded-full font-semibold flex items-center gap-2 disabled:opacity-50">
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />} {locale === 'fr' ? 'Envoyer ma candidature' : 'Submit application'}
@@ -168,7 +198,12 @@ export function AffiliatePage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#0f172a] mb-6">{locale === 'fr' ? "Tableau de bord Affilié" : 'Affiliate Dashboard'}</h1>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+          <div className="card p-4 bg-white">
+            <MousePointerClick className="w-5 h-5 text-[#3d1f00] mb-2" />
+            <p className="text-xl font-bold text-[#0f172a]">{funnel?.clicks ?? '—'}</p>
+            <p className="text-xs text-[#64748b]">{locale === 'fr' ? 'Clics sur votre lien' : 'Clicks on your link'}</p>
+          </div>
           <div className="card p-4 bg-white">
             <Users className="w-5 h-5 text-[#3d1f00] mb-2" />
             <p className="text-xl font-bold text-[#0f172a]">{referrals.length}</p>
@@ -190,6 +225,12 @@ export function AffiliatePage() {
             <p className="text-xs text-[#64748b]">{locale === 'fr' ? 'En attente de paiement' : 'Pending payout'}</p>
           </div>
         </div>
+        {funnel && funnel.clicks > 0 && (
+          <div className="card p-4 bg-white mb-6 flex items-center gap-6 text-xs text-[#64748b]">
+            <span>{locale === 'fr' ? 'Taux de conversion clic → inscription' : 'Click → signup rate'}: <strong className="text-[#0f172a]">{((referrals.length / funnel.clicks) * 100).toFixed(1)}%</strong></span>
+            <span>{locale === 'fr' ? 'Taux de conversion clic → payant' : 'Click → paid rate'}: <strong className="text-[#0f172a]">{((converted.length / funnel.clicks) * 100).toFixed(1)}%</strong></span>
+          </div>
+        )}
 
         <div className="card p-5 bg-white mb-6">
           <h2 className="font-display text-lg font-bold text-[#0f172a] mb-3">{locale === 'fr' ? 'Votre lien de parrainage' : 'Your referral link'}</h2>

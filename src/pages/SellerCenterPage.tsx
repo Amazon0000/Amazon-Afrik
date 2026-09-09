@@ -437,6 +437,14 @@ export function SellerCenterPage() {
                       </div>
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.description}</label><textarea value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="input-field" rows={3} placeholder={locale === 'fr' ? 'Description du produit...' : 'Product description...'} /></div>
                       <div className="sm:col-span-2"><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.uploadImages} *</label>
+                        <div className="mb-2 p-3 rounded-lg bg-[#ff7a00]/5 border border-[#ff7a00]/15 flex items-start gap-2">
+                          <ImagePlus className="w-4 h-4 text-[#ff7a00] shrink-0 mt-0.5" />
+                          <p className="text-xs text-[#0f172a]">
+                            {locale === 'fr'
+                              ? <><strong>Image principale :</strong> fond blanc uni obligatoire, produit centré et occupant 80-90% du cadre, format carré recommandé, min. 1000×1000px pour un zoom net. <strong>Autres photos :</strong> fond libre (contexte d'usage, angles, détails).</>
+                              : <><strong>Main image:</strong> plain white background required, product centered filling 80-90% of the frame, square format recommended, min. 1000×1000px for a sharp zoom. <strong>Other photos:</strong> free background (lifestyle context, angles, details).</>}
+                          </p>
+                        </div>
                         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
                         <div onClick={() => fileInputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); handleFileSelect(e.dataTransfer.files); }} className="border-2 border-dashed border-[#e2e8f0] rounded-xl p-6 text-center hover:border-[#ff7a00] transition-colors cursor-pointer">
                           {uploading ? (

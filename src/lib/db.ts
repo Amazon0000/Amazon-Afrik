@@ -70,6 +70,7 @@ export type Affiliate = {
   commission_rate: number; payout_provider: string | null; payout_account_identifier: string | null;
   total_earned: number; total_paid: number; reviewed_by: string | null; reviewed_at: string | null;
   rejection_reason: string | null; created_at: string;
+  social_link: string | null; photo_url: string | null;
 };
 
 export type ProductAnswer = {
@@ -878,7 +879,7 @@ function generateReferralCode(name: string): string {
   return `${base}${suffix}`;
 }
 
-export async function applyForAffiliate(opts: { userId: string; fullName: string; email: string; audienceDescription?: string }): Promise<string | null> {
+export async function applyForAffiliate(opts: { userId: string; fullName: string; email: string; audienceDescription?: string; socialLink: string; photoUrl: string }): Promise<string | null> {
   // Retry on the rare code collision — UNIQUE constraint on referral_code.
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data, error } = await supabase.from('affiliates').insert({
@@ -886,12 +887,58 @@ export async function applyForAffiliate(opts: { userId: string; fullName: string
       full_name: opts.fullName,
       email: opts.email,
       audience_description: opts.audienceDescription || null,
+      social_link: opts.socialLink,
+      photo_url: opts.photoUrl,
       referral_code: generateReferralCode(opts.fullName),
     }).select('id').single();
     if (!error && data) return data.id;
     if (error && !error.message.includes('duplicate key')) { console.error('applyForAffiliate:', error.message); return null; }
   }
   return null;
+}
+
+export async function uploadAffiliatePhoto(file: File, userId: string): Promise<string | null> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from('affiliate-photos').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+  if (error) { console.error('uploadAffiliatePhoto:', error.message); return null; }
+  const { data } = supabase.storage.from('affiliate-photos').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// Records one real click on a ?ref= link — resolved server-side (never
+// trusts a client-supplied affiliate id). Fire-and-forget: a tracking
+// failure should never block the visitor's navigation.
+export async function recordAffiliateClick(code: string, landingPage?: string): Promise<void> {
+  try {
+    await supabase.rpc('record_affiliate_click', { p_code: code, p_landing_page: landingPage || window.location.pathname });
+  } catch (e) {
+    console.warn('recordAffiliateClick failed:', e);
+  }
+}
+
+export type AffiliateFunnelStats = { clicks: number; signups: number; conversions: number; clicksByDay: { date: string; count: number }[] };
+
+// Full funnel for the affiliate's own dashboard — clicks -> signups ->
+// conversions, the real Amazon-Associates-style tracking that was missing
+// (previously only signups/conversions existed, no raw click count at all).
+export async function fetchAffiliateFunnelStats(affiliateId: string): Promise<AffiliateFunnelStats> {
+  const [{ count: clicks }, { data: clickRows }, { data: referrals }] = await Promise.all([
+    supabase.from('affiliate_clicks').select('id', { count: 'exact', head: true }).eq('affiliate_id', affiliateId),
+    supabase.from('affiliate_clicks').select('clicked_at').eq('affiliate_id', affiliateId).order('clicked_at', { ascending: false }).limit(1000),
+    supabase.from('affiliate_referrals').select('status').eq('affiliate_id', affiliateId),
+  ]);
+  const signups = referrals?.length || 0;
+  const conversions = (referrals || []).filter((r: { status: string }) => r.status === 'converted').length;
+
+  const byDay = new Map<string, number>();
+  for (const row of clickRows || []) {
+    const day = (row.clicked_at as string).slice(0, 10);
+    byDay.set(day, (byDay.get(day) || 0) + 1);
+  }
+  const clicksByDay = Array.from(byDay.entries()).map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date));
+
+  return { clicks: clicks || 0, signups, conversions, clicksByDay };
 }
 
 export async function fetchMyAffiliateAccount(userId: string): Promise<Affiliate | null> {

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { type Dict, type Locale, dictionaries } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import type { Country, Currency, Category, Product } from '@/lib/db';
+import { recordAffiliateClick } from '@/lib/db';
 
 type GeoSelection = {
   countryId: string;
@@ -125,11 +126,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Capture ?ref=CODE on first load (referral link from an affiliate) and
   // remember it for up to 30 days — attributed only once, at seller signup.
+  // Also records the real click itself (server-side resolved) — this is
+  // the top of the funnel that was previously untracked entirely; only
+  // eventual seller signups/conversions were ever counted.
   useEffect(() => {
     const urlRef = new URLSearchParams(window.location.search).get('ref');
     if (urlRef) {
       localStorage.setItem('zando-referral-code', urlRef.toUpperCase());
       localStorage.setItem('zando-referral-captured-at', Date.now().toString());
+      recordAffiliateClick(urlRef);
     }
   }, []);
   const [cart, setCart] = useState<{ productId: string; qty: number; variation?: string }[]>(() => {
