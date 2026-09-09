@@ -8,7 +8,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame, Store, BadgeCheck } from 'lucide-react';
 
 export function ProductPage() {
-  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user } = useApp();
+  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user, setPageMeta } = useApp();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [isReallySponsored, setIsReallySponsored] = useState(false);
@@ -36,6 +36,7 @@ export function ProductPage() {
       try {
         const p = await fetchProductById(params.id);
         setProduct(p);
+        if (p) setPageMeta(p.name, p.description || undefined);
         setFlashDeal(p ? await fetchProductFlashDeal(p.id) : null);
         setQuestions(p ? await fetchProductQuestions(p.id) : []);
         if (p) {

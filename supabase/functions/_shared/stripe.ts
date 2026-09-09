@@ -26,10 +26,11 @@ function toFormBody(params: Record<string, string>): string {
 
 export const stripeAdapter: PaymentProviderAdapter = {
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    const sep = (path: string) => (path.includes('?') ? '&' : '?');
     const params: Record<string, string> = {
       'mode': 'payment',
-      'success_url': `${input.returnUrl}?session_id={CHECKOUT_SESSION_ID}&ref=${input.internalReference}`,
-      'cancel_url': `${input.returnUrl}?cancelled=1&ref=${input.internalReference}`,
+      'success_url': `${input.returnUrl}${sep(input.returnUrl)}session_id={CHECKOUT_SESSION_ID}&ref=${input.internalReference}`,
+      'cancel_url': `${input.returnUrl}${sep(input.returnUrl)}cancelled=1&ref=${input.internalReference}`,
       'client_reference_id': input.internalReference,
       'line_items[0][price_data][currency]': input.currency.toLowerCase(),
       'line_items[0][price_data][product_data][name]': input.description,

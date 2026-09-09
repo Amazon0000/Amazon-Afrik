@@ -33,6 +33,7 @@ type AppState = {
   page: string;
   params: Record<string, string>;
   navigate: (page: string, params?: Record<string, string>) => void;
+  setPageMeta: (title: string, description?: string) => void;
   cart: { productId: string; qty: number; variation?: string }[];
   addToCart: (productId: string, qty?: number, variation?: string) => void;
   removeFromCart: (productId: string) => void;
@@ -96,8 +97,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('zando-user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [page, setPage] = useState('home');
-  const [params, setParams] = useState<Record<string, string>>({});
+  // Parse the current URL (?p=page&key=val...) so a real navigation, a
+  // shared link, or a browser refresh lands on the right screen instead of
+  // always resetting to home. This pairs with the pushState calls added to
+  // navigate() below — together they're what make individual pages
+  // crawlable, shareable, and back/forward-button-friendly.
+  const parseLocation = (): { page: string; params: Record<string, string> } => {
+    const sp = new URLSearchParams(window.location.search);
+    const p = sp.get('p') || 'home';
+    const parsedParams: Record<string, string> = {};
+    sp.forEach((v, k) => { if (k !== 'p') parsedParams[k] = v; });
+    return { page: p, params: parsedParams };
+  };
+  const [page, setPage] = useState(() => parseLocation().page);
+  const [params, setParams] = useState<Record<string, string>>(() => parseLocation().params);
+
+  // Keep state in sync with the browser's own back/forward navigation.
+  useEffect(() => {
+    const onPopState = () => {
+      const loc = parseLocation();
+      setPage(loc.page);
+      setParams(loc.params);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // Capture ?ref=CODE on first load (referral link from an affiliate) and
   // remember it for up to 30 days — attributed only once, at seller signup.
@@ -240,12 +264,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUserState(null);
     setPage('home');
+    setParams({});
+    window.history.pushState({ page: 'home', params: {} }, '', window.location.pathname);
   }, []);
 
-  const navigate = (p: string, params?: Record<string, string>) => {
+  const navigate = (p: string, navParams?: Record<string, string>) => {
     setPage(p);
-    setParams(params || {});
+    setParams(navParams || {});
+    const sp = new URLSearchParams();
+    if (p !== 'home') sp.set('p', p);
+    Object.entries(navParams || {}).forEach(([k, v]) => { if (v) sp.set(k, v); });
+    const qs = sp.toString();
+    const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.pushState({ page: p, params: navParams || {} }, '', url);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Baseline per-page-type title (every screen was previously stuck on the
+  // same static <title> from index.html regardless of what was shown).
+  // Pages that load specific content (a product name, a seller name) call
+  // setPageMeta() themselves once that data arrives, overriding this with
+  // something more specific and useful for SEO/sharing.
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      home: 'Zando — Marketplace Mondiale Premium',
+      catalog: 'Shop — Zando',
+      product: 'Product — Zando',
+      seller: 'Store — Zando',
+      sellers: 'All Stores — Zando',
+      cart: 'Cart — Zando',
+      checkout: 'Checkout — Zando',
+      account: 'My Account — Zando',
+      'seller-center': 'Seller Center — Zando',
+      plans: 'Seller Plans — Zando',
+      admin: 'Admin — Zando',
+      login: 'Log In — Zando',
+      signup: 'Sign Up — Zando',
+      sell: 'Sell on Zando',
+      'trust-safety': 'Trust & Safety — Zando',
+      affiliate: 'Affiliate Program — Zando',
+    };
+    document.title = titles[page] || 'Zando';
+  }, [page]);
+
+  const setPageMeta = (title: string, description?: string) => {
+    document.title = `${title} — Zando`;
+    if (description) {
+      let tag = document.querySelector('meta[name="description"]');
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('name', 'description');
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', description.slice(0, 160));
+    }
   };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -295,7 +367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       locale, setLocale, t: dictionaries[locale],
       geo, setGeo, user, setUser, logout,
-      page, params, navigate,
+      page, params, navigate, setPageMeta,
       cart, addToCart, removeFromCart, updateCartQty, clearCart, cartCount,
       wishlist, toggleWishlist,
       toasts, showToast, dismissToast,

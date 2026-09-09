@@ -101,7 +101,7 @@ export function AdsPage() {
         showToast(locale === 'fr' ? 'Erreur lors de la création de la campagne' : 'Error creating campaign', 'error');
         setSubmitting(false); return;
       }
-      const returnUrl = `${window.location.origin}${window.location.pathname}#ads-return`;
+      const returnUrl = `${window.location.origin}${window.location.pathname}?p=seller-center&tab=ads`;
       const result = await initiateAdvertisingPayment({ campaignId, provider: selectedProvider, returnUrl });
       if ('error' in result) {
         showToast(result.error, 'error');

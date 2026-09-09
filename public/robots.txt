@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Private / behind-auth areas — nothing to index, and crawling them wastes
+# crawl budget that should go to product and store pages instead.
+Disallow: /?p=checkout
+Disallow: /?p=cart
+Disallow: /?p=account
+Disallow: /?p=seller-center
+Disallow: /?p=admin
+Disallow: /?p=login
+Disallow: /?p=signup
+Disallow: /?p=onboarding
+
+# Static core pages (home, catalog, info/legal pages, sell landing).
+# Replace YOUR_DOMAIN with your real production domain.
+Sitemap: https://YOUR_DOMAIN/sitemap.xml
+
+# Live, DB-generated sitemap covering every product and store page.
+# Replace YOUR_SUPABASE_PROJECT with the real project ref after deploying
+# the `sitemap-products` Edge Function (see supabase/functions/sitemap-products).
+Sitemap: https://YOUR_SUPABASE_PROJECT.supabase.co/functions/v1/sitemap-products

@@ -31,3 +31,33 @@ verify_jwt = false
 
 [functions.ads-expire-campaigns]
 verify_jwt = false
+
+# ---- Added this audit pass: these functions existed in code but had no
+# config.toml entry, meaning Supabase would default to verify_jwt = true —
+# which silently breaks guest checkout (digital-download, notify-new-order
+# must work for buyers with no account) and every external PSP webhook
+# (Stripe/Flutterwave/PayUnit/Paddle cannot send a Supabase JWT at all).
+
+[functions.digital-download]
+verify_jwt = false
+
+[functions.notify-new-order]
+verify_jwt = false
+
+[functions.subscription-create-payment]
+verify_jwt = true
+
+[functions.subscription-webhook-stripe]
+verify_jwt = false
+
+[functions.subscription-webhook-flutterwave]
+verify_jwt = false
+
+[functions.subscription-webhook-payunit]
+verify_jwt = false
+
+[functions.subscription-webhook-paddle]
+verify_jwt = false
+
+[functions.sitemap-products]
+verify_jwt = false

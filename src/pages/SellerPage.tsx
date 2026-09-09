@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/Cards';
 import { Star, MapPin, Package, Calendar, Crown, Award, BadgeCheck } from 'lucide-react';
 
 export function SellerPage() {
-  const { t, params, locale } = useApp();
+  const { t, params, locale, setPageMeta } = useApp();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,13 +18,14 @@ export function SellerPage() {
       const s = await fetchSellerBySlug(params.id);
       if (s) {
         setSeller(s);
+        setPageMeta(s.business_name, s.description || undefined);
         const prods = await fetchProducts({ sellerId: s.id, limit: 50 });
         setProducts(prods);
       } else {
         // Try by id directly from products
         const prods = await fetchProducts({ sellerId: params.id, limit: 50 });
         setProducts(prods);
-        if (prods[0]?.sellers) setSeller(prods[0].sellers);
+        if (prods[0]?.sellers) { setSeller(prods[0].sellers); setPageMeta(prods[0].sellers.business_name); }
       }
       setLoading(false);
     })();

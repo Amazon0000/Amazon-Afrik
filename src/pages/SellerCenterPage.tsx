@@ -1024,7 +1024,7 @@ export function SellerCenterPage() {
                       disabled={changingPlan}
                       onClick={async () => {
                         setChangingPlan(true);
-                        const returnUrl = `${window.location.origin}${window.location.pathname}#subscription-return`;
+                        const returnUrl = `${window.location.origin}${window.location.pathname}?p=seller-center&tab=subscription`;
                         const result = await initiateSubscriptionPayment({ plan: upgradingPlan, provider: upgradeProvider, returnUrl });
                         setChangingPlan(false);
                         if ('error' in result) { showToast(result.error, 'error'); return; }
