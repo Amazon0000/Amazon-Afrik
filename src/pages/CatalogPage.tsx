@@ -14,6 +14,15 @@ export function CatalogPage() {
   const [priceMax, setPriceMax] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(params.category || '');
   const [showOtherCountries, setShowOtherCountries] = useState(false);
+  // "Shop by Location" here is a local browsing filter (which sellers'
+  // country to show products from) — it must NOT touch the global geo
+  // state, which drives the user's actual detected/chosen location,
+  // currency conversion, and homepage personalization. Previously this
+  // page called setGeo() directly, so picking a country to browse silently
+  // and permanently changed the user's real location. Defaults to the
+  // user's real country on first load (unchanged behavior), but never
+  // writes back to it.
+  const [browseCountryId, setBrowseCountryId] = useState(geo.countryId);
   const [minRating, setMinRating] = useState(0);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [cityFilter, setCityFilter] = useState('');
@@ -29,7 +38,7 @@ export function CatalogPage() {
       try {
         const [prods, sponsored] = await Promise.all([
           fetchProducts({
-            countryId: showOtherCountries ? undefined : geo.countryId,
+            countryId: showOtherCountries ? undefined : browseCountryId,
             categoryId: categoryFilter || undefined,
             search: params.q || undefined,
             sort: sortBy,
@@ -50,7 +59,7 @@ export function CatalogPage() {
         setLoading(false);
       }
     })();
-  }, [geo.countryId, geo.cityName, categoryFilter, sortBy, showOtherCountries, params.q, priceMin, priceMax]);
+  }, [browseCountryId, geo.cityName, categoryFilter, sortBy, showOtherCountries, params.q, priceMin, priceMax]);
 
   const filtered = useMemo(() => {
     let result = products;
@@ -196,13 +205,13 @@ export function CatalogPage() {
               <SlidersHorizontal className="w-4 h-4" /> {t.catalog.filters}
             </button>
             <div className="relative">
-              <select value={showOtherCountries ? 'all' : geo.countryId} onChange={(e) => { if (e.target.value === 'all') setShowOtherCountries(true); else { setShowOtherCountries(false); setGeo({ countryId: e.target.value }); } }} className="appearance-none pl-7 pr-7 py-1.5 text-xs rounded-lg border border-[#0f172a]/10 bg-[#f7f8fa] text-[#64748b] focus:outline-none focus:border-[#ff7a00] cursor-pointer">
+              <select value={showOtherCountries ? 'all' : browseCountryId} onChange={(e) => { if (e.target.value === 'all') setShowOtherCountries(true); else { setShowOtherCountries(false); setBrowseCountryId(e.target.value); } }} className="appearance-none pl-7 pr-7 py-1.5 text-xs rounded-lg border border-[#0f172a]/10 bg-[#f7f8fa] text-[#64748b] focus:outline-none focus:border-[#ff7a00] cursor-pointer">
                 <option value="all">{locale === 'fr' ? 'Tous les pays' : 'All countries'}</option>
                 {/* Native <select><option> can't render an <img>, only text. */}
                 {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
               </select>
               <span className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                {geo.countryId && !showOtherCountries ? <CountryFlag countryId={geo.countryId} size={14} /> : <Globe2 className="w-3.5 h-3.5 text-[#64748b]" />}
+                {browseCountryId && !showOtherCountries ? <CountryFlag countryId={browseCountryId} size={14} /> : <Globe2 className="w-3.5 h-3.5 text-[#64748b]" />}
               </span>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#64748b] pointer-events-none" />
             </div>
