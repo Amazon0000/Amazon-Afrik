@@ -131,7 +131,7 @@ export function HomePage() {
       <section className="relative w-full bg-[#eaeded] h-[220px] sm:h-[350px] md:h-[420px] lg:h-[550px] overflow-hidden select-none">
         {heroSlides.map((p, i) => (
           <div key={p.id} className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${i === heroIdx ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            <img src={p.product_images?.[0]?.image_url} alt={p.name} className="absolute inset-0 w-full h-full object-cover" />
+            <img src={p.product_images?.[0]?.image_url} alt={p.name} loading={i === 0 ? 'eager' : 'lazy'} className="absolute inset-0 w-full h-full object-cover" />
             {/* Linear overlay to white left, and fade to light gray bottom */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#eaeded] via-[#eaeded]/65 to-transparent" />
@@ -176,7 +176,7 @@ export function HomePage() {
               {categories.slice(0, 4).map((cat) => (
                 <button key={cat.id} onClick={() => goCategory(cat.id)} className="text-left group cursor-pointer focus:outline-none">
                   <div className="aspect-square bg-gray-100 rounded overflow-hidden border border-gray-200 group-hover:opacity-85 transition-opacity">
-                    <img src={products.find(p => p.category_id === cat.id)?.product_images?.[0]?.image_url || 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=300'} alt="" className="w-full h-full object-cover" />
+                    <img src={products.find(p => p.category_id === cat.id)?.product_images?.[0]?.image_url || 'https://images.pexels.com/photos/999283/pexels-photo-999283.jpeg?auto=compress&cs=tinysrgb&w=300'} alt="" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <span className="text-xs font-bold text-gray-700 mt-1 block group-hover:text-[#e06c00] truncate">{cat.name}</span>
                 </button>
@@ -198,7 +198,7 @@ export function HomePage() {
                   {locale === 'fr' ? 'Offre Spéciale' : 'Limited time deal'}
                 </span>
                 <div className="aspect-video w-full rounded overflow-hidden border border-gray-200 bg-gray-50 mb-3 cursor-pointer" onClick={() => navigate('product', { id: deals[0].id })}>
-                  <img src={deals[0].product_images?.[0]?.image_url} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                  <img src={deals[0].product_images?.[0]?.image_url} alt="" loading="lazy" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                 </div>
                 <p className="text-xs font-bold text-gray-900 line-clamp-1">{deals[0].name}</p>
                 <div className="flex items-baseline gap-2 mt-1.5">
@@ -225,7 +225,7 @@ export function HomePage() {
               <div>
                 <h3 className="text-[19px] font-black text-gray-900 leading-tight mb-4">{locale === 'fr' ? 'Boutique Vedette' : 'Featured Seller'}</h3>
                 <div className="flex items-center gap-3 mb-4">
-                  <img src={sellers[0].store_logo_url || ''} alt="" className="w-12 h-12 rounded border border-gray-200 object-cover" />
+                  <img src={sellers[0].store_logo_url || ''} alt="" loading="lazy" className="w-12 h-12 rounded border border-gray-200 object-cover" />
                   <div>
                     <h4 className="font-bold text-sm text-gray-900 flex items-center gap-1">
                       {sellers[0].business_name}
@@ -235,7 +235,7 @@ export function HomePage() {
                   </div>
                 </div>
                 <div className="aspect-video w-full rounded overflow-hidden border border-gray-200 bg-gray-50 mb-2 cursor-pointer" onClick={() => navigate('seller', { id: sellers[0].id })}>
-                  <img src={sellers[0].store_banner_url || ''} alt="" className="w-full h-full object-cover hover:opacity-90 transition-opacity" />
+                  <img src={sellers[0].store_banner_url || ''} alt="" loading="lazy" className="w-full h-full object-cover hover:opacity-90 transition-opacity" />
                 </div>
                 <p className="text-xs text-gray-500 line-clamp-2 mt-2 leading-tight">{sellers[0].description}</p>
               </div>
@@ -290,7 +290,7 @@ export function HomePage() {
                 <button key={deal.id} onClick={() => deal.products && navigate('product', { slug: deal.products.slug })} className="w-44 shrink-0 snap-start text-left">
                   <div className="bg-white rounded-lg overflow-hidden">
                     <div className="relative">
-                      <img src={deal.products?.product_images?.[0]?.image_url || ''} alt={deal.products?.name} className="w-full h-32 object-cover" />
+                      <img src={deal.products?.product_images?.[0]?.image_url || ''} alt={deal.products?.name} loading="lazy" className="w-full h-32 object-cover" />
                       <span className="absolute top-1.5 left-1.5 bg-[#ff7a00] text-[#2a1400] text-[10px] font-black px-1.5 py-0.5 rounded">-{deal.discount_percent}%</span>
                     </div>
                     <div className="p-2.5">
@@ -366,7 +366,7 @@ export function HomePage() {
                 return (
                   <div key={p.id} onClick={() => navigate('product', { id: p.id })} className="border border-gray-200 p-3 rounded hover:border-gray-300 transition-colors cursor-pointer bg-gray-50 group">
                     <div className="aspect-square rounded overflow-hidden bg-white mb-2 relative">
-                      <img src={p.product_images?.[0]?.image_url || ''} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={p.product_images?.[0]?.image_url || ''} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       {discount > 0 && <span className="absolute top-1 left-1 px-1.5 py-0.5 text-[9px] font-bold rounded-sm bg-[#cc0c39] text-white">-{discount}%</span>}
                     </div>
                     <p className="text-xs font-bold text-gray-900 truncate">{p.name}</p>

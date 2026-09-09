@@ -66,7 +66,7 @@ export function CartPage() {
             <div className="lg:col-span-2 space-y-3">
               {items.map((item) => (
                 <div key={item.productId} className="card p-4 flex items-center gap-3 sm:gap-4">
-                  <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover cursor-pointer shrink-0" onClick={() => navigate('product', { id: item.productId })} />
+                  <img src={item.product!.product_images?.[0]?.image_url || ''} alt={item.product!.name} loading="lazy" className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover cursor-pointer shrink-0" onClick={() => navigate('product', { id: item.productId })} />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-[#0f172a] cursor-pointer hover:text-[#ff7a00]" onClick={() => navigate('product', { id: item.productId })}>{item.product!.name}</h3>
                     <p className="text-xs text-[#64748b]">{item.product!.sellers?.business_name}</p>
