@@ -5,7 +5,7 @@ import type { Product, Address, Order, ReturnRequest, Message } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon, FileText, AlertOctagon } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon, FileText, AlertOctagon, ShieldAlert } from 'lucide-react';
 
 export function AccountPage() {
   const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
@@ -254,6 +254,12 @@ export function AccountPage() {
                         </div>
                         {messagingOrderId === order.id && (
                           <div className="mt-3 pt-3 border-t border-[#ff7a00]/10">
+                            <p className="text-[11px] text-[#64748b] flex items-start gap-1.5 mb-2 bg-[#f7f8fa] rounded-lg p-2">
+                              <ShieldAlert className="w-3.5 h-3.5 text-[#ff7a00] shrink-0 mt-0.5" />
+                              {locale === 'fr'
+                                ? "Pour votre sécurité, gardez vos échanges et paiements sur Zando. Ne payez jamais en dehors de la plateforme sur simple demande d'un vendeur."
+                                : 'For your safety, keep your conversations and payments on Zando. Never pay outside the platform just because a seller asks you to.'}
+                            </p>
                             <div className="max-h-64 overflow-y-auto space-y-2 mb-2 p-2 bg-[#f7f8fa] rounded-lg">
                               {conversationMessages.length === 0 ? (
                                 <p className="text-xs text-[#64748b] text-center py-4">{locale === 'fr' ? 'Démarrez la conversation avec le vendeur.' : 'Start the conversation with the seller.'}</p>
