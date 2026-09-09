@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests, getOrCreateConversation, fetchConversationMessages, sendMessage, markConversationRead, getDigitalDownloadUrl, createComplianceReport } from '@/lib/db';
+import { fetchProductById, fetchProductsByIds, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests, getOrCreateConversation, fetchConversationMessages, sendMessage, markConversationRead, getDigitalDownloadUrl, createComplianceReport } from '@/lib/db';
 import type { Product, Address, Order, ReturnRequest, Message } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { generateInvoicePdf } from '@/lib/invoice';
@@ -37,12 +37,8 @@ export function AccountPage() {
       setAddresses(addr);
       setOrders(ords);
       setReturnRequests(rets);
-      const prods: Product[] = [];
-      for (const id of wishlist) {
-        const p = await fetchProductById(id);
-        if (p) prods.push(p);
-      }
-      setWishlistProducts(prods);
+      const prods = await fetchProductsByIds(wishlist);
+      setWishlistProducts(Object.values(prods));
     })();
   }, [user, wishlist, navigate]);
 

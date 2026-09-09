@@ -667,6 +667,36 @@ export async function fetchProductById(id: string): Promise<Product | null> {
   }
 }
 
+// One query for many products by id, instead of N sequential
+// fetchProductById() round trips — used by Cart, Checkout, and Wishlist,
+// which previously awaited one product at a time in a loop.
+export async function fetchProductsByIds(ids: string[]): Promise<Record<string, Product>> {
+  const uniqueIds = Array.from(new Set(ids));
+  if (uniqueIds.length === 0) return {};
+  try {
+    const { data, error } = await supabase.from('products').select(`
+      *, product_images(*), product_variants(*), product_specifications(*),
+      reviews(*), sellers(*), categories(*), brands(*), countries(*)
+    `).in('id', uniqueIds);
+    const rows = (data || []) as Product[];
+    const found = new Map<string, Product>(rows.map((p) => [p.id, p]));
+    const result: Record<string, Product> = {};
+    for (const id of uniqueIds) {
+      const p: Product | undefined = found.get(id) || MOCK_PRODUCTS.find((m) => m.id === id);
+      if (p) result[id] = p;
+    }
+    if (error) console.error('fetchProductsByIds:', error.message);
+    return result;
+  } catch {
+    const result: Record<string, Product> = {};
+    for (const id of uniqueIds) {
+      const p = MOCK_PRODUCTS.find((m) => m.id === id);
+      if (p) result[id] = p;
+    }
+    return result;
+  }
+}
+
 export async function fetchSellers(opts?: { countryId?: string; limit?: number }): Promise<Seller[]> {
   try {
     let query = supabase.from('sellers').select('*').eq('status', 'approved');
@@ -757,6 +787,24 @@ export async function fetchProductFlashDeal(productId: string): Promise<FlashDea
     .maybeSingle();
   if (error) { console.error('fetchProductFlashDeal:', error.message); return null; }
   return data as FlashDeal | null;
+}
+
+// Batch equivalent of fetchProductFlashDeal — one query for many products.
+export async function fetchFlashDealsForProducts(productIds: string[]): Promise<Record<string, FlashDeal>> {
+  const uniqueIds = Array.from(new Set(productIds));
+  if (uniqueIds.length === 0) return {};
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('flash_deals')
+    .select('*')
+    .in('product_id', uniqueIds)
+    .eq('is_active', true)
+    .lte('starts_at', nowIso)
+    .gte('ends_at', nowIso);
+  if (error) { console.error('fetchFlashDealsForProducts:', error.message); return {}; }
+  const result: Record<string, FlashDeal> = {};
+  for (const deal of (data || []) as FlashDeal[]) result[deal.product_id] = deal;
+  return result;
 }
 
 export async function fetchSellerFlashDeals(sellerId: string): Promise<FlashDeal[]> {

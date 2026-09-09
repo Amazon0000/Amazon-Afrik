@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductFlashDeal, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry, notifyNewOrder } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductsByIds, fetchFlashDealsForProducts, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry, notifyNewOrder } from '@/lib/db';
 import type { Product, Address, SellerPaymentMethod, FlashDeal, ShippingRate } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
@@ -28,18 +28,9 @@ export function CheckoutPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const prods: Record<string, Product> = {};
-      const dealMap: Record<string, FlashDeal> = {};
-      for (const item of cart) {
-        if (!prods[item.productId]) {
-          const p = await fetchProductById(item.productId);
-          if (p) {
-            prods[item.productId] = p;
-            const deal = await fetchProductFlashDeal(p.id);
-            if (deal) dealMap[item.productId] = deal;
-          }
-        }
-      }
+      const ids = cart.map((item) => item.productId);
+      const prods = await fetchProductsByIds(ids);
+      const dealMap = await fetchFlashDealsForProducts(Object.keys(prods));
       setProducts(prods);
       setDeals(dealMap);
 

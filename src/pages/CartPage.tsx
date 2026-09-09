@@ -1,5 +1,5 @@
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchProductFlashDeal } from '@/lib/db';
+import { fetchProductsByIds, fetchFlashDealsForProducts } from '@/lib/db';
 import type { Product, FlashDeal } from '@/lib/db';
 import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, Truck, Flame } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -13,18 +13,9 @@ export function CartPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const prods: Record<string, Product> = {};
-      const dealMap: Record<string, FlashDeal> = {};
-      for (const item of cart) {
-        if (!prods[item.productId]) {
-          const p = await fetchProductById(item.productId);
-          if (p) {
-            prods[item.productId] = p;
-            const deal = await fetchProductFlashDeal(p.id);
-            if (deal) dealMap[item.productId] = deal;
-          }
-        }
-      }
+      const ids = cart.map((item) => item.productId);
+      const prods = await fetchProductsByIds(ids);
+      const dealMap = await fetchFlashDealsForProducts(Object.keys(prods));
       setProducts(prods);
       setDeals(dealMap);
       setLoading(false);
