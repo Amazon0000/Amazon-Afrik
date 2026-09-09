@@ -1698,6 +1698,59 @@ export async function toggleSellerPaymentMethod(methodId: string, isActive: bool
   return true;
 }
 
+// ============ Real vendor PSP credentials ============
+// Two-table pattern (see migration 054): public_key/merchant_id are safe
+// to read back (they're designed to be client-exposed); secret_key is
+// write-only — inserted/updated but never read back by the client, only
+// by Edge Functions via the service role.
+export type SellerPspCredential = {
+  id: string; seller_id: string; provider: 'stripe' | 'paddle' | 'payunit' | 'paystack' | 'flutterwave' | 'airwallex';
+  public_key: string | null; merchant_id: string | null; mode: 'test' | 'live';
+  is_active: boolean; has_secret: boolean; created_at: string; updated_at: string;
+};
+
+export async function fetchSellerPspCredentials(sellerId: string): Promise<SellerPspCredential[]> {
+  const { data, error } = await supabase.from('seller_psp_credentials').select('*').eq('seller_id', sellerId).order('created_at');
+  if (error) { console.error('fetchSellerPspCredentials:', error.message); return []; }
+  return data || [];
+}
+
+export async function connectSellerPsp(opts: {
+  sellerId: string;
+  provider: SellerPspCredential['provider'];
+  publicKey?: string;
+  merchantId?: string;
+  secretKey?: string;
+  mode: 'test' | 'live';
+}): Promise<boolean> {
+  const { data: cred, error } = await supabase.from('seller_psp_credentials').upsert({
+    seller_id: opts.sellerId,
+    provider: opts.provider,
+    public_key: opts.publicKey || null,
+    merchant_id: opts.merchantId || null,
+    mode: opts.mode,
+    is_active: true,
+    has_secret: !!opts.secretKey,
+  }, { onConflict: 'seller_id,provider' }).select('id').single();
+  if (error || !cred) { console.error('connectSellerPsp:', error?.message); return false; }
+
+  if (opts.secretKey) {
+    const { error: secretErr } = await supabase.from('seller_psp_secrets').upsert({
+      credential_id: cred.id,
+      seller_id: opts.sellerId,
+      secret_key: opts.secretKey,
+    }, { onConflict: 'credential_id' });
+    if (secretErr) { console.error('connectSellerPsp (secret):', secretErr.message); return false; }
+  }
+  return true;
+}
+
+export async function disconnectSellerPsp(credentialId: string): Promise<boolean> {
+  const { error } = await supabase.from('seller_psp_credentials').update({ is_active: false }).eq('id', credentialId);
+  if (error) { console.error('disconnectSellerPsp:', error.message); return false; }
+  return true;
+}
+
 export async function fetchSellerShippingRates(sellerId: string): Promise<ShippingRate[]> {
   const { data, error } = await supabase.from('seller_shipping_rates').select('*, countries(*)').eq('seller_id', sellerId).order('created_at');
   if (error) { console.error('fetchSellerShippingRates:', error.message); return []; }

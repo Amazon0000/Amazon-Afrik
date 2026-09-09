@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate, fetchReportsAgainstSeller, submitSellerReportResponse } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate, ComplianceReport } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate, fetchReportsAgainstSeller, submitSellerReportResponse, fetchSellerPspCredentials, connectSellerPsp, disconnectSellerPsp } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate, ComplianceReport, SellerPspCredential } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, MessageCircle, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle, Smartphone, Landmark, Lock } from 'lucide-react';
@@ -55,6 +55,10 @@ export function SellerCenterPage() {
   const [paymentMethods, setPaymentMethods] = useState<SellerPaymentMethod[]>([]);
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newPayment, setNewPayment] = useState({ providerName: PSP_OPTIONS.card[0], providerType: 'card', accountIdentifier: '', displayName: '' });
+  const [pspCredentials, setPspCredentials] = useState<SellerPspCredential[]>([]);
+  const [showApiPspForm, setShowApiPspForm] = useState(false);
+  const [connectingPsp, setConnectingPsp] = useState(false);
+  const [apiPspForm, setApiPspForm] = useState<{ provider: SellerPspCredential['provider']; publicKey: string; secretKey: string; merchantId: string; mode: 'test' | 'live' }>({ provider: 'stripe', publicKey: '', secretKey: '', merchantId: '', mode: 'live' });
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [newRate, setNewRate] = useState({ countryId: '', fee: '', minDays: '5', maxDays: '10' });
   const [savingRate, setSavingRate] = useState(false);
@@ -98,6 +102,7 @@ export function SellerCenterPage() {
         setSellerReports(myReports);
         const pms = await fetchSellerPaymentMethods(sellerId);
         setPaymentMethods(pms);
+        setPspCredentials(await fetchSellerPspCredentials(sellerId));
         setPlanActive(await isSellerPlanActive(sellerId));
         setShippingRates(await fetchSellerShippingRates(sellerId));
         setFlashDeals(await fetchSellerFlashDeals(sellerId));
@@ -817,8 +822,110 @@ export function SellerCenterPage() {
 
                 <div className="card p-6 bg-white">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-display text-lg font-bold text-[#0f172a]">{locale === 'fr' ? 'Vos PSP connectés' : 'Your connected PSPs'}</h2>
-                    <button onClick={() => setShowAddPayment(!showAddPayment)} className="btn-green px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"><Plus className="w-4 h-4" /> {locale === 'fr' ? 'Connecter un PSP' : 'Connect a PSP'}</button>
+                    <h2 className="font-display text-lg font-bold text-[#0f172a]">{locale === 'fr' ? 'Passerelles de paiement (clés API)' : 'Payment gateways (API keys)'}</h2>
+                    <button onClick={() => setShowApiPspForm(!showApiPspForm)} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"><Lock className="w-4 h-4" /> {locale === 'fr' ? 'Connecter' : 'Connect'}</button>
+                  </div>
+                  <p className="text-xs text-[#64748b] mb-4">
+                    {locale === 'fr'
+                      ? 'Entrez les clés fournies par votre propre compte Stripe, Paddle, PayUnit, Paystack, Flutterwave ou Airwallex. Vos clés secrètes ne sont jamais lisibles depuis l\'application une fois enregistrées — même par vous — uniquement utilisées côté serveur.'
+                      : "Enter the keys from your own Stripe, Paddle, PayUnit, Paystack, Flutterwave, or Airwallex account. Your secret keys are never readable from the app once saved — not even by you — only used server-side."}
+                  </p>
+
+                  {showApiPspForm && (
+                    <div className="p-4 rounded-xl bg-[#f7f8fa] mb-4 space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Fournisseur' : 'Provider'}</label>
+                        <select value={apiPspForm.provider} onChange={(e) => setApiPspForm({ ...apiPspForm, provider: e.target.value as typeof apiPspForm.provider })} className="input-field cursor-pointer">
+                          <option value="stripe">Stripe</option>
+                          <option value="paddle">Paddle</option>
+                          <option value="payunit">PayUnit</option>
+                          <option value="paystack">Paystack</option>
+                          <option value="flutterwave">Flutterwave</option>
+                          <option value="airwallex">Airwallex</option>
+                        </select>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">
+                            {apiPspForm.provider === 'paddle' ? (locale === 'fr' ? 'ID Vendeur' : 'Vendor ID') : apiPspForm.provider === 'payunit' ? 'API User' : apiPspForm.provider === 'airwallex' ? 'Client ID' : locale === 'fr' ? 'Clé publique' : 'Public key'}
+                          </label>
+                          <input value={apiPspForm.publicKey} onChange={(e) => setApiPspForm({ ...apiPspForm, publicKey: e.target.value })} className="input-field" placeholder={apiPspForm.provider === 'stripe' ? 'pk_live_...' : apiPspForm.provider === 'paystack' ? 'pk_live_...' : ''} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">
+                            {apiPspForm.provider === 'payunit' ? 'API Password / Key' : locale === 'fr' ? 'Clé secrète' : 'Secret key'}
+                          </label>
+                          <input type="password" value={apiPspForm.secretKey} onChange={(e) => setApiPspForm({ ...apiPspForm, secretKey: e.target.value })} className="input-field" placeholder={apiPspForm.provider === 'stripe' ? 'sk_live_...' : '••••••••'} />
+                        </div>
+                      </div>
+                      {(apiPspForm.provider === 'payunit' || apiPspForm.provider === 'airwallex') && (
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? "ID marchand / compte" : 'Merchant / account ID'}</label>
+                          <input value={apiPspForm.merchantId} onChange={(e) => setApiPspForm({ ...apiPspForm, merchantId: e.target.value })} className="input-field" />
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? 'Mode' : 'Mode'}</label>
+                        <div className="inline-flex rounded-lg border border-[#e2e8f0] overflow-hidden">
+                          <button type="button" onClick={() => setApiPspForm({ ...apiPspForm, mode: 'test' })} className={`px-3 py-1.5 text-xs font-semibold ${apiPspForm.mode === 'test' ? 'bg-[#ff7a00] text-white' : 'bg-white text-[#64748b]'}`}>Test</button>
+                          <button type="button" onClick={() => setApiPspForm({ ...apiPspForm, mode: 'live' })} className={`px-3 py-1.5 text-xs font-semibold border-l border-[#e2e8f0] ${apiPspForm.mode === 'live' ? 'bg-[#ff7a00] text-white' : 'bg-white text-[#64748b]'}`}>Live</button>
+                        </div>
+                      </div>
+                      <button
+                        disabled={connectingPsp || !apiPspForm.secretKey.trim()}
+                        onClick={async () => {
+                          const sellerId = user?.sellerId;
+                          if (!sellerId) return;
+                          setConnectingPsp(true);
+                          const ok = await connectSellerPsp({
+                            sellerId, provider: apiPspForm.provider,
+                            publicKey: apiPspForm.publicKey || undefined,
+                            merchantId: apiPspForm.merchantId || undefined,
+                            secretKey: apiPspForm.secretKey,
+                            mode: apiPspForm.mode,
+                          });
+                          setConnectingPsp(false);
+                          if (ok) {
+                            showToast(locale === 'fr' ? 'PSP connecté' : 'PSP connected');
+                            setPspCredentials(await fetchSellerPspCredentials(sellerId));
+                            setShowApiPspForm(false);
+                            setApiPspForm({ provider: 'stripe', publicKey: '', secretKey: '', merchantId: '', mode: 'live' });
+                          } else {
+                            showToast(locale === 'fr' ? 'Erreur de connexion' : 'Connection error', 'error');
+                          }
+                        }}
+                        className="btn-green px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
+                      >
+                        {connectingPsp ? <Loader2 className="w-4 h-4 animate-spin" /> : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+                      </button>
+                    </div>
+                  )}
+
+                  {pspCredentials.length === 0 ? (
+                    <p className="text-xs text-[#64748b] text-center py-4">{locale === 'fr' ? 'Aucune passerelle API connectée.' : 'No API gateway connected yet.'}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {pspCredentials.map((c) => (
+                        <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-[#e2e8f0]">
+                          <div className="w-9 h-9 rounded-lg bg-[#ff7a00]/10 flex items-center justify-center shrink-0"><Lock className="w-4 h-4 text-[#ff7a00]" /></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-[#0f172a] capitalize">{c.provider}</p>
+                            <p className="text-xs text-[#64748b]">{c.mode === 'test' ? (locale === 'fr' ? 'Mode test' : 'Test mode') : (locale === 'fr' ? 'Mode live' : 'Live mode')} • {c.has_secret ? (locale === 'fr' ? 'Clé secrète enregistrée' : 'Secret key saved') : (locale === 'fr' ? 'Clé publique seulement' : 'Public key only')}</p>
+                          </div>
+                          <button onClick={async () => {
+                            const ok = await disconnectSellerPsp(c.id);
+                            if (ok) { setPspCredentials((prev) => prev.filter((x) => x.id !== c.id)); showToast(locale === 'fr' ? 'Déconnecté' : 'Disconnected'); }
+                          }} className="p-2 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="card p-6 bg-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-display text-lg font-bold text-[#0f172a]">{locale === 'fr' ? 'Mobile Money / virement / autre' : 'Mobile Money / bank transfer / other'}</h2>
+                    <button onClick={() => setShowAddPayment(!showAddPayment)} className="btn-green px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"><Plus className="w-4 h-4" /> {locale === 'fr' ? 'Ajouter' : 'Add'}</button>
                   </div>
 
                   {showAddPayment && (
