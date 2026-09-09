@@ -2,7 +2,7 @@ import { useApp } from '@/lib/store';
 import { useState } from 'react';
 import { Logo } from './Logo';
 import { submitContactMessage } from '@/lib/db';
-import { Linkedin, Instagram, Facebook, Youtube, ArrowUp, Mail, Phone, Clock, Loader2, ExternalLink } from 'lucide-react';
+import { Linkedin, Instagram, Facebook, Youtube, ArrowUp, Mail, Clock, Loader2, ExternalLink } from 'lucide-react';
 
 type FooterLink = { label: string; page: string; params?: Record<string, string> };
 
@@ -136,10 +136,6 @@ export function Footer() {
               <div>
                 <p className="flex items-center gap-1.5 font-semibold text-white"><Mail className="w-3.5 h-3.5" /> Email</p>
                 <a href="mailto:support@liafrik.com" className="hover:text-[#ff7a00] transition-colors">support@liafrik.com</a>
-              </div>
-              <div>
-                <p className="flex items-center gap-1.5 font-semibold text-white"><Phone className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Appelez-nous' : 'Call us'}</p>
-                <p>+1 844-ZANDO</p>
               </div>
               <div>
                 <p className="flex items-center gap-1.5 font-semibold text-white"><Clock className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Horaires' : 'Business Hours'}</p>

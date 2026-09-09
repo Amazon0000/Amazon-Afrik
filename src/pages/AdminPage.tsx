@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember, fetchAdminCaseLog, adminExtendSellerPlanDays, adminExtendSellerPlanMonths, adminSetSellerPlanExpiry, setSellerVerified } from '@/lib/db';
+import { fetchSellers, fetchProducts, fetchCountries, fetchCategories, fetchAdCampaigns, fetchPaymentProviders, fetchOrders, fetchComplianceReports, updateSellerStatus, updateAdCampaignStatus, logAuditAction, fetchPlatformRevenue, fetchAdvertisingRevenue, fetchAdvertisingPlans, createAdvertisingPlan, updateAdvertisingPlan, fetchAdvertisingPlacements, fetchAllCampaignsAdmin, fetchAllAdvertisingPayments, cancelAdvertisingCampaign, refundAdvertisingCampaign, fetchAllAffiliates, updateAffiliateStatus, fetchAllSellerDocumentsAdmin, updateSellerDocument, getSellerKycDocumentUrl, fetchStaffRoles, createStaffRole, updateStaffRole, deleteStaffRole, fetchStaffMembers, addStaffMemberByEmail, removeStaffMember, fetchAdminCaseLog, adminExtendSellerPlanDays, adminExtendSellerPlanMonths, adminSetSellerPlanExpiry, setSellerVerified, fetchContactMessages, updateContactMessageStatus } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument, StaffRoleDb, StaffMember, StaffPermission, AdminCase } from '@/lib/db';
+import type { Seller, Product, Country, Category, AdCampaign, PaymentProvider, Order, ComplianceReport, PlatformRevenueSummary, AdvertisingPlan, AdvertisingPlacement, AdvertisingPayment, Affiliate, SellerDocument, StaffRoleDb, StaffMember, StaffPermission, AdminCase, ContactMessage } from '@/lib/db';
 import { StatCard, Badge } from '@/components/ui';
 import { CountryFlag } from '@/components/CountryFlag';
-import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye, BadgeCheck } from 'lucide-react';
+import { LayoutDashboard, Store, Package, ShieldCheck, Megaphone, AlertTriangle, Globe, Users, CreditCard, BarChart3, Settings, FileText, CheckCircle, XCircle, Clock, Crown, Plus, Trash2, ChevronRight, ArrowLeft, UserPlus, MessageSquare, ToggleLeft, ToggleRight, PackageCheck, ShoppingBag, TrendingUp, DollarSign, Eye, BadgeCheck, Mail, Loader2 } from 'lucide-react';
 
 function ProductApprovalCard({ product, categories, locale, onApprove, onReject }: {
   product: Product;
@@ -107,6 +107,7 @@ export function AdminPage() {
   const navItems = [
     { id: 'overview', label: t.admin.overview, icon: LayoutDashboard },
     { id: 'case-log', label: locale === 'fr' ? 'Centre de support' : 'Case Log', icon: AlertTriangle, superOnly: true },
+    { id: 'contact-inbox', label: locale === 'fr' ? 'Messages de contact' : 'Contact Inbox', icon: Mail, superOnly: true },
     { id: 'orders', label: locale === 'fr' ? 'Commandes' : 'Orders', icon: ShoppingBag },
     { id: 'sellers', label: t.admin.sellers, icon: Store },
     { id: 'products', label: t.admin.products, icon: Package },
@@ -187,6 +188,7 @@ export function AdminPage() {
               </div>
             )}
             {tab === 'case-log' && isSuperAdmin && <CaseLogTab locale={locale} navigate={navigate} />}
+            {tab === 'contact-inbox' && isSuperAdmin && <ContactInboxTab locale={locale} />}
 
             {tab === 'overview' && (
               <div className="animate-fade-up space-y-6">
@@ -1119,6 +1121,73 @@ function AdvertisingPaymentsTab() {
                 <p className="text-xs text-[#64748b]">{p.provider} • {p.currency_code} {p.amount} • {new Date(p.created_at).toLocaleString()}</p>
               </div>
               <Badge color={p.status === 'paid' ? '#ff7a00' : p.status === 'failed' ? '#ef4444' : '#64748b'}>{p.status}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContactInboxTab({ locale }: { locale: 'fr' | 'en' }) {
+  const { showToast } = useApp();
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'read' | 'resolved'>('new');
+
+  const load = async () => {
+    setLoading(true);
+    setMessages(await fetchContactMessages());
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleStatus = async (id: string, status: 'read' | 'resolved') => {
+    const ok = await updateContactMessageStatus(id, status);
+    if (ok) setMessages((prev) => prev.map((m) => m.id === id ? { ...m, status } : m));
+    else showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+  };
+
+  const filtered = statusFilter === 'all' ? messages : messages.filter((m) => m.status === statusFilter);
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 text-[#ff7a00] animate-spin" /></div>;
+
+  return (
+    <div className="animate-fade-up">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Messages de contact' : 'Contact Inbox'}</h1>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="input-field text-sm w-auto">
+          <option value="new">{locale === 'fr' ? 'Nouveaux' : 'New'}</option>
+          <option value="read">{locale === 'fr' ? 'Lus' : 'Read'}</option>
+          <option value="resolved">{locale === 'fr' ? 'Résolus' : 'Resolved'}</option>
+          <option value="all">{locale === 'fr' ? 'Tous' : 'All'}</option>
+        </select>
+      </div>
+      {filtered.length === 0 ? (
+        <div className="card p-10 text-center bg-white">
+          <Mail className="w-10 h-10 text-[#ff7a00]/30 mx-auto mb-3" />
+          <p className="text-sm text-[#64748b]">{locale === 'fr' ? 'Aucun message ici.' : 'No messages here.'}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((m) => (
+            <div key={m.id} className="card p-5 bg-white">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <p className="font-semibold text-[#0f172a]">{m.first_name} {m.last_name}</p>
+                  <a href={`mailto:${m.email}`} className="text-xs text-[#ff7a00] hover:underline">{m.email}</a>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge color={m.status === 'new' ? '#d97706' : m.status === 'resolved' ? '#22c55e' : '#64748b'}>{m.status}</Badge>
+                  <span className="text-xs text-[#64748b]">{new Date(m.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <p className="text-sm text-[#0f172a] whitespace-pre-wrap mb-3">{m.message}</p>
+              <div className="flex gap-2">
+                {m.status === 'new' && <button onClick={() => handleStatus(m.id, 'read')} className="px-3 py-1.5 rounded-lg bg-[#f7f8fa] text-[#0f172a] text-xs font-semibold">{locale === 'fr' ? 'Marquer lu' : 'Mark read'}</button>}
+                {m.status !== 'resolved' && <button onClick={() => handleStatus(m.id, 'resolved')} className="px-3 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold">{locale === 'fr' ? 'Marquer résolu' : 'Mark resolved'}</button>}
+                <a href={`mailto:${m.email}`} className="px-3 py-1.5 rounded-lg border border-[#e2e8f0] text-[#0f172a] text-xs font-semibold">{locale === 'fr' ? 'Répondre par email' : 'Reply by email'}</a>
+              </div>
             </div>
           ))}
         </div>

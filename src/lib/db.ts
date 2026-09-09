@@ -917,6 +917,26 @@ export async function fetchOrders(userId?: string): Promise<Order[]> {
   return data || [];
 }
 
+// Real order tracking, by tracking ID — used by DeliveryPage. Logged-in
+// buyers can look up any of their own orders (normal RLS, no email needed).
+// Guests must additionally provide the email used at checkout — proof of
+// ownership, since tracking_id alone is guessable/shareable (see the
+// get_guest_order_by_tracking RPC, migration 033/051).
+export async function fetchOrderByTracking(trackingId: string, guestEmail?: string): Promise<{ order: Order; items: OrderItem[] } | null> {
+  const { data: authData } = await supabase.auth.getUser();
+  if (authData?.user) {
+    const { data: order } = await supabase.from('orders').select('*, order_items(*)').eq('tracking_id', trackingId).eq('user_id', authData.user.id).maybeSingle();
+    if (order) return { order, items: (order as unknown as { order_items: OrderItem[] }).order_items || [] };
+    // Fall through to guest lookup below in case a logged-in user is
+    // tracking an order they placed as a guest before creating an account.
+  }
+  if (!guestEmail) return null;
+  const { data: orderRows, error } = await supabase.rpc('get_guest_order_by_tracking', { p_tracking_id: trackingId, p_email: guestEmail });
+  if (error || !orderRows || orderRows.length === 0) return null;
+  const { data: items } = await supabase.rpc('get_guest_order_items_by_tracking', { p_tracking_id: trackingId, p_email: guestEmail });
+  return { order: orderRows[0] as Order, items: (items || []) as OrderItem[] };
+}
+
 // Orders placed against a seller's own products — distinct from fetchOrders(userId),
 // which returns orders the person placed as a buyer.
 export async function fetchSellerOrders(sellerId: string): Promise<Order[]> {
@@ -1081,6 +1101,24 @@ export async function submitContactMessage(opts: { firstName: string; lastName: 
     message: opts.message,
   });
   if (error) { console.error('submitContactMessage:', error.message); return false; }
+  return true;
+}
+
+export type ContactMessage = {
+  id: string; first_name: string; last_name: string; email: string;
+  message: string; status: 'new' | 'read' | 'resolved'; created_at: string;
+};
+
+// Admin-only — RLS restricts SELECT to super_admins (see migration 022/051).
+export async function fetchContactMessages(): Promise<ContactMessage[]> {
+  const { data, error } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('fetchContactMessages:', error.message); return []; }
+  return data || [];
+}
+
+export async function updateContactMessageStatus(id: string, status: 'read' | 'resolved'): Promise<boolean> {
+  const { error } = await supabase.from('contact_messages').update({ status }).eq('id', id);
+  if (error) { console.error('updateContactMessageStatus:', error.message); return false; }
   return true;
 }
 
