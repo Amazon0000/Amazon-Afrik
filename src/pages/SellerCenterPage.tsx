@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate } from '@/lib/db';
-import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate, fetchReportsAgainstSeller, submitSellerReportResponse } from '@/lib/db';
+import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate, ComplianceReport } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
 import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, MessageCircle, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle, Smartphone, Landmark, Lock } from 'lucide-react';
@@ -38,6 +38,9 @@ export function SellerCenterPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
+  const [sellerReports, setSellerReports] = useState<ComplianceReport[]>([]);
+  const [respondingReportId, setRespondingReportId] = useState<string | null>(null);
+  const [reportResponseText, setReportResponseText] = useState('');
   const [respondingReturnId, setRespondingReturnId] = useState<string | null>(null);
   const [ads, setAds] = useState<AdCampaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,16 +84,18 @@ export function SellerCenterPage() {
       if (!user?.sellerId) { setLoading(false); return; }
       try {
         const sellerId = user.sellerId;
-        const [prods, ords, adCamp, rets] = await Promise.all([
+        const [prods, ords, adCamp, rets, myReports] = await Promise.all([
           fetchProducts({ sellerId, limit: 50, approvalStatus: 'all' }),
           fetchSellerOrders(sellerId),
           fetchSellerCampaignsDetailed(sellerId),
           fetchSellerReturnRequests(sellerId),
+          fetchReportsAgainstSeller(),
         ]);
         setProducts(prods);
         setOrders(ords.slice(0, 10));
         setAds(adCamp);
         setReturns(rets);
+        setSellerReports(myReports);
         const pms = await fetchSellerPaymentMethods(sellerId);
         setPaymentMethods(pms);
         setPlanActive(await isSellerPlanActive(sellerId));
@@ -1179,6 +1184,51 @@ export function SellerCenterPage() {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {sellerReports.length > 0 && (
+                  <div className="mt-8">
+                    <h2 className="font-display text-lg font-bold text-[#0f172a] mb-1 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-500" /> {locale === 'fr' ? 'Signalements Zando concernant vos commandes' : 'Zando reports about your orders'}</h2>
+                    <p className="text-xs text-[#64748b] mb-4">{locale === 'fr' ? "Un acheteur a signalé un problème à Zando. Répondez avec vos preuves (suivi, photos, etc.) — votre réponse est examinée par l'équipe Zando." : "A buyer reported a problem to Zando. Respond with your evidence (tracking, photos, etc.) — your response is reviewed by the Zando team."}</p>
+                    <div className="space-y-3">
+                      {sellerReports.map((r) => (
+                        <div key={r.id} className="card p-5 bg-white border-l-4 border-red-400">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-semibold text-[#0f172a] text-sm">{locale === 'fr' ? 'Commande' : 'Order'} {r.order_id?.slice(0, 8).toUpperCase()}</p>
+                            <Badge color={r.status === 'open' ? '#ef4444' : r.status === 'under_review' ? '#ff7a00' : r.status === 'resolved' ? '#22c55e' : '#64748b'}>{r.status.replace(/_/g, ' ')}</Badge>
+                          </div>
+                          {r.description && <p className="text-sm text-[#0f172a] mb-2">{r.description}</p>}
+                          {r.seller_response ? (
+                            <p className="text-xs text-[#64748b] bg-[#f7f8fa] rounded-lg p-2">{locale === 'fr' ? 'Votre réponse' : 'Your response'}: {r.seller_response}</p>
+                          ) : respondingReportId === r.id ? (
+                            <div className="space-y-2">
+                              <textarea value={reportResponseText} onChange={(e) => setReportResponseText(e.target.value)} placeholder={locale === 'fr' ? 'Votre réponse (preuves, numéro de suivi...)' : 'Your response (evidence, tracking number...)'} className="input-field text-sm w-full" rows={2} />
+                              <button onClick={async () => {
+                                if (!reportResponseText.trim()) return;
+                                const ok = await submitSellerReportResponse(r.id, reportResponseText);
+                                if (ok) {
+                                  showToast(locale === 'fr' ? 'Réponse envoyée' : 'Response sent');
+                                  setSellerReports((prev) => prev.map((x) => x.id === r.id ? { ...x, seller_response: reportResponseText } : x));
+                                  setRespondingReportId(null);
+                                  setReportResponseText('');
+                                } else {
+                                  showToast(locale === 'fr' ? 'Erreur' : 'Error', 'error');
+                                }
+                              }} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Envoyer la réponse' : 'Send response'}</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setRespondingReportId(r.id)} className="btn-gold px-4 py-2 rounded-lg text-xs font-semibold">{locale === 'fr' ? 'Répondre' : 'Respond'}</button>
+                          )}
+                          {r.resolution && (
+                            <div className="mt-2 p-2 rounded-lg bg-green-50 border border-green-200">
+                              <p className="text-[10px] font-semibold text-green-700 uppercase">{locale === 'fr' ? 'Décision Zando' : 'Zando decision'}</p>
+                              <p className="text-xs text-[#0f172a] mt-0.5">{r.resolution}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

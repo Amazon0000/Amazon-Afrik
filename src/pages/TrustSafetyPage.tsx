@@ -18,7 +18,7 @@ import {
 type Tab = 'overview' | 'verification' | 'documents' | 'reports' | 'cases' | 'health' | 'audit';
 
 export function TrustSafetyPage() {
-  const { locale, user, navigate } = useApp();
+  const { locale, user, navigate, showToast } = useApp();
   const [tab, setTab] = useState<Tab>('overview');
   const [sellers, setSellers] = useState<ComplianceSeller[]>([]);
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -124,8 +124,16 @@ export function TrustSafetyPage() {
     setDocViewer(null);
   };
 
+  const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({});
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+
   const handleReportAction = async (reportId: string, status: string) => {
-    const ok = await updateComplianceReport(reportId, status);
+    const resolution = resolutionNotes[reportId];
+    if ((status === 'resolved' || status === 'closed') && !resolution?.trim()) {
+      showToast(locale === 'fr' ? 'Ajoutez une note de résolution avant de fermer/résoudre' : 'Add a resolution note before resolving/closing', 'error');
+      return;
+    }
+    const ok = await updateComplianceReport(reportId, status, undefined, resolution, user?.id || null);
     if (ok) {
       await logAuditAction({
         actorId: user?.id || null,
@@ -133,6 +141,7 @@ export function TrustSafetyPage() {
         action: `report.${status}`,
         targetType: 'compliance_report',
         targetId: reportId,
+        reason: resolution || undefined,
       });
       const r = await fetchComplianceReports();
       setReports(r);
@@ -547,12 +556,37 @@ export function TrustSafetyPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-semibold text-[#0f172a] capitalize">{r.report_type}</span>
                               <Badge color={r.status === 'open' ? '#ef4444' : r.status === 'under_review' ? '#ff7a00' : r.status === 'resolved' ? '#ff7a00' : '#64748b'}>{r.status.replace(/_/g, ' ')}</Badge>
+                              {r.order_id && <span className="text-[10px] font-mono text-[#64748b] bg-[#f7f8fa] px-2 py-0.5 rounded">{locale === 'fr' ? 'Commande' : 'Order'}: {r.order_id.slice(0, 8)}</span>}
                             </div>
                             <p className="text-xs text-[#64748b] mt-1">{r.target_type} • {r.target_name || r.target_id?.slice(0, 8)}</p>
                             {r.description && <p className="text-sm text-[#0f172a] mt-2">{r.description}</p>}
                             <p className="text-xs text-[#64748b] mt-1">{r.reporter_name || 'Anonymous'} • {new Date(r.created_at).toLocaleDateString()}</p>
+                            {r.seller_response && (
+                              <div className="mt-2 p-2 rounded-lg bg-[#ff7a00]/5 border border-[#ff7a00]/15">
+                                <p className="text-[10px] font-semibold text-[#ff7a00] uppercase">{locale === 'fr' ? 'Réponse du vendeur' : "Seller's response"}</p>
+                                <p className="text-xs text-[#0f172a] mt-0.5">{r.seller_response}</p>
+                              </div>
+                            )}
+                            {r.resolution && (
+                              <div className="mt-2 p-2 rounded-lg bg-green-50 border border-green-200">
+                                <p className="text-[10px] font-semibold text-green-700 uppercase">{locale === 'fr' ? 'Résolution' : 'Resolution'}</p>
+                                <p className="text-xs text-[#0f172a] mt-0.5">{r.resolution}</p>
+                              </div>
+                            )}
+                            {(r.status === 'open' || r.status === 'under_review') && expandedReportId === r.id && (
+                              <textarea
+                                value={resolutionNotes[r.id] || ''}
+                                onChange={(e) => setResolutionNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                                placeholder={locale === 'fr' ? 'Note de résolution (requise pour résoudre/fermer)...' : 'Resolution note (required to resolve/close)...'}
+                                className="input-field text-xs w-full mt-2"
+                                rows={2}
+                              />
+                            )}
                           </div>
-                          <div className="flex gap-2 shrink-0">
+                          <div className="flex flex-col gap-2 shrink-0">
+                            {(r.status === 'open' || r.status === 'under_review') && (
+                              <button onClick={() => setExpandedReportId(expandedReportId === r.id ? null : r.id)} className="px-3 py-2 rounded-lg text-xs font-medium border border-[#e2e8f0] text-[#64748b]">{expandedReportId === r.id ? (locale === 'fr' ? 'Masquer' : 'Hide') : (locale === 'fr' ? 'Note' : 'Note')}</button>
+                            )}
                             {r.status === 'open' && <button onClick={() => handleReportAction(r.id, 'under_review')} className="px-3 py-2 rounded-lg text-xs font-medium bg-[#ff7a00]/10 text-[#ff7a00] hover:bg-[#ff7a00]/20">{locale === 'fr' ? 'Examiner' : 'Review'}</button>}
                             {(r.status === 'open' || r.status === 'under_review') && <button onClick={() => handleReportAction(r.id, 'resolved')} className="px-3 py-2 rounded-lg text-xs font-medium bg-[#ff7a00]/15 text-[#e06c00] hover:bg-[#ff7a00]/25">{locale === 'fr' ? 'Résoudre' : 'Resolve'}</button>}
                             {r.status !== 'closed' && <button onClick={() => handleReportAction(r.id, 'closed')} className="px-3 py-2 rounded-lg text-xs font-medium border border-[#e2e8f0] text-[#64748b]">{locale === 'fr' ? 'Fermer' : 'Close'}</button>}

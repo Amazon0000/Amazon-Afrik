@@ -193,6 +193,9 @@ export type ComplianceReport = {
   report_type: string; target_type: string; target_id: string | null;
   target_name: string | null; reason: string | null; description: string | null;
   status: string; case_id: string | null; created_at: string;
+  order_id: string | null; evidence_urls: string[] | null;
+  seller_response: string | null; seller_responded_at: string | null;
+  resolution: string | null; resolved_at: string | null; resolved_by: string | null;
 };
 
 export type ComplianceCase = {
@@ -1517,11 +1520,19 @@ export async function fetchAllSellerDocumentsAdmin(): Promise<(SellerDocument & 
 export async function updateComplianceReport(
   reportId: string,
   status: string,
-  caseId?: string | null
+  caseId?: string | null,
+  resolution?: string,
+  resolvedBy?: string | null
 ): Promise<boolean> {
+  const update: Record<string, unknown> = { status, case_id: caseId ?? null };
+  if ((status === 'resolved' || status === 'closed') && resolution) {
+    update.resolution = resolution;
+    update.resolved_at = new Date().toISOString();
+    update.resolved_by = resolvedBy ?? null;
+  }
   const { error } = await supabase
     .from('compliance_reports')
-    .update({ status, case_id: caseId ?? null })
+    .update(update)
     .eq('id', reportId);
   if (error) { console.error('updateComplianceReport:', error.message); return false; }
   return true;
@@ -1586,6 +1597,23 @@ export async function fetchMyComplianceReports(): Promise<MyComplianceReport[]> 
   const { data, error } = await supabase.from('compliance_reports').select('*').order('created_at', { ascending: false });
   if (error) { console.error('fetchMyComplianceReports:', error.message); return []; }
   return data || [];
+}
+
+// Seller-facing — reports filed against orders belonging to this seller
+// (RLS: seller_read_reports_against_them, migration 053).
+export async function fetchReportsAgainstSeller(): Promise<ComplianceReport[]> {
+  const { data, error } = await supabase.from('compliance_reports').select('*').eq('target_type', 'order').order('created_at', { ascending: false });
+  if (error) { console.error('fetchReportsAgainstSeller:', error.message); return []; }
+  return data || [];
+}
+
+export async function submitSellerReportResponse(reportId: string, response: string): Promise<boolean> {
+  const { error } = await supabase.from('compliance_reports').update({
+    seller_response: response,
+    seller_responded_at: new Date().toISOString(),
+  }).eq('id', reportId);
+  if (error) { console.error('submitSellerReportResponse:', error.message); return false; }
+  return true;
 }
 
 export async function addSellerPaymentMethod(opts: {
