@@ -1336,6 +1336,16 @@ export async function answerProductQuestion(opts: { questionId: string; userId: 
   return data.id;
 }
 
+// Sellers can delete any of their own products at any time, regardless of
+// approval status (pending, approved, or rejected) — the RLS policy
+// already allowed this (seller_delete_own_products, migration 012), but
+// no frontend function ever called it.
+export async function deleteProduct(productId: string): Promise<boolean> {
+  const { error } = await supabase.from('products').delete().eq('id', productId);
+  if (error) { console.error('deleteProduct:', error.message); return false; }
+  return true;
+}
+
 export async function deleteProductQuestion(questionId: string): Promise<boolean> {
   const { error } = await supabase.from('product_questions').delete().eq('id', questionId);
   if (error) { console.error('deleteProductQuestion:', error.message); return false; }
@@ -1780,9 +1790,16 @@ export async function fetchShippingRatesForCountry(countryId: string): Promise<S
   return (data || []) as ShippingRate[];
 }
 
-export async function updateSellerStatus(sellerId: string, status: string): Promise<boolean> {
-  const { error } = await supabase.from('sellers').update({ status }).eq('id', sellerId);
+export async function updateSellerStatus(sellerId: string, status: string, reason?: string): Promise<boolean> {
+  const update: Record<string, unknown> = { status, status_changed_at: new Date().toISOString() };
+  if (status === 'suspended') update.suspension_reason = reason || null;
+  if (status === 'rejected') update.rejection_reason = reason || null;
+  if (status === 'approved') { update.suspension_reason = null; update.rejection_reason = null; }
+  const { error } = await supabase.from('sellers').update(update).eq('id', sellerId);
   if (error) { console.error('updateSellerStatus:', error.message); return false; }
+  // Fire-and-forget — the status change already succeeded; a notification
+  // failure should never roll that back or block the admin's action.
+  supabase.functions.invoke('notify-seller-status-change', { body: { sellerId, status, reason } }).catch((e: unknown) => console.warn('notify-seller-status-change failed:', e));
   return true;
 }
 

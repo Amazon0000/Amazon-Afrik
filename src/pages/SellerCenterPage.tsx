@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate, fetchReportsAgainstSeller, submitSellerReportResponse, fetchSellerPspCredentials, connectSellerPsp, disconnectSellerPsp } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate, fetchReportsAgainstSeller, submitSellerReportResponse, fetchSellerPspCredentials, connectSellerPsp, disconnectSellerPsp, deleteProduct } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate, ComplianceReport, SellerPspCredential } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
@@ -34,6 +34,8 @@ export function SellerCenterPage() {
   const { t, locale, user, navigate, showToast, categories, countries, params } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -515,6 +517,7 @@ export function SellerCenterPage() {
                         ) : (
                           <button onClick={() => setFlashDealFor(flashDealFor === p.id ? null : p.id)} className="px-3 py-1.5 rounded-lg bg-[#ff7a00]/15 text-[#e06c00] text-xs font-semibold shrink-0 flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Vente flash' : 'Flash deal'}</button>
                         )}
+                        <button onClick={() => setConfirmDeleteId(p.id)} title={locale === 'fr' ? 'Supprimer le produit' : 'Delete product'} className="p-2 rounded-lg hover:bg-red-50 shrink-0"><Trash2 className="w-4 h-4 text-red-500" /></button>
                       </div>
                       {flashDealFor === p.id && (
                         <div className="mt-3 p-3 rounded-xl bg-[#f7f8fa] grid sm:grid-cols-4 gap-3 items-end">
@@ -1375,6 +1378,44 @@ export function SellerCenterPage() {
           </div>
         </div>
       </div>
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmDeleteId(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center animate-fade-up" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-7 h-7 text-red-500" />
+            </div>
+            <h3 className="font-display text-lg font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Supprimer ce produit ?' : 'Delete this product?'}</h3>
+            <p className="text-sm text-[#64748b] mb-6">
+              {locale === 'fr'
+                ? "Cette action est définitive. Le produit ne sera plus visible ni achetable. Les commandes déjà passées ne sont pas affectées."
+                : 'This is permanent. The product will no longer be visible or purchasable. Existing orders are not affected.'}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-[#e2e8f0] text-[#64748b]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+              <button
+                disabled={deletingProductId === confirmDeleteId}
+                onClick={async () => {
+                  const id = confirmDeleteId;
+                  setDeletingProductId(id);
+                  const ok = await deleteProduct(id);
+                  setDeletingProductId(null);
+                  setConfirmDeleteId(null);
+                  if (ok) {
+                    setProducts((prev) => prev.filter((x) => x.id !== id));
+                    showToast(locale === 'fr' ? 'Produit supprimé' : 'Product deleted');
+                  } else {
+                    showToast(locale === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting product', 'error');
+                  }
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-full text-sm font-semibold disabled:opacity-50"
+              >
+                {deletingProductId === confirmDeleteId ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (locale === 'fr' ? 'Supprimer' : 'Delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowUpgradeModal(false)}>

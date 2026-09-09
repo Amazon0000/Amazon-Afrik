@@ -69,18 +69,9 @@ export function OnboardingPage() {
     if (step === 3) return form.businessName && form.registrationNumber;
     if (step === 4) return form.idFront && form.idBack && form.selfie;
     if (step === 5) return form.storeName && form.storeSlug;
-    if (step === 6) return form.selectedPayments.length > 0 && (form.bankName || form.mobileMoney || form.selectedPayments.includes('mobile_money'));
+    if (step === 6) return true;
     if (step === 7) return form.warehouseAddress;
     return true;
-  };
-
-  const togglePayment = (id: string) => {
-    setForm((prev) => ({
-      ...prev,
-      selectedPayments: prev.selectedPayments.includes(id)
-        ? prev.selectedPayments.filter((p) => p !== id)
-        : [...prev.selectedPayments, id],
-    }));
   };
 
   const submit = async () => {
@@ -210,30 +201,12 @@ export function OnboardingPage() {
         }).eq('id', sellerId);
       }
 
-      // Real display names and account identifiers — not raw checkbox ids
-      // with a null identifier, which would leave a buyer with a "mobile_money"
-      // payment option and no actual number/account to pay into.
-      await supabase.from('seller_payment_methods').insert(
-        form.selectedPayments.map((pid) => {
-          const meta = PAYMENT_METHODS.find((pm) => pm.id === pid);
-          const accountIdentifier =
-            pid === 'mobile_money' ? (form.mobileMoney || null) :
-            pid === 'bank_transfer' ? (form.iban || null) :
-            null; // Gateways like Stripe/Paddle/PayPal/Flutterwave need a real
-                  // OAuth-style connection to get an account identifier, which
-                  // isn't built yet — left null rather than fabricated. The
-                  // seller can fill it in for real from Seller Center > Payment methods.
-          return {
-            seller_id: sellerId,
-            provider_name: meta?.label || pid,
-            provider_type: pid === 'bank_transfer' ? 'bank' : pid === 'mobile_money' ? 'mobile_money' : (pid === 'airwallex' || pid === 'alipay' || pid === 'wechatpay') ? 'digital_wallet' : 'card',
-            account_identifier: accountIdentifier,
-            display_name: meta?.label || pid,
-            is_active: true,
-            is_verified: false,
-          };
-        })
-      );
+      // Payment/PSP setup no longer happens at signup — collecting bank
+      // details or a placeholder mobile money number here added friction
+      // without real value, since it wasn't a real PSP connection anyway
+      // (no OAuth/API-key flow existed at signup time). Sellers now
+      // connect their real PSP credentials from Seller Center > Payment
+      // methods once they're in their dashboard.
 
       setUser({
         id: userId,
@@ -241,7 +214,7 @@ export function OnboardingPage() {
         fullName: form.storeName || form.businessName,
         role: 'seller',
         sellerId,
-        sellerPlan: form.plan as 'starter' | 'premium' | 'enterprise',
+        sellerPlan: form.plan as 'free' | 'starter' | 'premium' | 'enterprise',
         sellerStatus: 'pending',
       });
 
@@ -488,48 +461,33 @@ export function OnboardingPage() {
           {step === 6 && (
             <div>
               <h2 className="font-display text-xl font-bold text-[#0f172a] mb-1">
-                {locale === 'fr' ? 'Configurez votre moyen de paiement' : 'Configure your payment method'}
+                {locale === 'fr' ? 'Comment vous serez payé' : 'How you\u2019ll get paid'}
               </h2>
               <p className="text-sm text-[#64748b] mb-5">
                 {locale === 'fr'
-                  ? 'Configurez comment vous recevez l\'argent de vos ventes. Les acheteurs paient directement chez vous.'
-                  : 'Configure how you receive money from sales. Buyers pay directly to you.'}
+                  ? "Pas besoin de vos coordonnées bancaires maintenant. Une fois votre compte créé, connectez votre propre PSP (Stripe, Paddle, PayUnit, Paystack, Flutterwave, Mobile Money...) directement depuis votre Espace Vendeur — vos clients vous paient alors directement, sans intermédiaire ni commission Zando."
+                  : "No need for your bank details right now. Once your account is created, connect your own PSP (Stripe, Paddle, PayUnit, Paystack, Flutterwave, Mobile Money...) directly from your Seller Center — your customers then pay you directly, with no middleman and no Zando commission."}
               </p>
               <div className="space-y-3">
-                {PAYMENT_METHODS.map((pm) => {
-                  const selected = form.selectedPayments.includes(pm.id);
-                  return (
-                    <div key={pm.id}>
-                      <button onClick={() => togglePayment(pm.id)}
-                        className={'w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ' + (selected ? 'border-[#ff7a00] bg-[#ff7a00]/5' : 'border-[#0f172a]/10 hover:border-[#ff7a00]/50')}>
-                        <div className={'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' + (selected ? 'bg-[#ff7a00]/15' : 'bg-[#0f172a]/5')}>
-                          <pm.icon className={'w-5 h-5 ' + (selected ? 'text-[#ff7a00]' : 'text-[#64748b]')} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-[#0f172a]">{pm.label}</p>
-                          <p className="text-xs text-[#64748b]">{pm.desc}</p>
-                        </div>
-                        <div className={'w-5 h-5 rounded-full border-2 flex items-center justify-center ' + (selected ? 'border-[#ff7a00] bg-[#ff7a00]' : 'border-[#0f172a]/20')}>
-                          {selected && <Check className="w-3 h-3 text-[#0f172a]" />}
-                        </div>
-                      </button>
+                {PAYMENT_METHODS.map((pm) => (
+                  <div key={pm.id} className="w-full p-4 rounded-xl border-2 border-[#0f172a]/10 flex items-center gap-3 opacity-80">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-[#0f172a]/5">
+                      <pm.icon className="w-5 h-5 text-[#64748b]" />
                     </div>
-                  );
-                })}
-              </div>
-              <div className="mt-5 space-y-4">
-                <div className="p-4 rounded-xl bg-[#ff7a00]/5 border border-[#ff7a00]/20">
-                  <p className="text-xs font-semibold text-[#0f172a] mb-3 flex items-center gap-2">
-                    <Banknote className="w-4 h-4 text-[#ff7a00]" />
-                    {locale === 'fr' ? 'Coordonnées bancaires (pour recevoir vos paiements)' : 'Bank details (to receive your payments)'}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Input label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName} onChange={(v) => setForm({ ...form, bankName: v })} placeholder="Ecobank" />
-                    <Input label="IBAN" value={form.iban} onChange={(v) => setForm({ ...form, iban: v })} placeholder="CI..." />
-                    <Input label="SWIFT" value={form.swift} onChange={(v) => setForm({ ...form, swift: v })} placeholder="ECOCCIAB" />
-                    <Input label={locale === 'fr' ? 'Numéro Mobile Money' : 'Mobile Money number'} value={form.mobileMoney} onChange={(v) => setForm({ ...form, mobileMoney: v })} placeholder="+225 07 00 00 00" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[#0f172a]">{pm.label}</p>
+                      <p className="text-xs text-[#64748b]">{pm.desc}</p>
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+              <div className="mt-5 p-4 rounded-xl bg-[#ff7a00]/5 border border-[#ff7a00]/20 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-[#ff7a00] shrink-0 mt-0.5" />
+                <p className="text-xs text-[#0f172a]">
+                  {locale === 'fr'
+                    ? "Vos clés API restent privées : une fois enregistrées depuis l'Espace Vendeur, même vous ne pourrez plus les relire — elles ne sont utilisées que côté serveur."
+                    : "Your API keys stay private: once saved from Seller Center, not even you can read them back — they're only ever used server-side."}
+                </p>
               </div>
             </div>
           )}
@@ -576,8 +534,7 @@ export function OnboardingPage() {
                 <SummaryRow label={t.onboarding.country} value={countries.find((c) => c.id === form.countryId)?.name || '—'} />
                 <SummaryRow label={t.onboarding.companyName} value={form.businessName} />
                 <SummaryRow label={locale === 'fr' ? 'Boutique' : 'Store'} value={form.storeName} />
-                <SummaryRow label={locale === 'fr' ? 'Paiements' : 'Payments'} value={form.selectedPayments.map((id) => PAYMENT_METHODS.find((pm) => pm.id === id)?.label || id).join(', ') || '—'} />
-                <SummaryRow label={locale === 'fr' ? 'Banque' : 'Bank'} value={form.bankName || form.mobileMoney || '—'} />
+                <SummaryRow label={locale === 'fr' ? 'Paiement' : 'Payment'} value={locale === 'fr' ? 'À connecter après inscription' : 'To connect after signup'} />
               </div>
               <div className="mt-5 p-4 rounded-xl bg-[#ff7a00]/10 flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-[#ff7a00] shrink-0 mt-0.5" />

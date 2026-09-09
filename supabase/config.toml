@@ -61,3 +61,6 @@ verify_jwt = false
 
 [functions.sitemap-products]
 verify_jwt = false
+
+[functions.notify-seller-status-change]
+verify_jwt = true

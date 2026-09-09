@@ -58,6 +58,19 @@ export function AdminPage() {
   const [complianceReports, setComplianceReports] = useState<ComplianceReport[]>([]);
   const [sellerFilter, setSellerFilter] = useState<string>('all');
   const [extendingSellerId, setExtendingSellerId] = useState<string | null>(null);
+  const [statusChangeTarget, setStatusChangeTarget] = useState<{ seller: Seller; status: 'rejected' | 'suspended' } | null>(null);
+  const [statusChangeReason, setStatusChangeReason] = useState('');
+
+  const confirmStatusChange = async () => {
+    if (!statusChangeTarget) return;
+    const { seller: s, status } = statusChangeTarget;
+    await updateSellerStatus(s.id, status, statusChangeReason.trim() || undefined);
+    await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: `seller.${status}`, targetType: 'seller', targetId: s.id, targetName: s.business_name, reason: statusChangeReason.trim() || undefined });
+    setSellers((prev) => prev.map((x) => x.id === s.id ? { ...x, status } : x));
+    showToast(status === 'suspended' ? (locale === 'fr' ? 'Vendeur suspendu et notifié' : 'Seller suspended and notified') : (locale === 'fr' ? 'Vendeur rejeté et notifié' : 'Seller rejected and notified'));
+    setStatusChangeTarget(null);
+    setStatusChangeReason('');
+  };
   const [customExpiryDate, setCustomExpiryDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [superAdmins, setSuperAdmins] = useState<{ id: string; email: string; full_name: string | null; is_active: boolean }[]>([]);
@@ -310,11 +323,11 @@ export function AdminPage() {
                       {s.status === 'pending' && (
                         <div className="flex gap-1">
                           <button onClick={async () => { await updateSellerStatus(s.id, 'approved'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuv\u00e9' : 'Seller approved'); }} className="p-2 rounded-lg bg-[#ff7a00]/15 hover:bg-[#ff7a00]/25"><CheckCircle className="w-4 h-4 text-[#e06c00]" /></button>
-                          <button onClick={async () => { await updateSellerStatus(s.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.reject', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'rejected' as const } : x)); showToast(locale === 'fr' ? 'Vendeur rejet\u00e9' : 'Seller rejected'); }} className="p-2 rounded-lg bg-red-100 hover:bg-red-200"><XCircle className="w-4 h-4 text-red-700" /></button>
+                          <button onClick={() => setStatusChangeTarget({ seller: s, status: 'rejected' })} className="p-2 rounded-lg bg-red-100 hover:bg-red-200"><XCircle className="w-4 h-4 text-red-700" /></button>
                         </div>
                       )}
                       {s.status === 'approved' && (
-                        <button onClick={async () => { await updateSellerStatus(s.id, 'suspended'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.suspend', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'suspended' as const } : x)); showToast(locale === 'fr' ? 'Vendeur suspendu' : 'Seller suspended'); }} className="p-2 rounded-lg hover:bg-red-50"><AlertTriangle className="w-4 h-4 text-red-500" /></button>
+                        <button onClick={() => setStatusChangeTarget({ seller: s, status: 'suspended' })} className="p-2 rounded-lg hover:bg-red-50"><AlertTriangle className="w-4 h-4 text-red-500" /></button>
                       )}
                       {isSuperAdmin && (
                         <button onClick={() => { setExtendingSellerId(extendingSellerId === s.id ? null : s.id); setCustomExpiryDate(s.plan_expires_at ? s.plan_expires_at.slice(0, 10) : ''); }} className="p-2 rounded-lg hover:bg-[#f7f8fa]" title={locale === 'fr' ? 'Gérer l\u2019abonnement' : 'Manage subscription'}>
@@ -453,7 +466,7 @@ export function AdminPage() {
                       <div className="flex-1"><p className="font-semibold text-[#0f172a]">{s.business_name}</p><p className="text-xs text-[#64748b]">{locale === 'fr' ? 'En attente de vérification' : 'Awaiting verification'}</p></div>
                       <div className="flex gap-2">
                         <button onClick={async () => { await updateSellerStatus(s.id, 'approved'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.approve', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'approved' as const } : x)); showToast(locale === 'fr' ? 'Vendeur approuvé' : 'Seller approved'); }} className="px-3 py-2 rounded-lg bg-[#ff7a00]/15 text-[#e06c00] text-xs font-semibold flex items-center gap-1 hover:bg-[#ff7a00]/25"><CheckCircle className="w-4 h-4" /> {t.onboarding.approved}</button>
-                        <button onClick={async () => { await updateSellerStatus(s.id, 'rejected'); await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'seller.reject', targetType: 'seller', targetId: s.id, targetName: s.business_name }); setSellers(sellers.map(x => x.id === s.id ? { ...x, status: 'rejected' as const } : x)); showToast(locale === 'fr' ? 'Vendeur rejeté' : 'Seller rejected'); }} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {t.onboarding.rejected}</button>
+                        <button onClick={() => setStatusChangeTarget({ seller: s, status: 'rejected' })} className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-semibold flex items-center gap-1 hover:bg-red-200"><XCircle className="w-4 h-4" /> {t.onboarding.rejected}</button>
                       </div>
                     </div>
                   ))}
@@ -708,6 +721,30 @@ export function AdminPage() {
           </div>
         </div>
       </div>
+
+      {statusChangeTarget && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setStatusChangeTarget(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full animate-fade-up" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-display text-lg font-bold text-[#0f172a] mb-1">
+              {statusChangeTarget.status === 'suspended'
+                ? (locale === 'fr' ? `Suspendre ${statusChangeTarget.seller.business_name} ?` : `Suspend ${statusChangeTarget.seller.business_name}?`)
+                : (locale === 'fr' ? `Rejeter ${statusChangeTarget.seller.business_name} ?` : `Reject ${statusChangeTarget.seller.business_name}?`)}
+            </h3>
+            <p className="text-xs text-[#64748b] mb-4">{locale === 'fr' ? 'Le vendeur recevra cette raison via notification.' : 'The seller will receive this reason via notification.'}</p>
+            <textarea
+              value={statusChangeReason}
+              onChange={(e) => setStatusChangeReason(e.target.value)}
+              placeholder={locale === 'fr' ? 'Raison (visible par le vendeur)...' : 'Reason (visible to the seller)...'}
+              className="input-field text-sm w-full mb-4"
+              rows={3}
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setStatusChangeTarget(null)} className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-[#e2e8f0] text-[#64748b]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+              <button onClick={confirmStatusChange} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-full text-sm font-semibold">{locale === 'fr' ? 'Confirmer' : 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
