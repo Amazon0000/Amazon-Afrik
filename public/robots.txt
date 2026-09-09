@@ -19,4 +19,4 @@ Sitemap: https://YOUR_DOMAIN/sitemap.xml
 # Live, DB-generated sitemap covering every product and store page.
 # Replace YOUR_SUPABASE_PROJECT with the real project ref after deploying
 # the `sitemap-products` Edge Function (see supabase/functions/sitemap-products).
-Sitemap: https://YOUR_SUPABASE_PROJECT.supabase.co/functions/v1/sitemap-products
+Sitemap: https://tysbzwgzeyqtzluvdria.supabase.co/functions/v1/sitemap-products?domain=https://YOUR_DOMAIN

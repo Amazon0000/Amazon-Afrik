@@ -111,8 +111,17 @@ supabase secrets set \
   PAYUNIT_API_USER=xxx \
   PAYUNIT_API_PASSWORD=xxx \
   PAYUNIT_API_KEY=xxx \
-  PAYUNIT_MODE=live
+  PAYUNIT_MODE=live \
+  PADDLE_API_KEY=xxx \
+  PADDLE_WEBHOOK_SECRET=pdl_ntfset_xxx
 ```
+
+**Note Paddle** : contrairement aux 3 autres providers, ce secret n'était
+documenté nulle part dans ce fichier alors que `paddleAdapter`,
+`ads-webhook-paddle` et (depuis le module Subscriptions ci-dessous)
+`subscription-webhook-paddle` existent et sont déployés — Paddle payments
+échoueraient silencieusement sans `PADDLE_API_KEY`/`PADDLE_WEBHOOK_SECRET`
+configurés.
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont
 injectées automatiquement par Supabase dans les Edge Functions — pas besoin
@@ -210,3 +219,63 @@ npm run test:functions
 
 25 tests, aucune dépendance réseau — peuvent tourner dans n'importe quel
 environnement CI sans configuration supplémentaire.
+
+---
+
+## Module Subscriptions (ajouté — audit du 08-09/09/2026)
+
+**Bug corrigé par ce module** : `updateSellerPlan()` changeait le plan d'un
+vendeur en écriture directe, sans paiement — n'importe qui pouvait
+s'attribuer Premium ($29) ou Enterprise ($79) gratuitement en cliquant
+"Choisir". Ce module réutilise exactement l'architecture Advertising
+ci-dessus (mêmes adapters, même validation idempotente/montant/devise) pour
+que les 3 plans payants ($9/$29/$79 — pas de plan gratuit, seulement l'essai
+de 14 jours déjà existant) passent par un vrai paiement avant activation.
+
+### Déployer
+
+```bash
+supabase functions deploy subscription-create-payment
+supabase functions deploy subscription-webhook-stripe --no-verify-jwt
+supabase functions deploy subscription-webhook-flutterwave --no-verify-jwt
+supabase functions deploy subscription-webhook-payunit --no-verify-jwt
+supabase functions deploy subscription-webhook-paddle --no-verify-jwt
+```
+
+Aucun nouveau secret requis — réutilise exactement les mêmes
+(`STRIPE_SECRET_KEY`, `PADDLE_API_KEY`, etc., étape 3 ci-dessus).
+
+### Webhooks à ajouter côté chaque provider
+
+Même procédure que l'étape 5 ci-dessus, en ajoutant une URL webhook
+supplémentaire par provider (les deux modules coexistent, pas de conflit) :
+- Stripe → `.../functions/v1/subscription-webhook-stripe`
+- Flutterwave → `.../functions/v1/subscription-webhook-flutterwave`
+- PayUnit → `.../functions/v1/subscription-webhook-payunit` (notify_url envoyé dynamiquement, comme pour Advertising)
+- Paddle → `.../functions/v1/subscription-webhook-paddle`
+
+### Test de bout en bout
+
+Même procédure que l'étape 7, en vérifiant `subscription_payments` et
+`sellers.plan` au lieu de `advertising_payments`/`ad_campaigns`.
+
+---
+
+## SEO — sitemap dynamique
+
+`public/robots.txt` et `public/sitemap.xml` (pages statiques) sont déployés
+avec le site normalement (Cloudflare Pages sert tout le dossier `public/`).
+Il faut en plus déployer la fonction qui génère le sitemap produits/boutiques
+en direct depuis la base (impossible à maintenir en fichier statique) :
+
+```bash
+supabase functions deploy sitemap-products --no-verify-jwt
+```
+
+Puis remplacer `YOUR_DOMAIN` dans `public/robots.txt` par le vrai domaine de
+production avant le prochain déploiement du site, et vérifier que la ligne
+`Sitemap:` pointant vers la fonction répond bien en XML :
+```bash
+curl "https://tysbzwgzeyqtzluvdria.supabase.co/functions/v1/sitemap-products?domain=https://YOUR_DOMAIN"
+```
+
