@@ -523,7 +523,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Dans la mesure permise par la loi, la responsabilité de Zando envers un utilisateur, pour toute réclamation liée à l'utilisation de la plateforme, est limitée au montant des frais de plateforme effectivement perçus par Zando pour la transaction concernée. Zando n'est pas responsable des dommages indirects, pertes de profits ou pertes de données.</p>
               </Section>
               <Section title="11. Droit applicable et résolution des litiges">
-                <p>Zando opère via des entités enregistrées aux Émirats arabes unis (SPC FZC) et au Cameroun. Le droit applicable et la juridiction compétente exacts dépendent de l'entité contractante et de votre pays de résidence. <em>[Clause à finaliser avec un conseil juridique qualifié dans chaque juridiction concernée — LEGAL REVIEW REQUIRED avant publication définitive.]</em> Tout litige non résolu via le centre de confiance et de sécurité de Zando sera d'abord soumis à une tentative de résolution amiable, puis à la juridiction compétente ou à un mode alternatif de résolution des litiges convenu entre les parties.</p>
+                <p>Zando opère via des entités enregistrées aux Émirats arabes unis (SPC FZC — licence n° 4425201.01) et au Cameroun. Le droit applicable et la juridiction compétente exacts dépendent de l'entité contractante et de votre pays de résidence. <em>[Clause à finaliser avec un conseil juridique qualifié dans chaque juridiction concernée — LEGAL REVIEW REQUIRED avant publication définitive.]</em> Tout litige non résolu via le centre de confiance et de sécurité de Zando sera d'abord soumis à une tentative de résolution amiable, puis à la juridiction compétente ou à un mode alternatif de résolution des litiges convenu entre les parties.</p>
               </Section>
               <Section title="12. Résiliation de compte">
                 <p>Zando peut suspendre ou résilier un compte en cas de violation des présentes conditions, de fraude avérée, ou de non-respect répété des engagements vendeur. L'utilisateur peut demander la suppression de son compte à tout moment via le support.</p>
@@ -565,7 +565,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>To the extent permitted by law, Zando's liability to any user, for any claim related to use of the platform, is limited to the amount of platform fees actually collected by Zando for the transaction in question. Zando is not liable for indirect damages, lost profits, or data loss.</p>
               </Section>
               <Section title="11. Governing Law & Dispute Resolution">
-                <p>Zando operates through entities registered in the United Arab Emirates (SPC FZC) and in Cameroon. The exact governing law and competent jurisdiction depend on the contracting entity and your country of residence. <em>[Clause to be finalized with qualified legal counsel in each relevant jurisdiction — LEGAL REVIEW REQUIRED before final publication.]</em> Any dispute not resolved through Zando's Trust & Safety center will first be subject to a good-faith attempt at amicable resolution, then to the competent jurisdiction or an alternative dispute resolution method agreed between the parties.</p>
+                <p>Zando operates through entities registered in the United Arab Emirates (SPC FZC — license no. 4425201.01) and in Cameroon. The exact governing law and competent jurisdiction depend on the contracting entity and your country of residence. <em>[Clause to be finalized with qualified legal counsel in each relevant jurisdiction — LEGAL REVIEW REQUIRED before final publication.]</em> Any dispute not resolved through Zando's Trust & Safety center will first be subject to a good-faith attempt at amicable resolution, then to the competent jurisdiction or an alternative dispute resolution method agreed between the parties.</p>
               </Section>
               <Section title="12. Account Termination">
                 <p>Zando may suspend or terminate an account in case of violation of these terms, proven fraud, or repeated failure to meet seller obligations. Users may request account deletion at any time via support.</p>
@@ -679,7 +679,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Support technique : <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
               </Section>
               <Section title="Entités juridiques">
-                <p>Zando opère via les structures suivantes : une entité enregistrée aux Émirats arabes unis (SPC FZC) et une entité enregistrée au Cameroun. <em>[Numéro d'enregistrement, adresse de siège social et licence commerciale précise : NON VÉRIFIÉ — à confirmer et compléter avec les documents d'immatriculation officiels avant publication finale.]</em></p>
+                <p>Zando opère via les structures suivantes : une entité enregistrée aux Émirats arabes unis, <strong>SPC FZC — licence n° 4425201.01</strong>, et une entité enregistrée au Cameroun. <em>[Adresse du siège social, numéro d'enregistrement camerounais et forme juridique précise de l'entité camerounaise : NON VÉRIFIÉ — à confirmer et compléter avec les documents d'immatriculation officiels avant publication finale.]</em></p>
               </Section>
               <Section title="Hébergement">
                 <p>La plateforme Zando est hébergée sur des infrastructures cloud sécurisées avec chiffrement des données.</p>
@@ -700,7 +700,7 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
                 <p>Technical support: <a href="mailto:support@liafrik.com" className="text-[#ff7a00] font-semibold hover:underline">support@liafrik.com</a></p>
               </Section>
               <Section title="Registered Entities">
-                <p>Zando operates through the following structures: an entity registered in the United Arab Emirates (SPC FZC) and an entity registered in Cameroon. <em>[Precise registration number, registered office address, and commercial license: NOT VERIFIED — to be confirmed and completed with official incorporation documents before final publication.]</em></p>
+                <p>Zando operates through the following structures: an entity registered in the United Arab Emirates, <strong>SPC FZC — license no. 4425201.01</strong>, and an entity registered in Cameroon. <em>[Registered office address, Cameroonian registration number, and precise legal form of the Cameroon entity: NOT VERIFIED — to be confirmed and completed with official incorporation documents before final publication.]</em></p>
               </Section>
               <Section title="Hosting">
                 <p>The Zando platform is hosted on secure cloud infrastructure with data encryption.</p>
