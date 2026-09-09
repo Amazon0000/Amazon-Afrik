@@ -77,8 +77,14 @@ export function HomePage() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-full pl-1.5 pr-4 py-1.5 mb-6">
               <div className="flex -space-x-2">
-                {countries.filter((c) => c.is_active).slice(0, 5).map((c) => (
-                  <span key={c.id} className="w-6 h-6 rounded-full overflow-hidden border border-white/50"><CountryFlag countryId={c.id} size={24} /></span>
+                {countries.filter((c) => c.is_active).slice(0, 5).map((c, i) => (
+                  <span
+                    key={c.id}
+                    className="w-6 h-6 rounded-full overflow-hidden border border-white/50 animate-fade-in"
+                    style={{ animationDelay: `${i * 90}ms`, animationFillMode: 'backwards' }}
+                  >
+                    <CountryFlag countryId={c.id} size={24} />
+                  </span>
                 ))}
               </div>
               <span className="text-xs font-semibold text-white">
@@ -95,8 +101,8 @@ export function HomePage() {
             </h1>
             <p className="text-sm sm:text-lg text-white/85 max-w-lg mb-8">
               {locale === 'fr'
-                ? "Zando connecte des vendeurs vérifiés partout dans le monde — d'Afrique et d'ailleurs — à des acheteurs partout dans le monde. Paiement direct au vendeur, 0% de commission sur vos ventes."
-                : 'Zando connects verified sellers from around the world — across Africa and beyond — with buyers everywhere. Direct payment to sellers, 0% commission on your sales.'}
+                ? "Découvrez des produits du monde entier auprès de vendeurs vérifiés. Achetez simplement, payez directement votre vendeur et faites-vous livrer où que vous soyez."
+                : 'Discover products from around the world from verified sellers. Shop simply, pay your seller directly, and get delivered wherever you are.'}
             </p>
             <button onClick={() => navigate('catalog')} className="btn-gold px-7 py-3.5 rounded-full text-sm font-bold inline-flex items-center gap-2">
               {locale === 'fr' ? 'Explorer les produits' : 'Explore Products'} <ArrowRight className="w-4 h-4" />

@@ -1556,6 +1556,7 @@ export async function createComplianceReport(opts: {
   targetName?: string | null;
   reason?: string | null;
   description?: string | null;
+  orderId?: string | null;
 }): Promise<string | null> {
   const { data, error } = await supabase.from('compliance_reports').insert({
     reporter_id: opts.reporterId ?? null,
@@ -1566,10 +1567,25 @@ export async function createComplianceReport(opts: {
     target_name: opts.targetName ?? null,
     reason: opts.reason ?? null,
     description: opts.description ?? null,
+    order_id: opts.orderId ?? null,
     status: 'open',
   }).select('id').single();
-  if (error || !data) { console.error('createComplianceReport:', error.message); return null; }
+  if (error || !data) { console.error('createComplianceReport:', error?.message); return null; }
   return data.id;
+}
+
+export type MyComplianceReport = {
+  id: string; report_type: string; target_type: string; target_name: string | null;
+  reason: string | null; description: string | null; status: string;
+  seller_response: string | null; resolution: string | null; created_at: string;
+};
+
+// Buyer-facing — lets someone see the status of a report they filed
+// themselves (RLS: reporter_id = auth.uid(), see migration 053).
+export async function fetchMyComplianceReports(): Promise<MyComplianceReport[]> {
+  const { data, error } = await supabase.from('compliance_reports').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('fetchMyComplianceReports:', error.message); return []; }
+  return data || [];
 }
 
 export async function addSellerPaymentMethod(opts: {

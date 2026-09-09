@@ -57,6 +57,8 @@ export function Footer() {
   ];
   // Required legal links for a SaaS/marketplace operating internationally.
   const legalLinks: FooterLink[] = [
+    { label: locale === 'fr' ? 'Protection Acheteur' : 'Buyer Protection', page: 'info', params: { k: 'buyer-protection' } },
+    { label: locale === 'fr' ? 'Protection Vendeur' : 'Seller Protection', page: 'info', params: { k: 'seller-protection' } },
     { label: locale === 'fr' ? "Conditions d'utilisation" : 'Terms of Use', page: 'info', params: { k: 'terms' } },
     { label: locale === 'fr' ? 'Politique de confidentialité' : 'Privacy Policy', page: 'info', params: { k: 'privacy' } },
     { label: locale === 'fr' ? 'Politique de cookies' : 'Cookies Policy', page: 'info', params: { k: 'cookies' } },
@@ -75,7 +77,7 @@ export function Footer() {
 
   return (
     <footer className="relative bg-[#141414] text-white font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pr-16 sm:pr-20 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pr-14 sm:pr-16 py-10">
         {/* Contact block */}
         <div className="mb-10">
           <Logo size={30} variant="light" />
@@ -153,11 +155,11 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Vertical social sidebar, orange, right edge */}
-      <div className="hidden sm:flex flex-col absolute top-6 right-0 bottom-6 w-14 bg-[#ff7a00] rounded-l-2xl items-center py-4 gap-3">
+      {/* Vertical social sidebar, orange, right edge — kept, sized down for elegance */}
+      <div className="hidden sm:flex flex-col absolute top-6 right-0 bottom-6 w-11 bg-[#ff7a00] rounded-l-2xl items-center py-3.5 gap-2.5">
         {socials.map((s, i) => (
-          <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" title={s.label} className="w-9 h-9 rounded-full bg-black flex items-center justify-center hover:bg-black/70 transition-colors">
-            <s.icon className="w-4 h-4 text-white" />
+          <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" title={s.label} className="w-[30px] h-[30px] rounded-full bg-black flex items-center justify-center hover:bg-black/70 transition-colors">
+            <s.icon className="w-3.5 h-3.5 text-white" />
           </a>
         ))}
       </div>
@@ -168,7 +170,7 @@ export function Footer() {
       </button>
 
       {/* Bottom bar */}
-      <div className="border-t border-white/10 pr-16 sm:pr-20">
+      <div className="border-t border-white/10 pr-14 sm:pr-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-xs text-white/50">© 2026 Zando Marketplace. {locale === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
           <p className="text-xs text-white/50">FR / EN · USD / XOF / NGN</p>

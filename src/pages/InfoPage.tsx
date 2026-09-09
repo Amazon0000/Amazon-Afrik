@@ -7,7 +7,8 @@ import { useState } from 'react';
 
 export type InfoKey =
   | 'about' | 'sell-guide' | 'help' | 'shipping' | 'returns' | 'payment-methods'
-  | 'terms' | 'privacy' | 'cookies' | 'legal-notice' | 'careers' | 'contact';
+  | 'terms' | 'privacy' | 'cookies' | 'legal-notice' | 'careers' | 'contact'
+  | 'buyer-protection' | 'seller-protection';
 
 const infoMeta: Record<InfoKey, { icon: typeof Info; frTitle: string; enTitle: string }> = {
   'about': { icon: Info, frTitle: 'À propos de Zando', enTitle: 'About Zando' },
@@ -22,6 +23,8 @@ const infoMeta: Record<InfoKey, { icon: typeof Info; frTitle: string; enTitle: s
   'legal-notice': { icon: FileText, frTitle: 'Mentions légales', enTitle: 'Legal Notice' },
   'careers': { icon: Briefcase, frTitle: 'Carrières', enTitle: 'Careers' },
   'contact': { icon: Mail, frTitle: 'Contact', enTitle: 'Contact Us' },
+  'buyer-protection': { icon: ShieldCheck, frTitle: 'Protection Acheteur', enTitle: 'Buyer Protection' },
+  'seller-protection': { icon: ShieldCheck, frTitle: 'Protection Vendeur', enTitle: 'Seller Protection' },
 };
 
 type FAQItem = { q: string; a: string };
@@ -229,6 +232,116 @@ export function InfoPage({ pageKey }: { pageKey: InfoKey }) {
               </Section>
             </>
           )}
+
+          {pageKey === 'buyer-protection' && (locale === 'fr' ? (
+            <>
+              <Section title="Ce que couvre la Protection Acheteur Zando">
+                <p>Zando est une place de marché : chaque vendeur connecte son propre moyen de paiement (Stripe, Paddle, PayUnit, Paystack, mobile money, etc.) et reçoit votre paiement directement. Zando ne conserve jamais les fonds de votre commande — nous n'avons donc pas de « séquestre » à débloquer. Ce que nous offrons, c'est un cadre pour signaler un problème, faire intervenir un vendeur, et escalader vers l'équipe Zando si nécessaire.</p>
+              </Section>
+              <Section title="Vendeurs vérifiés">
+                <p>Les boutiques portant le badge bleu « Vendeur Vérifié » ont été examinées manuellement par notre équipe (documents d'identité et pièces justificatives). Les boutiques sans ce badge sont marquées « en attente de validation » — elles peuvent vendre, mais n'ont pas encore été vérifiées. Vérifiez toujours ce badge avant d'acheter.</p>
+              </Section>
+              <Section title="Si votre article n'arrive jamais">
+                <p>1. Suivez votre commande depuis « Mon compte {'>'} Mes commandes » — le statut réel (confirmée, en préparation, en transit, livrée) est visible à tout moment.</p>
+                <p>2. Contactez le vendeur directement via la messagerie intégrée à la commande.</p>
+                <p>3. Si le vendeur ne répond pas, ou si le délai de livraison annoncé est largement dépassé, utilisez le bouton « Signaler à Zando » sur la commande concernée. Notre équipe examine chaque signalement manuellement.</p>
+              </Section>
+              <Section title="Article très différent de sa description, endommagé ou défectueux">
+                <p>Une fois la commande marquée « Livrée », vous disposez de 7 jours pour demander un retour depuis « Mes commandes ». Le vendeur examine la demande et décide de l'approuver ou de la refuser. Si vous jugez le refus injustifié, ou si le vendeur ne répond pas, signalez le cas à Zando via le même bouton — un examen manuel sera effectué.</p>
+              </Section>
+              <Section title="Comportement suspect ou frauduleux d'un vendeur">
+                <p>Signalez immédiatement toute demande de paiement en dehors de Zando, tout comportement trompeur ou toute suspicion de fraude via le bouton de signalement sur la commande, ou depuis la page de la boutique. Les cas confirmés entraînent des sanctions pouvant aller jusqu'à la suspension définitive du vendeur.</p>
+              </Section>
+              <Section title="Comment fonctionne un signalement">
+                <p><strong>Soumission :</strong> vous décrivez le problème depuis votre commande. <strong>Réponse du vendeur :</strong> le vendeur est invité à répondre — un délai de réponse raisonnable est attendu, mais n'est pas appliqué automatiquement par le système à ce jour. <strong>Examen :</strong> un membre de l'équipe Zando examine le signalement, les échanges de messagerie et les informations de commande disponibles. <strong>Décision :</strong> la décision (résolution, avertissement au vendeur, remboursement recommandé, suspension) est prise manuellement, au cas par cas.</p>
+              </Section>
+              <Section title="Ce que Zando ne garantit PAS">
+                <p>Zando ne détenant pas les fonds de la transaction, nous ne pouvons pas déclencher un remboursement automatique depuis notre plateforme — un remboursement se fait via le vendeur (sur son propre moyen de paiement) ou, en dernier recours et en cas de fraude avérée, via une décision administrative avec le vendeur. Zando ne garantit pas de remboursement systématique ni de couverture de type « chargeback ». Une contestation de paiement (chargeback) auprès de votre banque ou de votre fournisseur de paiement est un processus distinct, entre vous et cet établissement, indépendant du processus de signalement Zando.</p>
+              </Section>
+              <Section title="Délais">
+                <p>Demande de retour : dans les 7 jours suivant la livraison. Signalement à Zando : recommandé dès que le problème est constaté, et idéalement dans les 30 jours suivant la commande.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="What Zando Buyer Protection Covers">
+                <p>Zando is a marketplace: every seller connects their own payment method (Stripe, Paddle, PayUnit, Paystack, mobile money, etc.) and receives your payment directly. Zando never holds your order's funds — so there is no "escrow" for us to release. What we provide is a framework to report a problem, involve the seller, and escalate to the Zando team when needed.</p>
+              </Section>
+              <Section title="Verified Sellers">
+                <p>Stores carrying the blue "Verified Merchant" badge have been manually reviewed by our team (identity documents and supporting evidence). Stores without this badge are marked "pending validation" — they can sell, but haven't been verified yet. Always check this badge before buying.</p>
+              </Section>
+              <Section title="If Your Item Never Arrives">
+                <p>1. Track your order from "My Account {'>'} My Orders" — the real status (confirmed, preparing, in transit, delivered) is visible at all times.</p>
+                <p>2. Contact the seller directly via the order's built-in messaging.</p>
+                <p>3. If the seller doesn't respond, or the stated delivery window has clearly passed, use the "Report to Zando" button on that order. Our team reviews every report manually.</p>
+              </Section>
+              <Section title="Item Significantly Different, Damaged, or Defective">
+                <p>Once an order is marked "Delivered", you have 7 days to request a return from "My Orders". The seller reviews the request and decides to approve or reject it. If you believe the rejection was unfair, or the seller doesn't respond, report the case to Zando via the same button — a manual review will follow.</p>
+              </Section>
+              <Section title="Suspicious or Fraudulent Seller Behavior">
+                <p>Report immediately any request to pay outside of Zando, misleading behavior, or suspected fraud using the report button on the order, or from the store page. Confirmed cases can result in penalties up to permanent seller suspension.</p>
+              </Section>
+              <Section title="How a Report Works">
+                <p><strong>Submission:</strong> you describe the issue from your order. <strong>Seller response:</strong> the seller is invited to respond — a reasonable response window is expected, but is not currently enforced automatically by the system. <strong>Review:</strong> a Zando team member reviews the report, available messaging history, and order information. <strong>Decision:</strong> the outcome (resolution, seller warning, recommended refund, suspension) is decided manually, case by case.</p>
+              </Section>
+              <Section title="What Zando Does NOT Guarantee">
+                <p>Because Zando doesn't hold transaction funds, we cannot trigger an automatic refund from our platform — a refund happens via the seller (on their own payment method) or, as a last resort in confirmed fraud cases, via an administrative decision involving the seller. Zando does not guarantee automatic refunds or chargeback-style coverage. A payment dispute (chargeback) with your bank or payment provider is a separate process between you and that institution, independent of Zando's report process.</p>
+              </Section>
+              <Section title="Deadlines">
+                <p>Return request: within 7 days of delivery. Report to Zando: recommended as soon as the issue is noticed, ideally within 30 days of the order.</p>
+              </Section>
+            </>
+          ))}
+
+          {pageKey === 'seller-protection' && (locale === 'fr' ? (
+            <>
+              <Section title="Ce que couvre la Protection Vendeur Zando">
+                <p>Zando protège les vendeurs de bonne foi contre les réclamations abusives ou frauduleuses. Comme votre paiement passe directement par votre propre moyen de paiement (et non par Zando), vous gardez le contrôle sur vos transactions — mais Zando intervient en cas de comportement acheteur abusif signalé.</p>
+              </Section>
+              <Section title="Réclamations « article non reçu » infondées">
+                <p>Si un acheteur affirme ne pas avoir reçu un article que vous avez expédié, répondez à sa demande de retour avec vos preuves (numéro de suivi, capture d'écran de statut de livraison, confirmation du transporteur). Ces éléments sont examinés en priorité en cas d'escalade vers l'équipe Zando.</p>
+              </Section>
+              <Section title="Demandes de remboursement abusives">
+                <p>Vous pouvez refuser une demande de retour directement depuis votre Espace Vendeur, avec une explication. Si l'acheteur signale ensuite le cas à Zando, votre réponse et vos preuves font partie de l'examen manuel.</p>
+              </Section>
+              <Section title="Preuves à fournir en cas de litige">
+                <p>Numéro et lien de suivi, capture d'écran de la description produit au moment de la vente, photos du produit avant expédition si disponibles, historique de messagerie avec l'acheteur. Plus vous documentez tôt, plus l'examen est rapide.</p>
+              </Section>
+              <Section title="Délai de réponse">
+                <p>Nous recommandons de répondre à toute demande de retour ou tout message acheteur sous 48 heures. Un temps de réponse constamment long peut affecter la visibilité de votre boutique et, en l'absence de réponse répétée, peut peser dans une décision d'escalade en votre défaveur.</p>
+              </Section>
+              <Section title="Résolution des litiges">
+                <p>La majorité des retours se règlent directement entre vous et l'acheteur via l'Espace Vendeur. Si l'acheteur signale le cas à Zando, un membre de l'équipe examine manuellement : votre réponse, vos preuves, l'historique de messagerie et les informations de commande. Vous serez informé de toute décision vous concernant.</p>
+              </Section>
+              <Section title="Ce que la Protection Vendeur ne couvre pas">
+                <p>Zando ne peut pas intervenir sur les décisions de votre propre fournisseur de paiement (contestations/chargebacks initiés directement auprès de Stripe, PayUnit, Paddle, Paystack, etc.) — ces processus sont gérés par le PSP concerné, indépendamment de Zando. Consultez la politique de votre PSP pour ces cas.</p>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Section title="What Zando Seller Protection Covers">
+                <p>Zando protects good-faith sellers against abusive or fraudulent claims. Since your payment goes directly through your own payment method (not through Zando), you retain control over your transactions — but Zando steps in when abusive buyer behavior is reported.</p>
+              </Section>
+              <Section title="Unfounded 'Item Not Received' Claims">
+                <p>If a buyer claims they never received an item you shipped, respond to their return request with your evidence (tracking number, delivery status screenshot, carrier confirmation). This evidence is reviewed first if the case escalates to the Zando team.</p>
+              </Section>
+              <Section title="Abusive Refund Requests">
+                <p>You can reject a return request directly from your Seller Center, with an explanation. If the buyer then reports the case to Zando, your response and evidence are part of the manual review.</p>
+              </Section>
+              <Section title="Evidence to Provide in a Dispute">
+                <p>Tracking number and link, screenshot of the product description at time of sale, product photos before shipping if available, message history with the buyer. The earlier you document, the faster the review.</p>
+              </Section>
+              <Section title="Response Time">
+                <p>We recommend responding to any return request or buyer message within 48 hours. Consistently slow response times can affect your store's visibility, and repeated non-response can weigh against you in an escalation decision.</p>
+              </Section>
+              <Section title="Dispute Resolution">
+                <p>Most returns are settled directly between you and the buyer via Seller Center. If the buyer reports the case to Zando, a team member manually reviews: your response, your evidence, the message history, and order information. You'll be informed of any decision concerning you.</p>
+              </Section>
+              <Section title="What Seller Protection Does Not Cover">
+                <p>Zando cannot intervene in your own payment provider's decisions (disputes/chargebacks filed directly with Stripe, PayUnit, Paddle, Paystack, etc.) — those processes are handled by that PSP, independently of Zando. Check your PSP's policy for those cases.</p>
+              </Section>
+            </>
+          ))}
 
           {pageKey === 'shipping' && (locale === 'fr' ? (
             <>

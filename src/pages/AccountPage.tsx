@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests, getOrCreateConversation, fetchConversationMessages, sendMessage, markConversationRead, getDigitalDownloadUrl } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchOrders, updateUserProfile, cancelOwnOrder, createReturnRequest, fetchBuyerReturnRequests, getOrCreateConversation, fetchConversationMessages, sendMessage, markConversationRead, getDigitalDownloadUrl, createComplianceReport } from '@/lib/db';
 import type { Product, Address, Order, ReturnRequest, Message } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { ProductCard } from '@/components/Cards';
-import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon, FileText } from 'lucide-react';
+import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon, FileText, AlertOctagon } from 'lucide-react';
 
 export function AccountPage() {
   const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
@@ -23,6 +23,9 @@ export function AccountPage() {
   const [newMessageBody, setNewMessageBody] = useState('');
   const [returningOrderId, setReturningOrderId] = useState<string | null>(null);
   const [returnReason, setReturnReason] = useState('');
+  const [reportingOrderId, setReportingOrderId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportedOrderIds, setReportedOrderIds] = useState<Set<string>>(new Set());
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
   const [addrForm, setAddrForm] = useState({ label: '', fullName: user?.fullName || '', phone: '', street: '', countryId: '', city: '' });
   const [profileForm, setProfileForm] = useState({ fullName: user?.fullName || '', phone: '' });
@@ -239,6 +242,14 @@ export function AccountPage() {
                               </button>
                             )}
                             <button onClick={() => navigate('delivery', { id: order.tracking_id || order.id })} className="flex items-center gap-1 text-sm font-semibold text-[#ff7a00] hover:underline"><Truck className="w-4 h-4" /> {t.account.viewTracking}</button>
+                            {order.seller_id && !reportedOrderIds.has(order.id) && (
+                              <button onClick={() => setReportingOrderId(reportingOrderId === order.id ? null : order.id)} className="flex items-center gap-1 text-sm font-semibold text-red-500 hover:text-red-600">
+                                <AlertOctagon className="w-4 h-4" /> {locale === 'fr' ? 'Signaler à Zando' : 'Report to Zando'}
+                              </button>
+                            )}
+                            {reportedOrderIds.has(order.id) && (
+                              <span className="text-xs font-semibold text-[#64748b]">{locale === 'fr' ? 'Signalement envoyé' : 'Report sent'}</span>
+                            )}
                           </div>
                         </div>
                         {messagingOrderId === order.id && (
@@ -285,6 +296,51 @@ export function AccountPage() {
                             >
                               {locale === 'fr' ? 'Envoyer la demande' : 'Send request'}
                             </button>
+                          </div>
+                        )}
+                        {reportingOrderId === order.id && (
+                          <div className="mt-3 pt-3 border-t border-red-200 space-y-2 bg-red-50/50 -mx-4 px-4 py-3 rounded-b-xl">
+                            <p className="text-xs text-[#64748b]">
+                              {locale === 'fr'
+                                ? "Utilisez ceci si le vendeur ne répond pas ou si un problème n'est pas résolu (article non reçu, très différent de la description, vendeur suspect). Une équipe Zando examine chaque signalement — ce n'est pas un remboursement automatique."
+                                : "Use this if the seller isn't responding or an issue remains unresolved (item never arrived, significantly not as described, suspicious seller). A Zando team reviews every report — this is not an automatic refund."}
+                            </p>
+                            <textarea
+                              value={reportReason}
+                              onChange={(e) => setReportReason(e.target.value)}
+                              placeholder={locale === 'fr' ? 'Décrivez le problème...' : 'Describe the issue...'}
+                              className="input-field text-sm w-full"
+                              rows={3}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  if (!reportReason.trim() || !user) return;
+                                  const id = await createComplianceReport({
+                                    reporterId: user.id,
+                                    reporterName: user.fullName,
+                                    reportType: 'order_issue',
+                                    targetType: 'order',
+                                    targetId: order.id,
+                                    targetName: order.tracking_id,
+                                    orderId: order.id,
+                                    description: reportReason,
+                                  });
+                                  if (id) {
+                                    showToast(locale === 'fr' ? 'Signalement envoyé à Zando' : 'Report sent to Zando');
+                                    setReportedOrderIds((prev) => new Set(prev).add(order.id));
+                                    setReportingOrderId(null);
+                                    setReportReason('');
+                                  } else {
+                                    showToast(locale === 'fr' ? "Erreur lors de l'envoi" : 'Error sending report', 'error');
+                                  }
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-semibold"
+                              >
+                                {locale === 'fr' ? 'Envoyer le signalement' : 'Send report'}
+                              </button>
+                              <button onClick={() => setReportingOrderId(null)} className="px-3 py-2 rounded-lg text-xs font-semibold text-[#64748b]">{locale === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                            </div>
                           </div>
                         )}
                       </div>
