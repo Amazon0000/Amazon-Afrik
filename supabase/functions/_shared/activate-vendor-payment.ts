@@ -86,7 +86,6 @@ export async function processVerifiedVendorPayment(args: ActivateArgs): Promise<
   for (const item of items || []) {
     if (item.product_id) await supabase.rpc('decrement_product_stock', { p_product_id: item.product_id, p_qty: item.qty });
   }
-
   const { data: seller } = await supabase.from('sellers').select('user_id').eq('id', payment.seller_id).maybeSingle();
   if (seller?.user_id) {
     await notifyUser(

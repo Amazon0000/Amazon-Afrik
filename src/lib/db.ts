@@ -787,6 +787,10 @@ export async function fetchProductFlashDeal(productId: string): Promise<FlashDea
     .gte('ends_at', nowIso)
     .maybeSingle();
   if (error) { console.error('fetchProductFlashDeal:', error.message); return null; }
+  // Enforce the seller's stock_limit — was previously decorative
+  // (claimed_count never incremented, limit never checked), meaning a
+  // "first 20 units" flash sale would silently apply to unlimited buyers.
+  if (data && data.stock_limit != null && data.claimed_count >= data.stock_limit) return null;
   return data as FlashDeal | null;
 }
 
@@ -804,7 +808,10 @@ export async function fetchFlashDealsForProducts(productIds: string[]): Promise<
     .gte('ends_at', nowIso);
   if (error) { console.error('fetchFlashDealsForProducts:', error.message); return {}; }
   const result: Record<string, FlashDeal> = {};
-  for (const deal of (data || []) as FlashDeal[]) result[deal.product_id] = deal;
+  for (const deal of (data || []) as FlashDeal[]) {
+    if (deal.stock_limit != null && deal.claimed_count >= deal.stock_limit) continue;
+    result[deal.product_id] = deal;
+  }
   return result;
 }
 
@@ -1213,6 +1220,11 @@ export async function restoreProductStock(productId: string, qty: number): Promi
   const { data, error } = await supabase.rpc('restore_product_stock', { p_product_id: productId, p_qty: qty });
   if (error) { console.error('restoreProductStock:', error.message); return null; }
   return data as number;
+}
+
+export async function incrementFlashDealClaimed(flashDealId: string, qty: number): Promise<void> {
+  const { error } = await supabase.rpc('increment_flash_deal_claimed', { p_flash_deal_id: flashDealId, p_qty: qty });
+  if (error) console.error('incrementFlashDealClaimed:', error.message);
 }
 
 export async function submitContactMessage(opts: { firstName: string; lastName: string; email: string; message: string }): Promise<boolean> {
@@ -1803,7 +1815,7 @@ export async function connectSellerPsp(opts: {
   merchantId?: string;
   secretKey?: string;
   mode: 'test' | 'live';
-}): Promise<boolean> {
+}): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data: cred, error } = await supabase.from('seller_psp_credentials').upsert({
     seller_id: opts.sellerId,
     provider: opts.provider,
@@ -1813,7 +1825,10 @@ export async function connectSellerPsp(opts: {
     is_active: true,
     has_secret: !!opts.secretKey,
   }, { onConflict: 'seller_id,provider' }).select('id').single();
-  if (error || !cred) { console.error('connectSellerPsp:', error?.message); return false; }
+  if (error || !cred) {
+    console.error('connectSellerPsp:', error?.message);
+    return { ok: false, error: error?.message || 'Unknown error creating credential' };
+  }
 
   if (opts.secretKey) {
     const { error: secretErr } = await supabase.from('seller_psp_secrets').upsert({
@@ -1821,9 +1836,12 @@ export async function connectSellerPsp(opts: {
       seller_id: opts.sellerId,
       secret_key: opts.secretKey,
     }, { onConflict: 'credential_id' });
-    if (secretErr) { console.error('connectSellerPsp (secret):', secretErr.message); return false; }
+    if (secretErr) {
+      console.error('connectSellerPsp (secret):', secretErr.message);
+      return { ok: false, error: secretErr.message };
+    }
   }
-  return true;
+  return { ok: true };
 }
 
 export async function disconnectSellerPsp(credentialId: string): Promise<boolean> {

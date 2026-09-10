@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductsByIds, fetchFlashDealsForProducts, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry, notifyNewOrder, fetchSellerPspCredentials, initiateVendorCheckoutPayment } from '@/lib/db';
+import { fetchProductById, fetchAddresses, fetchSellerPaymentMethods, fetchProductsByIds, fetchFlashDealsForProducts, decrementProductStock, validateCoupon, redeemCoupon, getDigitalDownloadUrl, fetchShippingRatesForCountry, notifyNewOrder, fetchSellerPspCredentials, initiateVendorCheckoutPayment, incrementFlashDealClaimed } from '@/lib/db';
 import type { Product, Address, SellerPaymentMethod, FlashDeal, ShippingRate, SellerPspCredential } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
@@ -267,6 +267,7 @@ export function CheckoutPage() {
             // actually confirmed.
             if (!realCredential) {
               await decrementProductStock(item.productId, item.qty);
+              if (item.deal) await incrementFlashDealClaimed(item.deal.id, item.qty);
             }
           }
           createdIds.push(trackingId);

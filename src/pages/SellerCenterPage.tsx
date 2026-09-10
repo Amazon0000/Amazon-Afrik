@@ -888,7 +888,7 @@ export function SellerCenterPage() {
                           const sellerId = user?.sellerId;
                           if (!sellerId) return;
                           setConnectingPsp(true);
-                          const ok = await connectSellerPsp({
+                          const result = await connectSellerPsp({
                             sellerId, provider: apiPspForm.provider,
                             publicKey: apiPspForm.publicKey || undefined,
                             merchantId: apiPspForm.merchantId || undefined,
@@ -896,13 +896,21 @@ export function SellerCenterPage() {
                             mode: apiPspForm.mode,
                           });
                           setConnectingPsp(false);
-                          if (ok) {
+                          if (result.ok) {
                             showToast(locale === 'fr' ? 'PSP connecté' : 'PSP connected');
                             setPspCredentials(await fetchSellerPspCredentials(sellerId));
                             setShowApiPspForm(false);
                             setApiPspForm({ provider: 'stripe', publicKey: '', secretKey: '', merchantId: '', mode: 'live' });
                           } else {
-                            showToast(locale === 'fr' ? 'Erreur de connexion' : 'Connection error', 'error');
+                            const isMissingTable = /relation .* does not exist|schema cache/i.test(result.error);
+                            showToast(
+                              isMissingTable
+                                ? (locale === 'fr'
+                                    ? "La table de connexion PSP n'existe pas encore côté base de données — la migration doit être déployée (supabase db push) avant de pouvoir connecter un PSP."
+                                    : "The PSP connection table doesn't exist yet on the database — the migration needs to be deployed (supabase db push) before a PSP can be connected.")
+                                : result.error,
+                              'error'
+                            );
                           }
                         }}
                         className="btn-green px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
