@@ -858,20 +858,20 @@ export function SellerCenterPage() {
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">
-                            {apiPspForm.provider === 'paddle' ? (locale === 'fr' ? 'ID Vendeur' : 'Vendor ID') : apiPspForm.provider === 'payunit' ? 'API User' : apiPspForm.provider === 'airwallex' ? 'Client ID' : locale === 'fr' ? 'Clé publique' : 'Public key'}
+                            {apiPspForm.provider === 'paddle' ? (locale === 'fr' ? 'ID Vendeur' : 'Vendor ID') : apiPspForm.provider === 'payunit' ? (locale === 'fr' ? 'Clé API (x-api-key)' : 'API Key (x-api-key)') : apiPspForm.provider === 'airwallex' ? 'Client ID' : locale === 'fr' ? 'Clé publique' : 'Public key'}
                           </label>
                           <input value={apiPspForm.publicKey} onChange={(e) => setApiPspForm({ ...apiPspForm, publicKey: e.target.value })} className="input-field" placeholder={apiPspForm.provider === 'stripe' ? 'pk_live_...' : apiPspForm.provider === 'paystack' ? 'pk_live_...' : ''} />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">
-                            {apiPspForm.provider === 'payunit' ? 'API Password / Key' : locale === 'fr' ? 'Clé secrète' : 'Secret key'}
+                            {apiPspForm.provider === 'payunit' ? (locale === 'fr' ? 'Mot de passe API' : 'API Password') : locale === 'fr' ? 'Clé secrète' : 'Secret key'}
                           </label>
                           <input type="password" value={apiPspForm.secretKey} onChange={(e) => setApiPspForm({ ...apiPspForm, secretKey: e.target.value })} className="input-field" placeholder={apiPspForm.provider === 'stripe' ? 'sk_live_...' : '••••••••'} />
                         </div>
                       </div>
                       {(apiPspForm.provider === 'payunit' || apiPspForm.provider === 'airwallex') && (
                         <div>
-                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{locale === 'fr' ? "ID marchand / compte" : 'Merchant / account ID'}</label>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{apiPspForm.provider === 'payunit' ? 'API User' : (locale === 'fr' ? "ID marchand / compte" : 'Merchant / account ID')}</label>
                           <input value={apiPspForm.merchantId} onChange={(e) => setApiPspForm({ ...apiPspForm, merchantId: e.target.value })} className="input-field" />
                         </div>
                       )}

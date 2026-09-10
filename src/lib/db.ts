@@ -1842,11 +1842,17 @@ export async function connectSellerPsp(opts: {
   }
 
   if (opts.secretKey) {
-    const { error: secretErr } = await supabase.from('seller_psp_secrets').upsert({
+    // Not an upsert — PostgreSQL's ON CONFLICT DO UPDATE needs SELECT
+    // visibility to detect the conflicting row, but this table deliberately
+    // has no SELECT policy at all (write-only secret, see migration 054).
+    // Delete-then-insert only needs the DELETE/INSERT policies, both of
+    // which exist, and never triggers that conflict-detection requirement.
+    await supabase.from('seller_psp_secrets').delete().eq('credential_id', cred.id);
+    const { error: secretErr } = await supabase.from('seller_psp_secrets').insert({
       credential_id: cred.id,
       seller_id: opts.sellerId,
       secret_key: opts.secretKey,
-    }, { onConflict: 'credential_id' });
+    });
     if (secretErr) {
       console.error('connectSellerPsp (secret):', secretErr.message);
       return { ok: false, error: secretErr.message };
