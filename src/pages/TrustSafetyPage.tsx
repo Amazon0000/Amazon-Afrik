@@ -64,13 +64,13 @@ export function TrustSafetyPage() {
     const updates: Record<string, unknown> = {};
     const prevStatus = seller.compliance_status || seller.status;
 
-    if (type === 'approve') { updates.compliance_status = 'approved'; updates.status = 'active'; }
+    if (type === 'approve') { updates.compliance_status = 'approved'; updates.status = 'approved'; }
     else if (type === 'reject') { updates.compliance_status = 'rejected'; updates.status = 'rejected'; }
-    else if (type === 'suspend') { updates.compliance_status = 'suspended'; updates.status = 'suspended'; updates.suspended_reason = reason || 'Policy violation'; updates.suspended_at = new Date().toISOString(); }
-    else if (type === 'reactivate') { updates.compliance_status = 'approved'; updates.status = 'active'; updates.suspended_reason = null; updates.suspended_at = null; }
-    else if (type === 'ban') { updates.compliance_status = 'banned'; updates.status = 'banned'; updates.suspended_reason = reason || 'Permanent ban'; updates.suspended_at = new Date().toISOString(); }
-    else if (type === 'freeze') { updates.status = 'frozen'; }
-    else if (type === 'unfreeze') { updates.status = 'active'; }
+    else if (type === 'suspend') { updates.compliance_status = 'suspended'; updates.status = 'suspended'; updates.suspended_reason = reason || 'Policy violation'; updates.suspended_at = new Date().toISOString(); updates.suspension_reason = reason || 'Policy violation'; updates.status_changed_at = new Date().toISOString(); }
+    else if (type === 'reactivate') { updates.compliance_status = 'approved'; updates.status = 'approved'; updates.suspended_reason = null; updates.suspended_at = null; updates.suspension_reason = null; }
+    else if (type === 'ban') { updates.compliance_status = 'banned'; updates.status = 'suspended'; updates.suspended_reason = reason || 'Permanent ban'; updates.suspended_at = new Date().toISOString(); updates.suspension_reason = reason || 'Permanent ban'; updates.status_changed_at = new Date().toISOString(); }
+    else if (type === 'freeze') { updates.compliance_status = 'frozen'; updates.status = 'suspended'; }
+    else if (type === 'unfreeze') { updates.compliance_status = 'approved'; updates.status = 'approved'; }
     else if (type === 'strike') { updates.strikes_count = (seller.strikes_count || 0) + 1; }
 
     const ok = await updateSellerCompliance(seller.id, updates);

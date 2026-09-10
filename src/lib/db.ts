@@ -1629,6 +1629,8 @@ export async function updateSellerCompliance(
     status: string;
     suspended_reason: string | null;
     suspended_at: string | null;
+    suspension_reason: string | null;
+    status_changed_at: string | null;
     phone_verified: boolean;
     email_verified: boolean;
     bank_verified: boolean;
@@ -1636,6 +1638,15 @@ export async function updateSellerCompliance(
 ): Promise<boolean> {
   const { error } = await supabase.from('sellers').update(updates).eq('id', sellerId);
   if (error) { console.error('updateSellerCompliance:', error.message); return false; }
+  // This is the action path Trust & Safety actually uses to suspend/ban a
+  // seller — it previously never notified them at all (only the separate
+  // AdminPage.updateSellerStatus() path did), so a seller banned from here
+  // would silently lose access with zero explanation.
+  if (updates.status === 'suspended' || updates.status === 'approved') {
+    supabase.functions.invoke('notify-seller-status-change', {
+      body: { sellerId, status: updates.status, reason: updates.suspension_reason || updates.suspended_reason || undefined },
+    }).catch((e: unknown) => console.warn('notify-seller-status-change failed:', e));
+  }
   return true;
 }
 
