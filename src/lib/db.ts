@@ -981,11 +981,16 @@ export async function fetchAllAffiliates(): Promise<Affiliate[]> {
 }
 
 export async function updateAffiliateStatus(affiliateId: string, status: 'approved' | 'rejected' | 'suspended', reviewerEmail: string, rejectionReason?: string): Promise<boolean> {
-  const { error } = await supabase.from('affiliates').update({
+  const { data, error } = await supabase.from('affiliates').update({
     status, reviewed_by: reviewerEmail, reviewed_at: new Date().toISOString(),
     rejection_reason: status === 'rejected' ? (rejectionReason || null) : null,
-  }).eq('id', affiliateId);
+  }).eq('id', affiliateId).select('id');
   if (error) { console.error('updateAffiliateStatus:', error.message); return false; }
+  // An RLS-blocked update is not a Postgres error — it just matches zero
+  // rows — so this check is required, not optional; without it a missing
+  // admin policy silently reports success while nothing actually changed
+  // (found exactly this way during the 2026-09-10 audit).
+  if (!data || data.length === 0) { console.error('updateAffiliateStatus: 0 rows updated — likely an RLS/permission issue'); return false; }
   return true;
 }
 
@@ -1251,8 +1256,9 @@ export async function fetchContactMessages(): Promise<ContactMessage[]> {
 }
 
 export async function updateContactMessageStatus(id: string, status: 'read' | 'resolved'): Promise<boolean> {
-  const { error } = await supabase.from('contact_messages').update({ status }).eq('id', id);
+  const { data, error } = await supabase.from('contact_messages').update({ status }).eq('id', id).select('id');
   if (error) { console.error('updateContactMessageStatus:', error.message); return false; }
+  if (!data || data.length === 0) { console.error('updateContactMessageStatus: 0 rows updated — likely an RLS/permission issue'); return false; }
   return true;
 }
 
@@ -1654,8 +1660,9 @@ export async function updateSellerDocument(
   docId: string,
   updates: Record<string, unknown>
 ): Promise<boolean> {
-  const { error } = await supabase.from('seller_documents').update(updates).eq('id', docId);
+  const { data, error } = await supabase.from('seller_documents').update(updates).eq('id', docId).select('id');
   if (error) { console.error('updateSellerDocument:', error.message); return false; }
+  if (!data || data.length === 0) { console.error('updateSellerDocument: 0 rows updated — likely an RLS/permission issue'); return false; }
   return true;
 }
 
@@ -1916,8 +1923,9 @@ export async function updateSellerStatus(sellerId: string, status: string, reaso
   if (status === 'suspended') update.suspension_reason = reason || null;
   if (status === 'rejected') update.rejection_reason = reason || null;
   if (status === 'approved') { update.suspension_reason = null; update.rejection_reason = null; }
-  const { error } = await supabase.from('sellers').update(update).eq('id', sellerId);
+  const { data, error } = await supabase.from('sellers').update(update).eq('id', sellerId).select('id');
   if (error) { console.error('updateSellerStatus:', error.message); return false; }
+  if (!data || data.length === 0) { console.error('updateSellerStatus: 0 rows updated — likely an RLS/permission issue'); return false; }
   // Fire-and-forget — the status change already succeeded; a notification
   // failure should never roll that back or block the admin's action.
   supabase.functions.invoke('notify-seller-status-change', { body: { sellerId, status, reason } }).catch((e: unknown) => console.warn('notify-seller-status-change failed:', e));
@@ -1930,12 +1938,13 @@ export async function updateSellerStatus(sellerId: string, status: string, reaso
 // makes this final call). Revoke by passing verified: false (e.g. if a
 // verified seller is later found to have submitted fraudulent documents).
 export async function setSellerVerified(sellerId: string, verified: boolean, adminUserId: string | null): Promise<boolean> {
-  const { error } = await supabase.from('sellers').update({
+  const { data, error } = await supabase.from('sellers').update({
     is_verified: verified,
     verified_at: verified ? new Date().toISOString() : null,
     verified_by: verified ? adminUserId : null,
-  }).eq('id', sellerId);
+  }).eq('id', sellerId).select('id');
   if (error) { console.error('setSellerVerified:', error.message); return false; }
+  if (!data || data.length === 0) { console.error('setSellerVerified: 0 rows updated — likely an RLS/permission issue'); return false; }
   return true;
 }
 
@@ -1984,8 +1993,9 @@ export async function isSellerPlanActive(sellerId: string): Promise<boolean> {
 }
 
 export async function updateAdCampaignStatus(campaignId: string, status: string): Promise<boolean> {
-  const { error } = await supabase.from('ad_campaigns').update({ status }).eq('id', campaignId);
+  const { data, error } = await supabase.from('ad_campaigns').update({ status }).eq('id', campaignId).select('id');
   if (error) { console.error('updateAdCampaignStatus:', error.message); return false; }
+  if (!data || data.length === 0) { console.error('updateAdCampaignStatus: 0 rows updated — likely an RLS/permission issue'); return false; }
   return true;
 }
 

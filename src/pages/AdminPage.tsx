@@ -400,12 +400,20 @@ export function AdminPage() {
                     <ProductApprovalCard key={p.id} product={p} categories={categories} user={user} locale={locale} onApprove={async (catId) => {
                       const updates: Record<string, unknown> = { approval_status: 'approved', reviewed_by: user?.email || 'admin', reviewed_at: new Date().toISOString(), rejection_reason: null };
                       if (catId && catId !== p.category_id) updates.category_id = catId;
-                      await supabase.from('products').update(updates).eq('id', p.id);
+                      const { data } = await supabase.from('products').update(updates).eq('id', p.id).select('id');
+                      if (!data || data.length === 0) {
+                        showToast(locale === 'fr' ? 'Échec — vérifiez vos droits admin' : 'Failed — check your admin permissions', 'error');
+                        return;
+                      }
                       await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.approve', targetType: 'product', targetId: p.id, targetName: p.name });
                       setProducts(products.map(x => x.id === p.id ? { ...x, ...updates } as Product : x));
                       showToast(locale === 'fr' ? 'Produit approuvé et mis en ligne' : 'Product approved and live');
                     }} onReject={async (reason) => {
-                      await supabase.from('products').update({ approval_status: 'rejected', reviewed_by: user?.email || 'admin', reviewed_at: new Date().toISOString(), rejection_reason: reason }).eq('id', p.id);
+                      const { data } = await supabase.from('products').update({ approval_status: 'rejected', reviewed_by: user?.email || 'admin', reviewed_at: new Date().toISOString(), rejection_reason: reason }).eq('id', p.id).select('id');
+                      if (!data || data.length === 0) {
+                        showToast(locale === 'fr' ? 'Échec — vérifiez vos droits admin' : 'Failed — check your admin permissions', 'error');
+                        return;
+                      }
                       await logAuditAction({ actorId: user?.id, actorName: user?.fullName, action: 'product.reject', targetType: 'product', targetId: p.id, targetName: p.name });
                       setProducts(products.map(x => x.id === p.id ? { ...x, approval_status: 'rejected', rejection_reason: reason } as Product : x));
                       showToast(locale === 'fr' ? 'Produit rejeté avec motif' : 'Product rejected with reason');
