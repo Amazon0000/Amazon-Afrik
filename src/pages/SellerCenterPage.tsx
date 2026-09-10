@@ -26,12 +26,13 @@ type NewProduct = {
   sku: string;
   categoryId: string;
   productType: 'physical' | 'digital';
+  currencyCode: string;
 };
 
-const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', productType: 'physical' };
+const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', productType: 'physical', currencyCode: 'USD' };
 
 export function SellerCenterPage() {
-  const { t, locale, user, navigate, showToast, categories, countries, params } = useApp();
+  const { t, locale, user, navigate, showToast, categories, countries, params, currencies } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
@@ -248,7 +249,7 @@ export function SellerCenterPage() {
       description: newProduct.description.trim(),
       price: parseFloat(newProduct.price),
       oldPrice: newProduct.oldPrice ? parseFloat(newProduct.oldPrice) : null,
-      currencyCode: 'USD',
+      currencyCode: newProduct.currencyCode || 'USD',
       categoryId: newProduct.categoryId || null,
       stock: parseInt(newProduct.stock, 10),
       sku: newProduct.sku.trim() || null,
@@ -259,7 +260,7 @@ export function SellerCenterPage() {
     setSaving(false);
     if (productId) {
       showToast(locale === 'fr' ? 'Produit créé — en attente de validation Zando avant mise en ligne' : 'Product created — pending Zando approval before it goes live');
-      setNewProduct(emptyProduct);
+      setNewProduct({ ...emptyProduct, currencyCode: newProduct.currencyCode });
       setUploadedImages([]);
       setDigitalFileMeta(null);
       setShowAddProduct(false);
@@ -425,7 +426,16 @@ export function SellerCenterPage() {
                     </div>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.productName} *</label><input value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} className="input-field" placeholder="Robe Wax Premium" /></div>
-                      <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.price} *</label><input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} className="input-field" placeholder="45" /></div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.price} *</label>
+                        <div className="flex gap-2">
+                          <input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} className="input-field flex-1" placeholder="45" />
+                          <select value={newProduct.currencyCode} onChange={(e) => setNewProduct({ ...newProduct, currencyCode: e.target.value })} className="input-field w-28 cursor-pointer shrink-0">
+                            {currencies.filter((c) => c.is_active).map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
+                          </select>
+                        </div>
+                        <p className="text-[11px] text-[#64748b] mt-1">{locale === 'fr' ? 'Les acheteurs voient ce prix converti automatiquement dans leur propre devise.' : 'Buyers see this price automatically converted into their own currency.'}</p>
+                      </div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{t.seller.stock} *</label><input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} className="input-field" placeholder="12" /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Ancien prix' : 'Compare price'}</label><input type="number" value={newProduct.oldPrice} onChange={(e) => setNewProduct({ ...newProduct, oldPrice: e.target.value })} className="input-field" placeholder="60" /></div>
                       <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">SKU</label><input value={newProduct.sku} onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })} className="input-field" placeholder="ZND-001" /></div>

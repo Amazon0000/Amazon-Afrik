@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
 
 export function CheckoutPage() {
-  const { t, locale, cart, navigate, clearCart, showToast, user, countries, formatPrice } = useApp();
+  const { t, locale, cart, navigate, clearCart, showToast, user, countries, formatPrice, currencies } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [deals, setDeals] = useState<Record<string, FlashDeal>>({});
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -90,7 +90,15 @@ export function CheckoutPage() {
 
   const items = cart.map((c) => ({ ...c, product: products[c.productId], deal: deals[c.productId] })).filter((i) => i.product);
   const effectivePrice = (i: typeof items[number]) => i.deal ? i.deal.deal_price : i.product!.price;
-  const subtotal = items.reduce((sum, i) => sum + (effectivePrice(i) * i.qty), 0);
+  // Items — even within one seller — can each carry their own currency
+  // (products.currency_code) now that sellers can choose one per product.
+  // Convert to a USD-equivalent before summing anywhere prices get added
+  // together, rather than naively adding raw numbers across currencies.
+  const usdEquivalent = (i: typeof items[number]) => {
+    const rate = currencies.find((c) => c.code === i.product!.currency_code)?.exchange_rate ?? 1;
+    return effectivePrice(i) * rate;
+  };
+  const subtotal = items.reduce((sum, i) => sum + (usdEquivalent(i) * i.qty), 0);
 
   const sellerGroups = items.reduce<Record<string, typeof items>>((acc, item) => {
     const sid = item.product!.seller_id;
@@ -99,7 +107,7 @@ export function CheckoutPage() {
   }, {});
   const sellerIds = Object.keys(sellerGroups);
   const allSellersHavePayment = sellerIds.every((sid) => selectedPayment[sid]);
-  const sellerSubtotal = (sid: string) => sellerGroups[sid].reduce((sum, i) => sum + effectivePrice(i) * i.qty, 0);
+  const sellerSubtotal = (sid: string) => sellerGroups[sid].reduce((sum, i) => sum + usdEquivalent(i) * i.qty, 0);
 
   // Shipping — physical items only, priced dynamically per seller x destination
   // country. Digital-only sellers never need a rate (instant delivery).
@@ -207,7 +215,20 @@ export function CheckoutPage() {
       const pendingRealPayments: { orderId: string; provider: 'stripe' | 'paddle' | 'payunit' | 'paystack' | 'flutterwave'; trackingId: string }[] = [];
       for (const sellerId of sellerIds) {
         const groupItems = sellerGroups[sellerId];
-        const rawTotal = groupItems.reduce((sum, i) => sum + effectivePrice(i) * i.qty, 0);
+        // Orders now carry the seller's real selling currency instead of
+        // silently defaulting to USD — if a seller's cart items happen to
+        // use different currencies (rare, but each product can now have
+        // its own), the first item's currency is the order's currency and
+        // the rest are converted to it via USD cross-rate, so the total —
+        // and the real PSP charge amount — stay internally consistent.
+        const groupCurrency = groupItems[0]?.product!.currency_code || 'USD';
+        const toGroupCurrency = (amount: number, fromCurrency: string): number => {
+          if (fromCurrency === groupCurrency) return amount;
+          const fromRate = currencies.find((c) => c.code === fromCurrency)?.exchange_rate ?? 1;
+          const toRate = currencies.find((c) => c.code === groupCurrency)?.exchange_rate ?? 1;
+          return (amount * fromRate) / toRate;
+        };
+        const rawTotal = groupItems.reduce((sum, i) => sum + toGroupCurrency(effectivePrice(i), i.product!.currency_code) * i.qty, 0);
         const coupon = appliedCoupons[sellerId];
         let discountAmount = 0;
         let redeemedCode: string | null = null;
@@ -261,6 +282,7 @@ export function CheckoutPage() {
           // confirmed only once the webhook verifies payment.
           status: realCredential ? 'pending' : (isFullyDigital ? 'delivered' : 'confirmed'),
           total: groupTotal,
+          currency_code: groupCurrency,
           coupon_code: redeemedCode,
           discount_amount: discountAmount,
           payment_method: method?.display_name || method?.provider_name || null,
