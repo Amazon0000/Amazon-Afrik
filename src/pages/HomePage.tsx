@@ -16,7 +16,7 @@ const MAIN_HERO_VIDEO_URL = 'https://videos.pexels.com/video-files/4266805/42668
 const SECOND_HERO_VIDEO_URL = 'https://videos.pexels.com/video-files/7287517/7287517-uhd_2560_1440_25fps.mp4';
 
 export function HomePage() {
-  const { t, navigate, geo, locale, products, loadingProducts, categories, countries } = useApp();
+  const { t, navigate, geo, locale, products, loadingProducts, categories, countries, formatPrice } = useApp();
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
   const [paidSponsored, setPaidSponsored] = useState<Product[]>([]);
   const [platformStats, setPlatformStats] = useState<{ sellers: number; products: number; countries: number } | null>(null);
@@ -202,8 +202,8 @@ export function HomePage() {
                 </div>
                 <p className="text-xs font-bold text-gray-900 line-clamp-1">{deals[0].name}</p>
                 <div className="flex items-baseline gap-2 mt-1.5">
-                  <span className="text-xl font-bold text-[#b12704]">${deals[0].price}</span>
-                  <span className="text-xs text-gray-400 line-through">${deals[0].old_price}</span>
+                  <span className="text-xl font-bold text-[#b12704]">{formatPrice(deals[0].price, deals[0].currency_code)}</span>
+                  <span className="text-xs text-gray-400 line-through">{formatPrice(deals[0].old_price ?? deals[0].price, deals[0].currency_code)}</span>
                 </div>
               </div>
               <button onClick={() => navigate('catalog', { sort: 'priceLow' })} className="text-xs font-bold text-[#007185] hover:text-[#c45500] hover:underline text-left">
@@ -296,8 +296,8 @@ export function HomePage() {
                     <div className="p-2.5">
                       <p className="text-xs text-[#0f172a] font-medium truncate">{deal.products?.name}</p>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-sm font-bold text-[#3d1f00]">${deal.deal_price.toFixed(2)}</span>
-                        <span className="text-[10px] text-[#64748b] line-through">${deal.products?.price.toFixed(2)}</span>
+                        <span className="text-sm font-bold text-[#3d1f00]">{formatPrice(deal.deal_price, deal.products?.currency_code)}</span>
+                        <span className="text-[10px] text-[#64748b] line-through">{formatPrice(deal.products?.price ?? deal.deal_price, deal.products?.currency_code)}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1.5 text-[10px] font-bold text-[#e06c00]">
                         <Zap className="w-3 h-3" /> <Countdown endsAt={deal.ends_at} />
@@ -371,7 +371,7 @@ export function HomePage() {
                     </div>
                     <p className="text-xs font-bold text-gray-900 truncate">{p.name}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">{p.sellers?.business_name}</p>
-                    <p className="text-sm font-black text-[#b12704] mt-1">${p.price}</p>
+                    <p className="text-sm font-black text-[#b12704] mt-1">{formatPrice(p.price, p.currency_code)}</p>
                   </div>
                 );
               })}

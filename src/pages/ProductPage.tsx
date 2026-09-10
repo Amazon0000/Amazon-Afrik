@@ -8,7 +8,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { Star, ShoppingCart, ChevronRight, Heart, CheckCircle, MapPin, Search, Lock, Megaphone, Flame, Store, BadgeCheck } from 'lucide-react';
 
 export function ProductPage() {
-  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user, setPageMeta } = useApp();
+  const { t, params, navigate, addToCart, locale, wishlist, toggleWishlist, showToast, user, setPageMeta, formatPrice } = useApp();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [isReallySponsored, setIsReallySponsored] = useState(false);
@@ -278,14 +278,12 @@ export function ProductPage() {
                 {(flashDeal || product.old_price) && (
                   <>
                     {locale === 'fr' ? 'Prix conseillé :' : 'List Price:'}
-                    <span className="line-through">${flashDeal ? product.price.toFixed(2) : product.old_price}</span>
+                    <span className="line-through">{formatPrice(flashDeal ? product.price : product.old_price!, product.currency_code)}</span>
                   </>
                 )}
               </div>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-[28px] font-light text-gray-900 leading-none">$</span>
-                <span className="text-[28px] font-black text-gray-900 leading-none">{Math.floor(flashDeal ? flashDeal.deal_price : product.price)}</span>
-                <span className="text-[14px] font-bold text-gray-900 align-super">.00</span>
+                <span className="text-[28px] font-black text-gray-900 leading-none">{formatPrice(flashDeal ? flashDeal.deal_price : product.price, product.currency_code)}</span>
 
                 {(flashDeal || product.old_price) && (
                   <span className="text-xs text-[#cc0c39] font-bold ml-2 bg-[#cc0c39]/10 px-2 py-0.5 rounded-sm">
@@ -346,7 +344,7 @@ export function ProductPage() {
 
               {/* Product Price & Currency conversion reference */}
               <div>
-                <span className="text-2xl font-bold text-gray-900">${product.price}</span>
+                <span className="text-2xl font-bold text-gray-900">{formatPrice(flashDeal ? flashDeal.deal_price : product.price, product.currency_code)}</span>
                 <p className="text-xs text-[#e06c00] font-bold mt-1 flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>Free Shipping included</span>

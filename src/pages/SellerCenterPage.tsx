@@ -838,8 +838,8 @@ export function SellerCenterPage() {
                   </div>
                   <p className="text-xs text-[#64748b] mb-4">
                     {locale === 'fr'
-                      ? 'Entrez les clés fournies par votre propre compte Stripe, Paddle, PayUnit, Paystack, Flutterwave ou Airwallex. Vos clés secrètes ne sont jamais lisibles depuis l\'application une fois enregistrées — même par vous — uniquement utilisées côté serveur.'
-                      : "Enter the keys from your own Stripe, Paddle, PayUnit, Paystack, Flutterwave, or Airwallex account. Your secret keys are never readable from the app once saved — not even by you — only used server-side."}
+                      ? "Entrez les clés fournies par votre propre compte Stripe, Paddle, PayUnit, Paystack ou Flutterwave. Vos clés secrètes ne sont jamais lisibles depuis l'application une fois enregistrées — même par vous — uniquement utilisées côté serveur."
+                      : "Enter the keys from your own Stripe, Paddle, PayUnit, Paystack, or Flutterwave account. Your secret keys are never readable from the app once saved — not even by you — only used server-side."}
                   </p>
 
                   {showApiPspForm && (
@@ -852,13 +852,13 @@ export function SellerCenterPage() {
                           <option value="payunit">PayUnit</option>
                           <option value="paystack">Paystack</option>
                           <option value="flutterwave">Flutterwave</option>
-                          <option value="airwallex">Airwallex</option>
                         </select>
+                        <p className="text-[11px] text-[#64748b] mt-1">{locale === 'fr' ? "Airwallex, Alipay et WeChat Pay : le paiement automatisé n'est pas encore construit pour ces fournisseurs — utilisez la section \"Mobile Money / virement / autre\" ci-dessous en attendant." : "Airwallex, Alipay, and WeChat Pay: automated checkout isn't built for these providers yet — use the \"Mobile Money / bank transfer / other\" section below in the meantime."}</p>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">
-                            {apiPspForm.provider === 'paddle' ? (locale === 'fr' ? 'ID Vendeur' : 'Vendor ID') : apiPspForm.provider === 'payunit' ? (locale === 'fr' ? 'Clé API (x-api-key)' : 'API Key (x-api-key)') : apiPspForm.provider === 'airwallex' ? 'Client ID' : locale === 'fr' ? 'Clé publique' : 'Public key'}
+                            {apiPspForm.provider === 'paddle' ? (locale === 'fr' ? 'ID Vendeur' : 'Vendor ID') : apiPspForm.provider === 'payunit' ? (locale === 'fr' ? 'Clé API (x-api-key)' : 'API Key (x-api-key)') : locale === 'fr' ? 'Clé publique' : 'Public key'}
                           </label>
                           <input value={apiPspForm.publicKey} onChange={(e) => setApiPspForm({ ...apiPspForm, publicKey: e.target.value })} className="input-field" placeholder={apiPspForm.provider === 'stripe' ? 'pk_live_...' : apiPspForm.provider === 'paystack' ? 'pk_live_...' : ''} />
                         </div>
@@ -869,9 +869,9 @@ export function SellerCenterPage() {
                           <input type="password" value={apiPspForm.secretKey} onChange={(e) => setApiPspForm({ ...apiPspForm, secretKey: e.target.value })} className="input-field" placeholder={apiPspForm.provider === 'stripe' ? 'sk_live_...' : '••••••••'} />
                         </div>
                       </div>
-                      {(apiPspForm.provider === 'payunit' || apiPspForm.provider === 'airwallex') && (
+                      {apiPspForm.provider === 'payunit' && (
                         <div>
-                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">{apiPspForm.provider === 'payunit' ? 'API User' : (locale === 'fr' ? "ID marchand / compte" : 'Merchant / account ID')}</label>
+                          <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-1.5">API User</label>
                           <input value={apiPspForm.merchantId} onChange={(e) => setApiPspForm({ ...apiPspForm, merchantId: e.target.value })} className="input-field" />
                         </div>
                       )}

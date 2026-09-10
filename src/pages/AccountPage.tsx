@@ -8,7 +8,7 @@ import { ProductCard } from '@/components/Cards';
 import { User as UserIcon, Package, MapPin, Heart, Plus, Trash2, Truck, RotateCcw, Loader2, XCircle, Download, MessageSquare as MessageSquareIcon, FileText, AlertOctagon, ShieldAlert } from 'lucide-react';
 
 export function AccountPage() {
-  const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart } = useApp();
+  const { t, locale, user, navigate, wishlist, showToast, countries, params, addToCart, formatPrice } = useApp();
   const [tab, setTab] = useState((params.tab as string) || 'profile');
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [buyingAgain, setBuyingAgain] = useState<string | null>(null);
@@ -197,7 +197,7 @@ export function AccountPage() {
                           <div key={item.id} className="flex items-center gap-3 mb-2">
                             {item.image_url && <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />}
                             <span className="text-sm text-[#0f172a] flex-1">{item.product_name} x{item.qty}</span>
-                            <span className="text-sm font-bold text-[#0f172a]">${item.price * item.qty}</span>
+                            <span className="text-sm font-bold text-[#0f172a]">{formatPrice(item.price * item.qty)}</span>
                             {item.product_type === 'digital' ? (
                               <button onClick={() => downloadDigitalItem(item.id)} disabled={downloadingItemId === item.id} className="flex items-center gap-1 text-xs font-semibold text-white bg-[#ff7a00] rounded-full px-3 py-1.5 hover:bg-[#e06c00] disabled:opacity-50 shrink-0">
                                 {downloadingItemId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
@@ -212,7 +212,7 @@ export function AccountPage() {
                           </div>
                         ))}
                         <div className="flex items-center justify-between pt-3 border-t border-[#ff7a00]/10">
-                          <span className="font-bold text-[#0f172a]">{t.cart.total}: ${order.total.toFixed(2)}</span>
+                          <span className="font-bold text-[#0f172a]">{t.cart.total}: {formatPrice(order.total)}</span>
                           <div className="flex items-center gap-3">
                             {['pending', 'confirmed'].includes(order.status) && (
                               <button onClick={() => cancelOrder(order.id)} disabled={cancellingId === order.id} className="flex items-center gap-1 text-sm font-semibold text-red-500 hover:underline disabled:opacity-50">

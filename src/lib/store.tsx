@@ -51,7 +51,7 @@ type AppState = {
   categories: Category[];
   currencyCode: string;
   setCurrencyCode: (c: string) => void;
-  formatPrice: (usdAmount: number) => string;
+  formatPrice: (amount: number, sourceCurrencyCode?: string) => string;
   products: Product[];
   loadingProducts: boolean;
   loadingReference: boolean;
@@ -355,11 +355,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('zando-currency-manual', 'true');
   };
 
-  // Real conversion: converts a USD amount into the user's selected currency
-  // and formats it with the right symbol/decimals. Falls back to raw USD if
-  // the currency isn't loaded yet or is unknown — never silently mis-converts.
-  const formatPrice = (usdAmount: number): string => {
+  // Real conversion: converts an amount, in its OWN source currency (a
+  // product may be priced in something other than USD — see
+  // products.currency_code), into the user's selected display currency,
+  // via USD as the common cross-rate base (exchange_rate convention: USD
+  // value of one unit of that currency). Defaults to USD for anything
+  // that doesn't carry its own currency (subscription plans, ad pricing,
+  // etc.), so every existing call site keeps working unchanged.
+  // Falls back to raw display if a currency isn't loaded/known — never
+  // silently mis-converts.
+  const formatPrice = (amount: number, sourceCurrencyCode: string = 'USD'): string => {
     const currency = currencies.find((c) => c.code === currencyCode);
+    const sourceCurrency = currencies.find((c) => c.code === sourceCurrencyCode);
+    const usdAmount = sourceCurrency ? amount * sourceCurrency.exchange_rate : amount;
     if (!currency || currency.code === 'USD') return `$${usdAmount.toFixed(2)}`;
     const localAmount = usdAmount / currency.exchange_rate;
     const noDecimalCurrencies = ['JPY', 'KRW', 'VND', 'IDR', 'XOF', 'XAF', 'GNF', 'RWF', 'UGX', 'TZS', 'CDF', 'DJF', 'BIF', 'KMF'];

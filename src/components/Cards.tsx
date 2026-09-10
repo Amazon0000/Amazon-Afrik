@@ -4,7 +4,7 @@ import type { Product, Seller } from '@/lib/db';
 import { CountryFlag } from './CountryFlag';
 
 export function ProductCard({ product, sponsored }: { product: Product; sponsored?: boolean }) {
-  const { t, navigate, wishlist, toggleWishlist, showToast } = useApp();
+  const { t, navigate, wishlist, toggleWishlist, showToast, formatPrice } = useApp();
   const inWishlist = wishlist.includes(product.id);
   const country = product.countries;
   const seller = product.sellers;
@@ -99,11 +99,11 @@ export function ProductCard({ product, sponsored }: { product: Product; sponsore
         <div className="mt-2.5">
           <div className="flex items-baseline gap-1.5">
             <span className="text-lg font-black text-[#0f172a] font-sans">
-              ${product.price}
+              {formatPrice(product.price, product.currency_code)}
             </span>
             {product.old_price && (
               <span className="text-xs text-[#565959] line-through font-normal">
-                ${product.old_price}
+                {formatPrice(product.old_price, product.currency_code)}
               </span>
             )}
           </div>

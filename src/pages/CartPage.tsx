@@ -5,7 +5,7 @@ import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, Truck, Flame } from 'luci
 import { useState, useEffect } from 'react';
 
 export function CartPage() {
-  const { t, locale, cart, removeFromCart, updateCartQty, navigate, showToast } = useApp();
+  const { t, locale, cart, removeFromCart, updateCartQty, navigate, showToast, formatPrice, currencies } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [deals, setDeals] = useState<Record<string, FlashDeal>>({});
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,14 @@ export function CartPage() {
 
   const items = cart.map((c) => ({ ...c, product: products[c.productId], deal: deals[c.productId] })).filter((i) => i.product);
   const effectivePrice = (i: typeof items[number]) => i.deal ? i.deal.deal_price : i.product!.price;
-  const total = items.reduce((sum, i) => sum + (effectivePrice(i) * i.qty), 0);
+  // Items can be priced in different currencies (products.currency_code) —
+  // convert each to a USD-equivalent before summing, rather than naively
+  // adding raw numbers across currencies.
+  const usdEquivalent = (i: typeof items[number]) => {
+    const rate = currencies.find((c) => c.code === i.product!.currency_code)?.exchange_rate ?? 1;
+    return effectivePrice(i) * rate;
+  };
+  const total = items.reduce((sum, i) => sum + (usdEquivalent(i) * i.qty), 0);
 
   if (loading) return <div className="motif-bg min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-[#ff7a00]/20 border-t-[#ff7a00] animate-spin" /></div>;
 
@@ -82,10 +89,10 @@ export function CartPage() {
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-lg font-bold text-[#0f172a]">${(effectivePrice(item) * item.qty).toFixed(0)}</p>
+                    <p className="text-lg font-bold text-[#0f172a]">{formatPrice(effectivePrice(item) * item.qty, item.product!.currency_code)}</p>
                     <p className="text-xs text-[#64748b]">
-                      {item.deal && <span className="line-through mr-1">${item.product!.price}</span>}
-                      ${effectivePrice(item)} {t.cart.qty}
+                      {item.deal && <span className="line-through mr-1">{formatPrice(item.product!.price, item.product!.currency_code)}</span>}
+                      {formatPrice(effectivePrice(item), item.product!.currency_code)} {t.cart.qty}
                     </p>
                   </div>
                 </div>
@@ -95,12 +102,12 @@ export function CartPage() {
               <div className="card p-5 lg:sticky lg:top-20">
                 <h2 className="font-display text-lg font-bold text-[#0f172a] mb-4">{t.cart.orderSummary}</h2>
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${total.toFixed(2)}</span></div>
+                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">{formatPrice(total)}</span></div>
                   <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.delivery}</span><span className="font-semibold text-[#e06c00] flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {t.cart.freeDelivery}</span></div>
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-[#ff7a00]/20 mb-5">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
-                  <span className="text-2xl font-bold text-[#0f172a]">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[#0f172a]">{formatPrice(total)}</span>
                 </div>
                 <button onClick={() => navigate('checkout')} className="w-full btn-gold py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2">{t.cart.checkout} <ArrowRight className="w-4 h-4" /></button>
                 <button onClick={() => navigate('catalog')} className="w-full mt-2 text-sm text-[#64748b] hover:text-[#0f172a] transition-colors">{t.cart.continueShopping}</button>

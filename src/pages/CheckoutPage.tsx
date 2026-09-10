@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { CheckCircle, CreditCard, MapPin, Plus, Truck, ShieldCheck, User, Mail, Phone, Smartphone, Store, AlertTriangle, Tag, Loader2, X, Wallet, Download, FileText } from 'lucide-react';
 
 export function CheckoutPage() {
-  const { t, locale, cart, navigate, clearCart, showToast, user, countries } = useApp();
+  const { t, locale, cart, navigate, clearCart, showToast, user, countries, formatPrice } = useApp();
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [deals, setDeals] = useState<Record<string, FlashDeal>>({});
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -136,13 +136,13 @@ export function CheckoutPage() {
     setCouponChecking({ ...couponChecking, [sellerId]: false });
     if (result.valid) {
       setAppliedCoupons({ ...appliedCoupons, [sellerId]: { code: code.toUpperCase(), discount: result.discount_amount } });
-      showToast(locale === 'fr' ? `Code appliqué : -$${result.discount_amount.toFixed(2)}` : `Code applied: -$${result.discount_amount.toFixed(2)}`);
+      showToast(locale === 'fr' ? `Code appliqué : -${formatPrice(result.discount_amount)}` : `Code applied: -${formatPrice(result.discount_amount)}`);
     } else {
       const messages: Record<string, { fr: string; en: string }> = {
         not_found: { fr: 'Code invalide pour ce vendeur', en: 'Invalid code for this seller' },
         expired: { fr: 'Ce code a expiré', en: 'This code has expired' },
         limit_reached: { fr: "Ce code a atteint sa limite d'utilisation", en: 'This code has reached its usage limit' },
-        min_order_not_met: { fr: `Achat minimum de $${result.min_order_amount} requis`, en: `Minimum order of $${result.min_order_amount} required` },
+        min_order_not_met: { fr: `Achat minimum de ${formatPrice(result.min_order_amount || 0)} requis`, en: `Minimum order of ${formatPrice(result.min_order_amount || 0)} required` },
       };
       const m = messages[result.reason];
       showToast((locale === 'fr' ? m?.fr : m?.en) || (locale === 'fr' ? 'Code invalide' : 'Invalid code'), 'error');
@@ -460,7 +460,7 @@ export function CheckoutPage() {
                       <div className="flex items-center gap-2 mb-3">
                         <Store className="w-4 h-4 text-[#64748b]" />
                         <span className="text-sm font-semibold text-[#0f172a]">{seller?.business_name || sellerId}</span>
-                        <span className="ml-auto text-sm font-bold text-[#0f172a]">${sellerFinalTotal(sellerId).toFixed(2)}</span>
+                        <span className="ml-auto text-sm font-bold text-[#0f172a]">{formatPrice(sellerFinalTotal(sellerId))}</span>
                       </div>
                       {sellerHasPhysicalItems(sellerId) && destinationCountryId && !sellerShippingRate(sellerId) && (
                         <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 text-xs mb-2">
@@ -471,7 +471,7 @@ export function CheckoutPage() {
                       {sellerHasPhysicalItems(sellerId) && sellerShippingRate(sellerId) && (
                         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white text-xs text-[#0f172a] mb-2 border border-[#0f172a]/10">
                           <Truck className="w-3.5 h-3.5 text-[#ff7a00] shrink-0" />
-                          <span className="flex-1">{locale === 'fr' ? 'Livraison' : 'Shipping'}: ${sellerShippingRate(sellerId)!.fee.toFixed(2)} · {sellerShippingRate(sellerId)!.min_days}-{sellerShippingRate(sellerId)!.max_days} {locale === 'fr' ? 'jours' : 'days'}</span>
+                          <span className="flex-1">{locale === 'fr' ? 'Livraison' : 'Shipping'}: {formatPrice(sellerShippingRate(sellerId)!.fee)} · {sellerShippingRate(sellerId)!.min_days}-{sellerShippingRate(sellerId)!.max_days} {locale === 'fr' ? 'jours' : 'days'}</span>
                         </div>
                       )}
                       {methods.length === 0 ? (
@@ -509,7 +509,7 @@ export function CheckoutPage() {
                       <div className="mt-3 pt-3 border-t border-[#0f172a]/10">
                         {appliedCoupons[sellerId] ? (
                           <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-[#3d1f00]/20">
-                            <span className="text-xs font-semibold text-[#3d1f00] flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> {appliedCoupons[sellerId].code} · -${appliedCoupons[sellerId].discount.toFixed(2)}</span>
+                            <span className="text-xs font-semibold text-[#3d1f00] flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> {appliedCoupons[sellerId].code} · -{formatPrice(appliedCoupons[sellerId].discount)}</span>
                             <button onClick={() => removeCoupon(sellerId)} className="text-[#64748b] hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                           </div>
                         ) : (
@@ -545,14 +545,14 @@ export function CheckoutPage() {
                       <p className="text-xs font-medium text-[#0f172a] truncate">{i.product!.name}</p>
                       <p className="text-xs text-[#64748b]">{t.cart.qty}: {i.qty}</p>
                     </div>
-                    <span className="text-sm font-bold text-[#0f172a]">${(effectivePrice(i) * i.qty).toFixed(0)}</span>
+                    <span className="text-sm font-bold text-[#0f172a]">{formatPrice(effectivePrice(i) * i.qty, i.product!.currency_code)}</span>
                   </div>
                 ))}
               </div>
               <div className="space-y-2 pt-3 border-t border-[#3d1f00]/15">
-                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">${subtotal.toFixed(2)}</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="text-[#64748b]">{t.cart.subtotal}</span><span className="font-semibold text-[#0f172a]">{formatPrice(subtotal)}</span></div>
                 {totalDiscount > 0 && (
-                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b] flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Remise' : 'Discount'}</span><span className="font-semibold text-[#3d1f00]">-${totalDiscount.toFixed(2)}</span></div>
+                  <div className="flex items-center justify-between text-sm"><span className="text-[#64748b] flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Remise' : 'Discount'}</span><span className="font-semibold text-[#3d1f00]">-{formatPrice(totalDiscount)}</span></div>
                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[#64748b]">{t.cart.delivery}</span>
@@ -563,12 +563,12 @@ export function CheckoutPage() {
                   ) : shippingLoading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-[#64748b]" />
                   ) : (
-                    <span className="font-semibold text-[#0f172a]">${totalShipping.toFixed(2)}</span>
+                    <span className="font-semibold text-[#0f172a]">{formatPrice(totalShipping)}</span>
                   )}
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-[#3d1f00]/15">
                   <span className="font-bold text-[#0f172a]">{t.cart.total}</span>
-                  <span className="text-2xl font-bold text-[#0f172a]">${grandTotal.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[#0f172a]">{formatPrice(grandTotal)}</span>
                 </div>
               </div>
               <button onClick={placeOrder} disabled={(user ? !selectedAddressId : !guestInfo.name || !guestInfo.email || !guestInfo.address || (items.some((i) => i.product!.product_type !== 'digital') && !guestInfo.countryId)) || !allSellersHavePayment || !allSellersCanShip} className="w-full btn-gold py-3.5 rounded-full font-semibold mt-5 disabled:opacity-50 soft-glow">
