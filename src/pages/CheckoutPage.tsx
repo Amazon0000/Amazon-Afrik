@@ -50,9 +50,36 @@ export function CheckoutPage() {
           fetchSellerPaymentMethods(sellerId).then((m) => m.filter((x) => x.is_active)),
           fetchSellerPspCredentials(sellerId),
         ]);
-        paymentsBySeller[sellerId] = methods;
+        // A seller connecting a real API PSP (Seller Center > Payment
+        // gateways) previously never appeared at checkout at all —
+        // checkout only ever read the separate manual directory table
+        // (seller_payment_methods), and connecting real keys doesn't
+        // write to that table. Synthesize a buyer-facing entry for any
+        // active, fully-configured real credential that doesn't already
+        // have a matching manual entry, so "connected" actually means
+        // "buyers can pay with it".
+        const merged = [...methods];
+        for (const cred of pspCreds) {
+          if (!cred.is_active || !cred.has_secret) continue;
+          const alreadyListed = methods.some((m) => m.provider_name.toLowerCase() === cred.provider);
+          if (!alreadyListed) {
+            merged.push({
+              id: `psp-credential-${cred.id}`,
+              seller_id: sellerId,
+              provider_name: cred.provider,
+              provider_type: 'card',
+              account_identifier: null,
+              is_active: true,
+              is_verified: true,
+              display_name: cred.provider.charAt(0).toUpperCase() + cred.provider.slice(1),
+              instructions: null,
+              created_at: cred.created_at,
+            });
+          }
+        }
+        paymentsBySeller[sellerId] = merged;
         pspCredsBySeller[sellerId] = pspCreds;
-        if (methods.length > 0) defaults[sellerId] = methods[0].id;
+        if (merged.length > 0) defaults[sellerId] = merged[0].id;
       }));
       setSellerPayments(paymentsBySeller);
       setPspCredentialsBySeller(pspCredsBySeller);
