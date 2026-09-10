@@ -185,13 +185,16 @@ export function CheckoutPage() {
         let discountAmount = 0;
         let redeemedCode: string | null = null;
         if (coupon) {
-          // Re-validate + atomically consume the use right at order time — the
-          // preview above could be stale (another buyer may have just used the
-          // last redemption). If redemption fails, the order still goes through
-          // at full price rather than blocking the whole checkout.
-          const stillValid = await redeemCoupon(coupon.code, sellerId);
-          if (stillValid) {
-            discountAmount = coupon.discount;
+          // Re-validate (non-consuming) right at order time — the preview
+          // above could be stale (another buyer may have just used the last
+          // redemption). Actually consuming a use (redeemCoupon) happens
+          // below, AFTER we know whether this order is immediately
+          // confirmed or awaiting real PSP payment — a coupon must not be
+          // permanently spent on a checkout that's later abandoned and
+          // never actually pays (see the identical fix for stock decrement).
+          const revalidated = await validateCoupon(coupon.code, sellerId, rawTotal);
+          if (revalidated.valid) {
+            discountAmount = revalidated.discount_amount ?? coupon.discount;
             redeemedCode = coupon.code;
           } else {
             showToast(locale === 'fr' ? `Le code ${coupon.code} n'est plus disponible — commande passée au prix plein` : `Code ${coupon.code} is no longer available — order placed at full price`, 'error');
@@ -274,6 +277,7 @@ export function CheckoutPage() {
           if (realCredential) {
             pendingRealPayments.push({ orderId: order.id, provider: realCredential.provider, trackingId });
           } else {
+            if (redeemedCode) await redeemCoupon(redeemedCode, sellerId);
             notifyNewOrder(order.id);
           }
         }

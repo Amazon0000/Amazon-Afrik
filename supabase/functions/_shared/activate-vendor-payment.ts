@@ -70,7 +70,7 @@ export async function processVerifiedVendorPayment(args: ActivateArgs): Promise<
     updated_at: new Date().toISOString(),
   }).eq('id', payment.id);
 
-  const { data: order } = await supabase.from('orders').select('id, user_id, guest_email, seller_id, tracking_id').eq('id', payment.order_id).maybeSingle();
+  const { data: order } = await supabase.from('orders').select('id, user_id, guest_email, seller_id, tracking_id, coupon_code').eq('id', payment.order_id).maybeSingle();
 
   if (newStatus !== 'paid') {
     return { ok: true, message: `Paiement en statut ${newStatus}, commande non confirmée.` };
@@ -85,6 +85,14 @@ export async function processVerifiedVendorPayment(args: ActivateArgs): Promise<
   const { data: items } = await supabase.from('order_items').select('product_id, qty').eq('order_id', payment.order_id);
   for (const item of items || []) {
     if (item.product_id) await supabase.rpc('decrement_product_stock', { p_product_id: item.product_id, p_qty: item.qty });
+  }
+  // Coupon consumption (times_used) was deferred from checkout to here —
+  // the discount was already applied to the order total, but a limited-use
+  // coupon must not be permanently spent by a checkout that's later
+  // abandoned and never actually pays (see CheckoutPage.tsx for the
+  // matching checkout-side half of this fix).
+  if (order?.coupon_code) {
+    await supabase.rpc('redeem_coupon', { p_code: order.coupon_code, p_seller_id: payment.seller_id });
   }
   const { data: seller } = await supabase.from('sellers').select('user_id').eq('id', payment.seller_id).maybeSingle();
   if (seller?.user_id) {
