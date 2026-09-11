@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSponsoredProducts } from '@/lib/db';
+import { fetchProducts, fetchSponsoredProducts, recordAdImpression } from '@/lib/db';
 import type { Product } from '@/lib/db';
 import { ProductCard } from '@/components/Cards';
 import { EmptyState } from '@/components/ui';
@@ -53,6 +53,10 @@ export function CatalogPage() {
         ]);
         setProducts(prods);
         setSponsoredIds(new Set(sponsored.map((p) => p.id)));
+        // Real impression tracking — each sponsored product returned here
+        // is about to be rendered to this visitor, which is what
+        // "impression" means (was completely untracked before).
+        sponsored.forEach((p) => recordAdImpression(p.id, 'search_results'));
       } catch (e) {
         console.error(e);
       } finally {

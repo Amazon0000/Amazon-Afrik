@@ -1,9 +1,10 @@
 import { Star, MapPin, Heart } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import type { Product, Seller } from '@/lib/db';
+import { recordAdClick } from '@/lib/db';
 import { CountryFlag } from './CountryFlag';
 
-export function ProductCard({ product, sponsored }: { product: Product; sponsored?: boolean }) {
+export function ProductCard({ product, sponsored, placementId = 'search_results' }: { product: Product; sponsored?: boolean; placementId?: string }) {
   const { t, navigate, wishlist, toggleWishlist, showToast, formatPrice } = useApp();
   const inWishlist = wishlist.includes(product.id);
   const country = product.countries;
@@ -17,7 +18,10 @@ export function ProductCard({ product, sponsored }: { product: Product; sponsore
 
   return (
     <div
-      onClick={() => navigate('product', { id: product.id })}
+      onClick={() => {
+        if (isSponsored) recordAdClick(product.id, placementId);
+        navigate('product', { id: product.id });
+      }}
       className="bg-white border border-[#e7e7e7] rounded-sm p-3 flex flex-col justify-between h-full hover:shadow-md hover:border-[#dddddd] transition-all cursor-pointer group"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-[#f7f7f7] rounded-sm mb-3">

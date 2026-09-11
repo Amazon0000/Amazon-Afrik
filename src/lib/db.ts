@@ -2270,6 +2270,21 @@ export async function fetchSponsoredProducts(placementId?: string, limit = 20): 
   return (data || []) as Product[];
 }
 
+// Real ad performance tracking — was completely fake before (impressions/
+// clicks never incremented anywhere). Fire-and-forget: tracking must never
+// block or break the actual browsing/navigation experience.
+export function recordAdImpression(productId: string, placementId: string): void {
+  supabase.rpc('record_ad_event', { p_product_id: productId, p_placement: placementId, p_event_type: 'impression' }).then(({ error }: { error: { message: string } | null }) => {
+    if (error) console.warn('recordAdImpression failed:', error.message);
+  });
+}
+
+export function recordAdClick(productId: string, placementId: string): void {
+  supabase.rpc('record_ad_event', { p_product_id: productId, p_placement: placementId, p_event_type: 'click' }).then(({ error }: { error: { message: string } | null }) => {
+    if (error) console.warn('recordAdClick failed:', error.message);
+  });
+}
+
 export async function fetchAllCampaignsAdmin(filters?: {
   status?: string; paymentStatus?: string; provider?: string; placementId?: string;
 }): Promise<AdCampaign[]> {

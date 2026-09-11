@@ -5,7 +5,7 @@ import { Countdown } from '@/components/ui';
 import { CountryCarousel } from '@/components/CountryCarousel';
 import { VideoHero } from '@/components/VideoHero';
 import { CountryFlag } from '@/components/CountryFlag';
-import { fetchActiveFlashDeals, fetchSponsoredProducts, fetchPlatformStats, type FlashDeal, type Product } from '@/lib/db';
+import { fetchActiveFlashDeals, fetchSponsoredProducts, fetchPlatformStats, recordAdImpression, recordAdClick, type FlashDeal, type Product } from '@/lib/db';
 import { ArrowRight, Sparkles, TrendingUp, Store, MapPin, Zap, Tag, Gift, Award, Megaphone, ChevronLeft, ChevronRight, Star, Flame, Globe2, ShieldCheck } from 'lucide-react';
 
 // Real videos (Pexels License — free for commercial use, no attribution
@@ -27,7 +27,10 @@ export function HomePage() {
     // campagne active + payée + non expirée. Le champ products.is_sponsored
     // n'est conservé que comme repli pour les données de démo/seed sans
     // campagne réelle associée.
-    fetchSponsoredProducts('homepage').then(setPaidSponsored);
+    fetchSponsoredProducts('homepage').then((prods) => {
+      setPaidSponsored(prods);
+      prods.forEach((p) => recordAdImpression(p.id, 'homepage'));
+    });
     fetchPlatformStats().then(setPlatformStats);
   }, []);
 
@@ -364,7 +367,7 @@ export function HomePage() {
               {sponsored.slice(0, 4).map((p) => {
                 const discount = p.old_price && p.old_price > p.price ? Math.round(((p.old_price - p.price) / p.old_price) * 100) : 0;
                 return (
-                  <div key={p.id} onClick={() => navigate('product', { id: p.id })} className="border border-gray-200 p-3 rounded hover:border-gray-300 transition-colors cursor-pointer bg-gray-50 group">
+                  <div key={p.id} onClick={() => { recordAdClick(p.id, 'homepage'); navigate('product', { id: p.id }); }} className="border border-gray-200 p-3 rounded hover:border-gray-300 transition-colors cursor-pointer bg-gray-50 group">
                     <div className="aspect-square rounded overflow-hidden bg-white mb-2 relative">
                       <img src={p.product_images?.[0]?.image_url || ''} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       {discount > 0 && <span className="absolute top-1 left-1 px-1.5 py-0.5 text-[9px] font-bold rounded-sm bg-[#cc0c39] text-white">-{discount}%</span>}

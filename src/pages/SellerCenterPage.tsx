@@ -844,7 +844,7 @@ export function SellerCenterPage() {
                         return dailyRevenue.map((d, i) => (
                           <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
                             <div className="w-full rounded-t bg-gradient-to-t from-[#ff7a00] to-[#e06c00] hover:opacity-80 transition-opacity" style={{ height: `${Math.max((d.total / maxDay) * 100, d.total > 0 ? 4 : 0)}%`, minHeight: d.total > 0 ? '4px' : '0' }} title={`${d.label}: $${d.total.toFixed(2)}`} />
-                            <span className="text-[9px] text-[#64748b] rotate-0">{d.label}</span>
+                            <span className={`text-[9px] text-[#64748b] ${i % 2 === 1 ? 'invisible sm:visible' : ''}`}>{d.label}</span>
                           </div>
                         ));
                       })()}
@@ -883,7 +883,7 @@ export function SellerCenterPage() {
                   <button onClick={() => navigate('ads')} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4" /> {t.ads.createCampaign}</button>
                 </div>
                 {ads.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
                     <div className="card p-4 bg-white text-center">
                       <p className="text-xl font-bold text-[#0f172a]">{ads.filter((a) => a.status === 'active').length}</p>
                       <p className="text-[11px] text-[#64748b] mt-1">{locale === 'fr' ? 'Campagnes actives' : 'Active campaigns'}</p>
@@ -900,6 +900,16 @@ export function SellerCenterPage() {
                       <p className="text-xl font-bold text-[#0f172a]">{ads.reduce((sum, a) => sum + a.clicks, 0).toLocaleString()}</p>
                       <p className="text-[11px] text-[#64748b] mt-1">{t.ads.clicks}</p>
                     </div>
+                    <div className="card p-4 bg-white text-center">
+                      <p className="text-xl font-bold text-[#0f172a]">
+                        {(() => {
+                          const totalImp = ads.reduce((sum, a) => sum + a.impressions, 0);
+                          const totalClk = ads.reduce((sum, a) => sum + a.clicks, 0);
+                          return totalImp > 0 ? `${((totalClk / totalImp) * 100).toFixed(2)}%` : '—';
+                        })()}
+                      </p>
+                      <p className="text-[11px] text-[#64748b] mt-1">CTR</p>
+                    </div>
                   </div>
                 )}
                 {ads.length === 0 ? (
@@ -914,9 +924,10 @@ export function SellerCenterPage() {
                             <p className="font-semibold text-[#0f172a]">{ad.products?.name || ad.name}</p>
                             <Badge color={statusColor}>{ad.payment_status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending') : ad.status}</Badge>
                           </div>
-                          <div className="grid grid-cols-3 gap-3 text-center">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                             <div><p className="text-lg font-bold text-[#0f172a]">{ad.impressions.toLocaleString()}</p><p className="text-xs text-[#64748b]">{t.ads.impressions}</p></div>
                             <div><p className="text-lg font-bold text-[#0f172a]">{ad.clicks.toLocaleString()}</p><p className="text-xs text-[#64748b]">{t.ads.clicks}</p></div>
+                            <div><p className="text-lg font-bold text-[#0f172a]">{ad.impressions > 0 ? `${((ad.clicks / ad.impressions) * 100).toFixed(2)}%` : '—'}</p><p className="text-xs text-[#64748b]">CTR</p></div>
                             <div><p className="text-lg font-bold text-[#0f172a]">{ad.currency_code || '$'} {ad.price ?? ad.budget}</p><p className="text-xs text-[#64748b]">{t.ads.budget}</p></div>
                           </div>
                           {ad.status === 'active' && ad.expires_at && (
