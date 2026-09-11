@@ -125,7 +125,7 @@ export function SellerCenterPage() {
           });
         }
         setProducts(prods);
-        setOrders(ords.slice(0, 10));
+        setOrders(ords);
         setAds(adCamp);
         setReturns(rets);
         setSellerReports(myReports);
@@ -205,6 +205,26 @@ export function SellerCenterPage() {
   const activeProducts = products.filter((p) => p.approval_status === 'approved' && p.is_active).length;
   const lowStock = products.filter((p) => p.stock > 0 && p.stock < 5);
   const outOfStock = products.filter((p) => p.stock === 0);
+
+  // Real daily revenue for the last 14 days — used by the Analytics tab's
+  // sales-over-time chart. Built from the full (untruncated) order
+  // history, not just the 10 most recent orders.
+  const dailyRevenue = (() => {
+    const days: { label: string; total: number }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 13; i >= 0; i--) {
+      const dayStart = new Date(today);
+      dayStart.setDate(dayStart.getDate() - i);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      const total = completedOrders
+        .filter((o) => { const t = new Date(o.created_at); return t >= dayStart && t < dayEnd; })
+        .reduce((s, o) => s + o.total, 0);
+      days.push({ label: dayStart.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: '2-digit' }), total });
+    }
+    return days;
+  })();
 
   const reloadProducts = async () => {
     if (!user?.sellerId && !user?.id) return;
@@ -405,7 +425,7 @@ export function SellerCenterPage() {
                   <div className="card overflow-hidden bg-white">
                     {orders.length === 0 ? (
                       <div className="p-6 text-center text-sm text-[#64748b]"><ShoppingCart className="w-8 h-8 text-[#ff7a00]/30 mx-auto mb-2" />{locale === 'fr' ? 'Aucune commande pour le moment' : 'No orders yet'}</div>
-                    ) : orders.map((o, i) => (
+                    ) : orders.slice(0, 10).map((o, i) => (
                       <div key={o.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-[#e2e8f0]' : ''}`}>
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-[#0f172a]">{o.order_items?.[0]?.product_name || 'Order'}</p>
@@ -812,6 +832,24 @@ export function SellerCenterPage() {
                   <StatCard label={locale === 'fr' ? 'Commandes' : 'Orders'} value={totalOrders.toString()} icon={ShoppingCart} />
                   <StatCard label={locale === 'fr' ? 'Note moyenne' : 'Avg rating'} value={avgRating.toFixed(1)} icon={Star} />
                   <StatCard label={locale === 'fr' ? 'Produits actifs' : 'Active products'} value={activeProducts.toString()} icon={Package} />
+                </div>
+                <div className="card p-6 bg-white">
+                  <h3 className="font-semibold text-[#0f172a] mb-4">{locale === 'fr' ? 'Ventes des 14 derniers jours' : 'Sales over the last 14 days'}</h3>
+                  {dailyRevenue.every((d) => d.total === 0) ? (
+                    <p className="text-sm text-[#64748b] text-center py-4">{locale === 'fr' ? 'Aucune vente pour le moment.' : 'No sales yet.'}</p>
+                  ) : (
+                    <div className="flex items-end gap-1.5 h-32">
+                      {(() => {
+                        const maxDay = Math.max(...dailyRevenue.map((d) => d.total), 1);
+                        return dailyRevenue.map((d, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+                            <div className="w-full rounded-t bg-gradient-to-t from-[#ff7a00] to-[#e06c00] hover:opacity-80 transition-opacity" style={{ height: `${Math.max((d.total / maxDay) * 100, d.total > 0 ? 4 : 0)}%`, minHeight: d.total > 0 ? '4px' : '0' }} title={`${d.label}: $${d.total.toFixed(2)}`} />
+                            <span className="text-[9px] text-[#64748b] rotate-0">{d.label}</span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <div className="card p-6 bg-white">
                   <h3 className="font-semibold text-[#0f172a] mb-4">{locale === 'fr' ? 'Ventes par produit' : 'Sales by product'}</h3>
