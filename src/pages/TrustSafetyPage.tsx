@@ -4,18 +4,18 @@ import {
   fetchComplianceSellers, fetchAuditLogs, fetchComplianceReports,
   fetchComplianceCases, fetchStoreHealthScores, fetchSellerDocuments,
   updateSellerCompliance, updateSellerDocument, updateComplianceReport,
-  updateComplianceCase, logAuditAction,
+  updateComplianceCase, logAuditAction, fetchRecentReviewsAdmin, deleteReviewAdmin,
 } from '@/lib/db';
-import type { ComplianceSeller, AuditLog, ComplianceReport, ComplianceCase, StoreHealthScore, SellerDocument } from '@/lib/db';
+import type { ComplianceSeller, AuditLog, ComplianceReport, ComplianceCase, StoreHealthScore, SellerDocument, AdminReview } from '@/lib/db';
 import { Badge } from '@/components/ui';
 import {
   ShieldCheck, Store, FileText, AlertTriangle, BarChart3, ScrollText, Search,
   CheckCircle, XCircle, Clock, Ban, Snowflake, RotateCcw, Flag, Eye, FileSearch,
   Activity, TrendingUp, ChevronRight, X, ZoomIn,
-  AlertOctagon, Gavel,
+  AlertOctagon, Gavel, Star, Trash2,
 } from 'lucide-react';
 
-type Tab = 'overview' | 'verification' | 'documents' | 'reports' | 'cases' | 'health' | 'audit';
+type Tab = 'overview' | 'verification' | 'documents' | 'reports' | 'cases' | 'health' | 'audit' | 'reviews';
 
 export function TrustSafetyPage() {
   const { locale, user, navigate, showToast } = useApp();
@@ -25,6 +25,8 @@ export function TrustSafetyPage() {
   const [reports, setReports] = useState<ComplianceReport[]>([]);
   const [cases, setCases] = useState<ComplianceCase[]>([]);
   const [healthScores, setHealthScores] = useState<StoreHealthScore[]>([]);
+  const [reviews, setReviews] = useState<AdminReview[]>([]);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSeller, setSelectedSeller] = useState<ComplianceSeller | null>(null);
   const [sellerDocs, setSellerDocs] = useState<SellerDocument[]>([]);
@@ -36,14 +38,15 @@ export function TrustSafetyPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [s, l, r, c, h] = await Promise.all([
+        const [s, l, r, c, h, rv] = await Promise.all([
           fetchComplianceSellers(),
           fetchAuditLogs(200),
           fetchComplianceReports(),
           fetchComplianceCases(),
           fetchStoreHealthScores(),
+          fetchRecentReviewsAdmin(150),
         ]);
-        setSellers(s); setLogs(l); setReports(r); setCases(c); setHealthScores(h);
+        setSellers(s); setLogs(l); setReports(r); setCases(c); setHealthScores(h); setReviews(rv);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
@@ -148,6 +151,27 @@ export function TrustSafetyPage() {
     }
   };
 
+  const handleDeleteReview = async (review: AdminReview) => {
+    setDeletingReviewId(review.id);
+    const ok = await deleteReviewAdmin(review.id);
+    setDeletingReviewId(null);
+    if (ok) {
+      await logAuditAction({
+        actorId: user?.id || null,
+        actorName: user?.fullName || 'Admin',
+        action: 'review.delete',
+        targetType: 'review',
+        targetId: review.id,
+        targetName: review.products?.name || review.product_id,
+        reason: `${review.rating}★ by ${review.author_name}: ${review.comment || ''}`.slice(0, 500),
+      });
+      setReviews((prev) => prev.filter((r) => r.id !== review.id));
+      showToast(locale === 'fr' ? 'Avis supprimé' : 'Review deleted');
+    } else {
+      showToast(locale === 'fr' ? 'Échec — vérifiez vos droits admin' : 'Failed — check your admin permissions', 'error');
+    }
+  };
+
   const handleCaseAction = async (caseId: string, status: string) => {
     const ok = await updateComplianceCase(caseId, { status });
     if (ok) {
@@ -211,6 +235,7 @@ export function TrustSafetyPage() {
     { id: 'cases', label: locale === 'fr' ? 'Cas' : 'Cases', icon: Gavel, badge: metrics.openCases },
     { id: 'health', label: locale === 'fr' ? 'Santé boutique' : 'Store Health', icon: Activity, badge: metrics.flaggedHealth },
     { id: 'audit', label: locale === 'fr' ? 'Journaux d\'audit' : 'Audit Logs', icon: ScrollText },
+    { id: 'reviews', label: locale === 'fr' ? 'Avis clients' : 'Reviews', icon: Star },
   ];
 
   if (loading) {
@@ -721,6 +746,46 @@ export function TrustSafetyPage() {
                       </div>
                     ))
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* REVIEWS MODERATION */}
+            {tab === 'reviews' && (
+              <div className="animate-fade-up">
+                <p className="text-sm text-[#64748b] mb-4">
+                  {locale === 'fr'
+                    ? "Tous les avis proviennent d'acheteurs ayant réellement reçu leur commande (vérification automatique) — cette liste sert à retirer un avis abusif, du spam, ou un contenu inapproprié, pas à filtrer les faux avis (déjà impossible techniquement)."
+                    : "Every review already comes from a buyer who actually received their order (automatic verification) — this list is for removing an abusive, spammy, or inappropriate review, not filtering fake ones (already technically impossible)."}
+                </p>
+                <div className="space-y-3">
+                  {reviews.length === 0 ? (
+                    <p className="text-sm text-[#64748b] text-center py-8">{locale === 'fr' ? 'Aucun avis pour le moment.' : 'No reviews yet.'}</p>
+                  ) : reviews.map((r) => (
+                    <div key={r.id} className="premium-card p-4 bg-white/90 rounded-2xl flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`w-3.5 h-3.5 ${n <= r.rating ? 'fill-[#ff7a00] text-[#ff7a00]' : 'text-[#e2e8f0]'}`} />)}
+                          </div>
+                          <span className="text-sm font-semibold text-[#0f172a]">{r.author_name}</span>
+                          {r.is_verified && <Badge color="#22c55e">{locale === 'fr' ? 'Achat vérifié' : 'Verified purchase'}</Badge>}
+                        </div>
+                        <p className="text-xs text-[#64748b] mt-1">
+                          {r.products?.name || r.product_id} {r.products?.sellers?.business_name && `• ${r.products.sellers.business_name}`} • {new Date(r.created_at).toLocaleDateString()}
+                        </p>
+                        {r.comment && <p className="text-sm text-[#0f172a] mt-2">{r.comment}</p>}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteReview(r)}
+                        disabled={deletingReviewId === r.id}
+                        className="p-2 rounded-lg hover:bg-red-50 text-red-500 shrink-0 disabled:opacity-50"
+                        title={locale === 'fr' ? "Supprimer l'avis" : 'Delete review'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

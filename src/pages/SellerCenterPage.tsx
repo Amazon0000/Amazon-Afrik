@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
-import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate, fetchReportsAgainstSeller, submitSellerReportResponse, fetchSellerPspCredentials, connectSellerPsp, disconnectSellerPsp, deleteProduct } from '@/lib/db';
+import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaignsDetailed, uploadProductImage, uploadDigitalFile, createProduct, fetchSellerPaymentMethods, addSellerPaymentMethod, removeSellerPaymentMethod, toggleSellerPaymentMethod, updateSellerPlan, initiateSubscriptionPayment, isSellerPlanActive, fetchSellerFlashDeals, createFlashDeal, endFlashDeal, fetchSellerCoupons, createCoupon, deactivateCoupon, fetchSellerReturnRequests, respondToReturnRequest, fetchSellerConversations, fetchConversationMessages, sendMessage, markConversationRead, fetchSellerAccountHealth, fetchSellerInventoryAlerts, updateProductStock, updateProductLowStockThreshold, fetchSellerShippingRates, addShippingRate, removeShippingRate, fetchReportsAgainstSeller, submitSellerReportResponse, fetchSellerPspCredentials, connectSellerPsp, disconnectSellerPsp, deleteProduct, fetchSellerProfile, updateSellerProfile } from '@/lib/db';
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate, ComplianceReport, SellerPspCredential } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
@@ -39,6 +39,8 @@ export function SellerCenterPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [sellerProfile, setSellerProfile] = useState<{ businessName: string; description: string; phone: string; countryId: string; city: string; businessAddress: string }>({ businessName: '', description: '', phone: '', countryId: '', city: '', businessAddress: '' });
+  const [savingSettings, setSavingSettings] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [sellerReports, setSellerReports] = useState<ComplianceReport[]>([]);
@@ -91,13 +93,24 @@ export function SellerCenterPage() {
       if (!user?.sellerId) { setLoading(false); return; }
       try {
         const sellerId = user.sellerId;
-        const [prods, ords, adCamp, rets, myReports] = await Promise.all([
+        const [prods, ords, adCamp, rets, myReports, profile] = await Promise.all([
           fetchProducts({ sellerId, limit: 50, approvalStatus: 'all' }),
           fetchSellerOrders(sellerId),
           fetchSellerCampaignsDetailed(sellerId),
           fetchSellerReturnRequests(sellerId),
           fetchReportsAgainstSeller(),
+          fetchSellerProfile(sellerId),
         ]);
+        if (profile) {
+          setSellerProfile({
+            businessName: profile.business_name || '',
+            description: profile.description || '',
+            phone: profile.phone || '',
+            countryId: profile.country_id || '',
+            city: profile.city || '',
+            businessAddress: profile.business_address || '',
+          });
+        }
         setProducts(prods);
         setOrders(ords.slice(0, 10));
         setAds(adCamp);
@@ -1395,9 +1408,47 @@ export function SellerCenterPage() {
               <div className="animate-fade-up space-y-6">
                 <h1 className="font-display text-2xl font-bold text-[#0f172a]">{locale === 'fr' ? 'Paramètres boutique' : 'Store settings'}</h1>
                 <div className="card p-6 bg-white space-y-4">
-                  <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Nom de la boutique' : 'Store name'}</label><input defaultValue={user?.fullName} className="input-field" /></div>
-                  <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Téléphone' : 'Phone'}</label><input className="input-field" placeholder="+225 07 00 00 00" /></div>
-                  <button onClick={() => showToast(locale === 'fr' ? 'Paramètres enregistrés' : 'Settings saved')} className="btn-green px-6 py-2.5 rounded-lg text-sm font-semibold">{t.common.save}</button>
+                  {!sellerProfile.countryId && (
+                    <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+                      {locale === 'fr'
+                        ? "Aucun pays défini pour votre boutique — vos produits n'apparaîtront jamais quand un acheteur filtre par localisation. Choisissez votre pays ci-dessous."
+                        : "No country set for your store — your products will never appear when a buyer filters by location. Choose your country below."}
+                    </div>
+                  )}
+                  <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Nom de la boutique' : 'Store name'}</label><input value={sellerProfile.businessName} onChange={(e) => setSellerProfile({ ...sellerProfile, businessName: e.target.value })} className="input-field" /></div>
+                  <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Description' : 'Description'}</label><textarea value={sellerProfile.description} onChange={(e) => setSellerProfile({ ...sellerProfile, description: e.target.value })} className="input-field resize-none" rows={3} /></div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Téléphone' : 'Phone'}</label><input value={sellerProfile.phone} onChange={(e) => setSellerProfile({ ...sellerProfile, phone: e.target.value })} className="input-field" placeholder="+225 07 00 00 00" /></div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Pays *' : 'Country *'}</label>
+                      <select value={sellerProfile.countryId} onChange={(e) => setSellerProfile({ ...sellerProfile, countryId: e.target.value })} className="input-field cursor-pointer">
+                        <option value="">{locale === 'fr' ? '— Choisir —' : '— Choose —'}</option>
+                        {countries.map((c) => <option key={c.id} value={c.id}>{c.flag} {c.name}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Ville' : 'City'}</label><input value={sellerProfile.city} onChange={(e) => setSellerProfile({ ...sellerProfile, city: e.target.value })} className="input-field" /></div>
+                    <div><label className="block text-xs font-semibold text-[#0f172a] uppercase mb-2">{locale === 'fr' ? 'Adresse' : 'Address'}</label><input value={sellerProfile.businessAddress} onChange={(e) => setSellerProfile({ ...sellerProfile, businessAddress: e.target.value })} className="input-field" /></div>
+                  </div>
+                  <button
+                    disabled={savingSettings}
+                    onClick={async () => {
+                      if (!user?.sellerId) return;
+                      setSavingSettings(true);
+                      const ok = await updateSellerProfile(user.sellerId, {
+                        businessName: sellerProfile.businessName,
+                        description: sellerProfile.description,
+                        phone: sellerProfile.phone,
+                        countryId: sellerProfile.countryId,
+                        city: sellerProfile.city,
+                        businessAddress: sellerProfile.businessAddress,
+                      });
+                      setSavingSettings(false);
+                      showToast(ok ? (locale === 'fr' ? 'Paramètres enregistrés' : 'Settings saved') : (locale === 'fr' ? 'Échec — vérifiez vos droits' : 'Failed — check your permissions'), ok ? undefined : 'error');
+                    }}
+                    className="btn-green px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {savingSettings && <Loader2 className="w-4 h-4 animate-spin" />} {t.common.save}
+                  </button>
                 </div>
               </div>
             )}

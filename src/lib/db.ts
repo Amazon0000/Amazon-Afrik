@@ -44,6 +44,31 @@ export type ProductVariant = { id: string; variant_type: string; variant_value: 
 export type ProductSpec = { id: string; spec_name: string; spec_value: string };
 export type Review = { id: string; author_name: string; rating: number; comment: string | null; is_verified: boolean; created_at: string };
 
+export type AdminReview = {
+  id: string; author_name: string; rating: number; comment: string | null;
+  is_verified: boolean; created_at: string; product_id: string; user_id: string | null;
+  products?: { name: string; seller_id: string; sellers?: { business_name: string } };
+};
+
+// Admin-only moderation view — most recent reviews platform-wide, with
+// enough product/seller context to judge whether one looks fake/abusive.
+export async function fetchRecentReviewsAdmin(limit = 100): Promise<AdminReview[]> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id, author_name, rating, comment, is_verified, created_at, product_id, user_id, products(name, seller_id, sellers(business_name))')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) { console.error('fetchRecentReviewsAdmin:', error.message); return []; }
+  return (data || []) as unknown as AdminReview[];
+}
+
+export async function deleteReviewAdmin(reviewId: string): Promise<boolean> {
+  const { data, error } = await supabase.from('reviews').delete().eq('id', reviewId).select('id');
+  if (error) { console.error('deleteReviewAdmin:', error.message); return false; }
+  if (!data || data.length === 0) { console.error('deleteReviewAdmin: 0 rows deleted — likely an RLS/permission issue'); return false; }
+  return true;
+}
+
 export type Product = {
   id: string; seller_id: string; category_id: string | null; brand_id: string | null;
   country_id: string | null; name: string; slug: string; description: string | null;
@@ -1937,6 +1962,34 @@ export async function updateSellerStatus(sellerId: string, status: string, reaso
 // individually approved and still not be granted the badge until an admin
 // makes this final call). Revoke by passing verified: false (e.g. if a
 // verified seller is later found to have submitted fraudulent documents).
+// Real self-service store profile update — the Store Settings save button
+// previously called showToast() with no actual write at all. Also the
+// only way a seller can fix a missing/wrong country_id after onboarding
+// (which directly feeds the "Shop by Location" filter — a seller with no
+// country set would never appear when a buyer filters by any location).
+export async function fetchSellerProfile(sellerId: string): Promise<{ business_name: string; description: string | null; phone: string | null; country_id: string | null; city: string | null; business_address: string | null } | null> {
+  const { data, error } = await supabase.from('sellers').select('business_name, description, phone, country_id, city, business_address').eq('id', sellerId).maybeSingle();
+  if (error) { console.error('fetchSellerProfile:', error.message); return null; }
+  return data;
+}
+
+export async function updateSellerProfile(sellerId: string, updates: {
+  businessName?: string; description?: string; phone?: string;
+  countryId?: string; city?: string; businessAddress?: string;
+}): Promise<boolean> {
+  const payload: Record<string, unknown> = {};
+  if (updates.businessName !== undefined) payload.business_name = updates.businessName;
+  if (updates.description !== undefined) payload.description = updates.description;
+  if (updates.phone !== undefined) payload.phone = updates.phone;
+  if (updates.countryId !== undefined) payload.country_id = updates.countryId;
+  if (updates.city !== undefined) payload.city = updates.city;
+  if (updates.businessAddress !== undefined) payload.business_address = updates.businessAddress;
+  const { data, error } = await supabase.from('sellers').update(payload).eq('id', sellerId).select('id');
+  if (error) { console.error('updateSellerProfile:', error.message); return false; }
+  if (!data || data.length === 0) { console.error('updateSellerProfile: 0 rows updated — likely an RLS/permission issue'); return false; }
+  return true;
+}
+
 export async function setSellerVerified(sellerId: string, verified: boolean, adminUserId: string | null): Promise<boolean> {
   const { data, error } = await supabase.from('sellers').update({
     is_verified: verified,

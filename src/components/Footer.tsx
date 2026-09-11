@@ -68,7 +68,8 @@ export function Footer() {
 
   // Real, official Zando/Liafrik social accounts.
   const socials = [
-    { icon: TikTokIcon, url: 'https://www.tiktok.com/@liyahgroup?_r=1&_t=ZS-9981XGgaxrE', label: 'TikTok' },
+    { icon: TikTokIcon, url: 'https://www.tiktok.com/@liyahgroup?_r=1&_t=ZS-9981XGgaxrE', label: 'TikTok (Liyah Group)' },
+    { icon: TikTokIcon, url: 'https://www.tiktok.com/@liafrik4?_r=1&_t=ZN-9981b1Sq59K', label: 'TikTok (Liafrik)' },
     { icon: Facebook, url: 'https://www.facebook.com/share/1LMAGqsy3n/?mibextid=wwXIfr', label: 'Facebook' },
     { icon: Instagram, url: 'https://www.instagram.com/liafrik_tech?igsi=eXBjdTc5NG42Zml4&utm_source=qr', label: 'Instagram' },
     { icon: Linkedin, url: 'https://www.linkedin.com/company/liafrik/', label: 'LinkedIn' },
