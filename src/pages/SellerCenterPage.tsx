@@ -4,7 +4,8 @@ import { fetchProducts, fetchSellerOrders, updateOrderStatus, fetchSellerCampaig
 import type { Product, Order, AdCampaign, SellerPaymentMethod, FlashDeal, Coupon, ReturnRequest, Conversation, Message, SellerAccountHealth, InventoryAlert, ShippingRate, ComplianceReport, SellerPspCredential } from '@/lib/db';
 import { generateInvoicePdf } from '@/lib/invoice';
 import { StatCard, Badge } from '@/components/ui';
-import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, MessageCircle, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle, Smartphone, Landmark, Lock } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, RotateCcw, Star, CreditCard, Megaphone, BarChart3, Plus, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, MessageCircle, Wallet, FileText, Settings, Bell, Loader2, ImagePlus, Trash2, ShieldCheck, Flame, Tag, Download, PackageCheck, AlertTriangle, Smartphone, Landmark, Lock, Upload } from 'lucide-react';
+import Papa from 'papaparse';
 
 // Major global payment service providers, with strong African + worldwide
 // coverage — sellers pick their own PSP here; Zando never touches the
@@ -31,10 +32,22 @@ type NewProduct = {
 
 const emptyProduct: NewProduct = { name: '', description: '', price: '', oldPrice: '', stock: '', sku: '', categoryId: '', productType: 'physical', currencyCode: 'USD' };
 
+type BulkProductRow = {
+  name: string; description: string; price: string; currency: string; oldPrice: string;
+  category: string; stock: string; sku: string; imageUrl1: string; imageUrl2: string; imageUrl3: string;
+  status: 'pending' | 'ok' | 'error'; error?: string;
+};
+
+const BULK_CSV_TEMPLATE = 'name,description,price,currency,old_price,category,stock,sku,image_url_1,image_url_2,image_url_3\n"Robe Wax Premium","Robe en tissu wax 100% coton, coupe ajustée",45,USD,60,Mode,25,ZND-001,https://exemple.com/image1.jpg,,\n';
+
 export function SellerCenterPage() {
   const { t, locale, user, navigate, showToast, categories, countries, params, currencies } = useApp();
   const [tab, setTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [bulkRows, setBulkRows] = useState<BulkProductRow[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkResults, setBulkResults] = useState<{ succeeded: number; failed: { row: number; name: string; reason: string }[] } | null>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -411,15 +424,158 @@ export function SellerCenterPage() {
               <div className="animate-fade-up">
                 <div className="flex items-center justify-between mb-6">
                   <h1 className="font-display text-2xl font-bold text-[#0f172a]">{t.seller.products}</h1>
-                  <button onClick={() => {
-                    const activeCount = products.filter((p) => p.is_active).length;
-                    if (plan === 'free' && activeCount >= 1 && !showAddProduct) {
-                      setShowUpgradeModal(true);
-                      return;
-                    }
-                    setShowAddProduct(!showAddProduct);
-                  }} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {t.seller.addProduct}</button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setShowBulkUpload(!showBulkUpload)} className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-[#0f172a]/15 text-[#0f172a] flex items-center gap-2 hover:border-[#ff7a00]"><Upload className="w-4 h-4" /> {locale === 'fr' ? 'Import en masse' : 'Bulk upload'}</button>
+                    <button onClick={() => {
+                      const activeCount = products.filter((p) => p.is_active).length;
+                      if (plan === 'free' && activeCount >= 1 && !showAddProduct) {
+                        setShowUpgradeModal(true);
+                        return;
+                      }
+                      setShowAddProduct(!showAddProduct);
+                    }} className="btn-green px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {t.seller.addProduct}</button>
+                  </div>
                 </div>
+
+                {showBulkUpload && (
+                  <div className="card p-6 mb-6 animate-fade-up bg-white">
+                    <h2 className="font-display text-lg font-bold text-[#0f172a] mb-2">{locale === 'fr' ? 'Import en masse (CSV)' : 'Bulk upload (CSV)'}</h2>
+                    <p className="text-sm text-[#64748b] mb-4">
+                      {locale === 'fr'
+                        ? "Ajoutez des dizaines de produits d'un coup avec un fichier CSV. Téléchargez le modèle, remplissez-le dans Excel/Google Sheets, puis importez-le ici. Chaque produit créé passe par la validation Zando habituelle avant mise en ligne."
+                        : "Add dozens of products at once with a CSV file. Download the template, fill it in Excel/Google Sheets, then import it here. Every product created still goes through the normal Zando approval before going live."}
+                    </p>
+                    <button
+                      onClick={() => {
+                        const blob = new Blob([BULK_CSV_TEMPLATE], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = 'zando-bulk-upload-template.csv';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="flex items-center gap-2 text-sm font-semibold text-[#ff7a00] hover:underline mb-4"
+                    >
+                      <Download className="w-4 h-4" /> {locale === 'fr' ? 'Télécharger le modèle CSV' : 'Download CSV template'}
+                    </button>
+
+                    {bulkRows.length === 0 ? (
+                      <label className="block border-2 border-dashed border-[#0f172a]/15 rounded-xl p-8 text-center cursor-pointer hover:border-[#ff7a00]">
+                        <input type="file" accept=".csv" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          Papa.parse<Record<string, string>>(file, {
+                            header: true, skipEmptyLines: true,
+                            complete: (result) => {
+                              const rows: BulkProductRow[] = result.data.map((r) => ({
+                                name: r.name || '', description: r.description || '', price: r.price || '',
+                                currency: (r.currency || 'USD').toUpperCase(), oldPrice: r.old_price || '',
+                                category: r.category || '', stock: r.stock || '', sku: r.sku || '',
+                                imageUrl1: r.image_url_1 || '', imageUrl2: r.image_url_2 || '', imageUrl3: r.image_url_3 || '',
+                                status: 'pending' as const,
+                              })).filter((r) => r.name.trim());
+                              setBulkRows(rows);
+                              setBulkResults(null);
+                            },
+                            error: () => showToast(locale === 'fr' ? 'Erreur de lecture du fichier CSV' : 'Error reading CSV file', 'error'),
+                          });
+                          e.target.value = '';
+                        }} />
+                        <Upload className="w-8 h-8 text-[#64748b] mx-auto mb-2" />
+                        <p className="text-sm font-semibold text-[#0f172a]">{locale === 'fr' ? 'Cliquez pour choisir un fichier CSV' : 'Click to choose a CSV file'}</p>
+                      </label>
+                    ) : (
+                      <div>
+                        <div className="overflow-x-auto mb-4 max-h-80 overflow-y-auto rounded-lg border border-[#e2e8f0]">
+                          <table className="w-full text-xs">
+                            <thead className="bg-[#f7f8fa] sticky top-0">
+                              <tr>
+                                <th className="text-left p-2 font-semibold text-[#64748b]">{locale === 'fr' ? 'Nom' : 'Name'}</th>
+                                <th className="text-left p-2 font-semibold text-[#64748b]">{locale === 'fr' ? 'Prix' : 'Price'}</th>
+                                <th className="text-left p-2 font-semibold text-[#64748b]">{locale === 'fr' ? 'Stock' : 'Stock'}</th>
+                                <th className="text-left p-2 font-semibold text-[#64748b]">{locale === 'fr' ? 'Statut' : 'Status'}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bulkRows.map((r, i) => (
+                                <tr key={i} className="border-t border-[#e2e8f0]">
+                                  <td className="p-2 text-[#0f172a]">{r.name}</td>
+                                  <td className="p-2 text-[#0f172a]">{r.price} {r.currency}</td>
+                                  <td className="p-2 text-[#0f172a]">{r.stock}</td>
+                                  <td className="p-2">
+                                    {r.status === 'pending' && <span className="text-[#64748b]">{locale === 'fr' ? 'En attente' : 'Pending'}</span>}
+                                    {r.status === 'ok' && <span className="text-green-600 font-semibold flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> OK</span>}
+                                    {r.status === 'error' && <span className="text-red-500 font-semibold" title={r.error}>{r.error}</span>}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {bulkResults && (
+                          <p className="text-sm font-semibold text-[#0f172a] mb-3">
+                            {locale === 'fr' ? `${bulkResults.succeeded} produit(s) créé(s)` : `${bulkResults.succeeded} product(s) created`}
+                            {bulkResults.failed.length > 0 && ` — ${bulkResults.failed.length} ${locale === 'fr' ? 'échec(s)' : 'failure(s)'}`}
+                          </p>
+                        )}
+                        <div className="flex gap-3">
+                          <button onClick={() => { setBulkRows([]); setBulkResults(null); setShowBulkUpload(false); }} className="px-6 py-2.5 rounded-lg text-sm font-medium border border-[#e2e8f0] text-[#0f172a]">{t.common.cancel}</button>
+                          <button
+                            disabled={bulkProcessing}
+                            onClick={async () => {
+                              const sellerId = user?.sellerId;
+                              if (!sellerId) return;
+                              setBulkProcessing(true);
+                              let succeeded = 0;
+                              const failed: { row: number; name: string; reason: string }[] = [];
+                              const updatedRows = [...bulkRows];
+                              for (let i = 0; i < updatedRows.length; i++) {
+                                const r = updatedRows[i];
+                                const price = parseFloat(r.price);
+                                const stock = parseInt(r.stock, 10);
+                                if (!r.name.trim() || isNaN(price) || price <= 0 || isNaN(stock) || stock < 0) {
+                                  updatedRows[i] = { ...r, status: 'error', error: locale === 'fr' ? 'Nom/prix/stock invalide' : 'Invalid name/price/stock' };
+                                  failed.push({ row: i + 1, name: r.name, reason: 'Invalid name/price/stock' });
+                                  continue;
+                                }
+                                const matchedCategory = categories.find((c) => c.name.toLowerCase() === r.category.trim().toLowerCase());
+                                const imageUrls = [r.imageUrl1, r.imageUrl2, r.imageUrl3].map((u) => u.trim()).filter(Boolean);
+                                const productId = await createProduct({
+                                  sellerId,
+                                  name: r.name.trim(),
+                                  description: r.description.trim(),
+                                  price,
+                                  oldPrice: r.oldPrice ? parseFloat(r.oldPrice) : null,
+                                  currencyCode: r.currency || 'USD',
+                                  categoryId: matchedCategory?.id || null,
+                                  stock,
+                                  sku: r.sku.trim() || null,
+                                  imageUrls,
+                                  productType: 'physical',
+                                });
+                                if (productId) {
+                                  updatedRows[i] = { ...r, status: 'ok' };
+                                  succeeded++;
+                                } else {
+                                  updatedRows[i] = { ...r, status: 'error', error: locale === 'fr' ? 'Échec de création' : 'Creation failed' };
+                                  failed.push({ row: i + 1, name: r.name, reason: 'Creation failed' });
+                                }
+                              }
+                              setBulkRows(updatedRows);
+                              setBulkResults({ succeeded, failed });
+                              setBulkProcessing(false);
+                              if (succeeded > 0) await reloadProducts();
+                            }}
+                            className="btn-green px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {bulkProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {locale === 'fr' ? `Importer ${bulkRows.length} produit(s)` : `Import ${bulkRows.length} product(s)`}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {showAddProduct && (
                   <div className="card p-6 mb-6 animate-fade-up bg-white">
